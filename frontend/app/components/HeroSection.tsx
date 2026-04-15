@@ -5,18 +5,18 @@ import { BookOpen, MapPin, ChevronDown, Search } from "lucide-react";
 export default function HeroSection() {
   return (
     <section
-      className="py-[100px] pb-[120px] text-center"
+      className="py-12 sm:py-16 md:py-[100px] pb-16 sm:pb-20 md:pb-[120px] text-center"
       style={{
         backgroundColor: "var(--primary)",
         color: "var(--primary-foreground)",
       }}
     >
-      <div className="w-full max-w-[1200px] mx-auto px-6">
-        <h1 className="text-5xl font-extrabold mb-6 max-w-[800px] mx-auto leading-tight">
+      <div className="w-full max-w-[1200px] mx-auto px-4 sm:px-6">
+        <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-extrabold mb-4 sm:mb-6 max-w-[800px] mx-auto leading-tight">
           Khám Phá Tiềm Năng Cùng Gia Sư Xuất Sắc
         </h1>
         <p
-          className="text-lg mb-12 max-w-[600px] mx-auto"
+          className="text-sm sm:text-base md:text-lg mb-8 sm:mb-12 max-w-[600px] mx-auto"
           style={{ color: "rgba(255,255,255,0.9)" }}
         >
           Hệ thống quản lý và kết nối gia sư uy tín hàng đầu. Trải nghiệm học
@@ -25,7 +25,7 @@ export default function HeroSection() {
 
         {/* Search Box */}
         <div
-          className="flex items-center max-w-[860px] mx-auto rounded-xl p-3"
+          className="flex flex-col sm:flex-row items-stretch sm:items-center max-w-[860px] mx-auto rounded-lg sm:rounded-xl p-3 gap-3 sm:gap-0"
           style={{
             backgroundColor: "var(--background)",
             color: "var(--foreground)",
@@ -34,68 +34,69 @@ export default function HeroSection() {
           }}
         >
           {/* Subject Field */}
-          <div className="flex items-center gap-4 flex-1 px-6 py-3">
-            <div className="flex items-center justify-center w-6 h-6 shrink-0">
+          <div className="flex items-center gap-2 sm:gap-4 flex-1 px-3 sm:px-6 py-3 sm:py-3">
+            <div className="flex items-center justify-center w-5 h-5 sm:w-6 sm:h-6 shrink-0">
               <BookOpen
-                size={24}
+                size={20}
+                className="sm:w-6 sm:h-6"
                 style={{ color: "var(--muted-foreground)" }}
               />
             </div>
-            <div className="flex flex-col items-start gap-1 flex-1 text-left">
+            <div className="flex flex-col items-start gap-0.5 sm:gap-1 flex-1 text-left">
               <label
-                className="text-[13px] font-bold uppercase tracking-wide"
+                className="text-[11px] sm:text-[13px] font-bold uppercase tracking-wide"
                 style={{ color: "var(--foreground)" }}
               >
                 Môn học
               </label>
               <div
-                className="flex items-center justify-between w-full text-[15px] cursor-pointer"
+                className="flex items-center justify-between w-full text-[13px] sm:text-[15px] cursor-pointer truncate"
                 style={{ color: "var(--muted-foreground)" }}
               >
-                <span>Tìm môn Toán, Lý, Tiếng Anh...</span>
-                <ChevronDown size={16} />
+                <span className="truncate">Tìm môn Toán, Lý...</span>
+                <ChevronDown size={16} className="shrink-0 ml-2" />
               </div>
             </div>
           </div>
 
           {/* Divider */}
           <div
-            className="w-px h-12 shrink-0"
+            className="hidden sm:block w-px h-12 shrink-0"
             style={{ backgroundColor: "var(--border)" }}
           />
 
           {/* Location Field */}
-          <div className="flex items-center gap-4 flex-1 px-6 py-3">
-            <div className="flex items-center justify-center w-6 h-6 shrink-0">
-              <MapPin size={24} style={{ color: "var(--muted-foreground)" }} />
+          <div className="flex items-center gap-2 sm:gap-4 flex-1 px-3 sm:px-6 py-3 sm:py-3">
+            <div className="flex items-center justify-center w-5 h-5 sm:w-6 sm:h-6 shrink-0">
+              <MapPin size={20} className="sm:w-6 sm:h-6" style={{ color: "var(--muted-foreground)" }} />
             </div>
-            <div className="flex flex-col items-start gap-1 flex-1 text-left">
+            <div className="flex flex-col items-start gap-0.5 sm:gap-1 flex-1 text-left">
               <label
-                className="text-[13px] font-bold uppercase tracking-wide"
+                className="text-[11px] sm:text-[13px] font-bold uppercase tracking-wide"
                 style={{ color: "var(--foreground)" }}
               >
                 Khu vực
               </label>
               <div
-                className="flex items-center justify-between w-full text-[15px] cursor-pointer"
+                className="flex items-center justify-between w-full text-[13px] sm:text-[15px] cursor-pointer truncate"
                 style={{ color: "var(--muted-foreground)" }}
               >
-                <span>Nhập thành phố, quận/huyện...</span>
-                <ChevronDown size={16} />
+                <span className="truncate">Nhập thành phố...</span>
+                <ChevronDown size={16} className="shrink-0 ml-2" />
               </div>
             </div>
           </div>
 
           {/* Search Button */}
           <button
-            className="flex items-center gap-2 h-14 px-8 text-base font-semibold rounded-xl border-none cursor-pointer transition-opacity hover:opacity-90 shrink-0"
+            className="flex items-center justify-center gap-2 h-10 sm:h-14 px-4 sm:px-8 text-sm sm:text-base font-semibold rounded-lg sm:rounded-xl border-none cursor-pointer transition-opacity hover:opacity-90 shrink-0 w-full sm:w-auto"
             style={{
               backgroundColor: "var(--primary)",
               color: "var(--primary-foreground)",
             }}
           >
-            <Search size={20} />
-            Tìm kiếm
+            <Search size={18} className="sm:w-5 sm:h-5" />
+            <span>Tìm kiếm</span>
           </button>
         </div>
       </div>

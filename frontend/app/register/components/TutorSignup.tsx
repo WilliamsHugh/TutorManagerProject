@@ -157,8 +157,8 @@ export default function TutorSignup({ onBack }: TutorSignupProps) {
   }
 
   return (
-    <div className="min-h-screen px-4 py-8 sm:py-12" style={{ backgroundColor: "var(--background)" }}>
-      <div className="w-full max-w-2xl mx-auto">
+    <div className="min-h-screen px-4 sm:px-6 py-8 sm:py-12 w-full flex items-center justify-center" style={{ backgroundColor: "var(--background)" }}>
+      <div className="w-full max-w-md">
         {/* Back Button */}
         <button
           onClick={onBack}

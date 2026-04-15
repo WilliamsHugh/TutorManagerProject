@@ -9,8 +9,8 @@ interface RoleSelectionProps {
 
 export default function RoleSelection({ onSelectRole }: RoleSelectionProps) {
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 py-8 sm:py-12">
-      <div className="w-full max-w-[1200px]">
+    <div className="min-h-screen flex items-center justify-center px-4 sm:px-6 py-8 sm:py-12 w-full">
+      <div className="w-full max-w-md">
         {/* Header */}
         <div className="mb-12 sm:mb-16">
           <Link href="/" className="inline-flex items-center gap-2 mb-8 sm:mb-12">
@@ -45,7 +45,7 @@ export default function RoleSelection({ onSelectRole }: RoleSelectionProps) {
         </div>
 
         {/* Role Selection Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 max-w-2xl">
+        <div className="grid grid-cols-1 gap-4 w-full">
           {/* Student Card */}
           <button
             onClick={() => onSelectRole("student")}

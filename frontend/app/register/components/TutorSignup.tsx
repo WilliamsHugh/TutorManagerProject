@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { BookOpen, ChevronLeft, Eye, EyeOff, Upload, X } from "lucide-react";
 import Link from "next/link";
+import { registerTutor } from "@/lib/api";
 
 interface TutorSignupProps {
   onBack: () => void;
@@ -102,10 +103,17 @@ export default function TutorSignup({ onBack }: TutorSignupProps) {
 
     setLoading(true);
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-      setSuccess(true);
-      setError("");
+      await registerTutor({
+      fullName: formData.fullName,
+      email: formData.email,
+      phone: formData.phone,
+      password: formData.password,
+      education: formData.education,
+      experience: formData.experience,
+      subjects: formData.selectedSubjects,
+    });
+    setSuccess(true);
+    // Tutor chờ duyệt nên không lưu token
     } catch (err) {
       setError("Có lỗi xảy ra. Vui lòng thử lại.");
     } finally {

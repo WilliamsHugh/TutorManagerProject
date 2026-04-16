@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { BookOpen, ChevronLeft, Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
+import { registerStudent } from "@/lib/api";
 
 interface StudentSignupProps {
   onBack: () => void;
@@ -47,10 +48,10 @@ export default function StudentSignup({ onBack }: StudentSignupProps) {
 
     setLoading(true);
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      const result = await registerStudent(formData);
+      localStorage.setItem('access_token', result.access_token);
+      localStorage.setItem('user', JSON.stringify(result.user));
       setSuccess(true);
-      setError("");
     } catch (err) {
       setError("Có lỗi xảy ra. Vui lòng thử lại.");
     } finally {

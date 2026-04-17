@@ -44,4 +44,4 @@ import { Notification } from './notifications/notification.entity';
     UsersModule,
   ],
 })
-export class AppModule {}
+export class AppModule { }

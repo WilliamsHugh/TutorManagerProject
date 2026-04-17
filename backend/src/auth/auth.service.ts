@@ -5,7 +5,7 @@ import { UsersService } from '../users/users.service';
 import { RegisterStudentDto } from './dto/register-student.dto';
 import { RegisterTutorDto } from './dto/register-tutor.dto';
 import { LoginDto } from './dto/login.dto';
-import { UserRole, TutorStatus } from '../users/user.entity';
+import { ApprovalStatus } from '../users/entities/tutor.entity';
 
 @Injectable()
 export class AuthService {
@@ -15,14 +15,15 @@ export class AuthService {
   ) {}
 
   async registerStudent(dto: RegisterStudentDto) {
-    const hashedPassword = await bcrypt.hash(dto.password, 10);
-    const user = await this.usersService.create({
-      ...dto,
-      password: hashedPassword,
-      role: UserRole.STUDENT,
+    const passwordHash = await bcrypt.hash(dto.password, 10);
+    const user = await this.usersService.createStudent({
+      fullName: dto.fullName,
+      email: dto.email,
+      phone: dto.phone,
+      passwordHash: passwordHash,
     });
 
-    const { password, ...result } = user;
+    const { passwordHash: _, ...result } = user;
     return {
       message: 'Đăng ký thành công',
       user: result,
@@ -31,15 +32,22 @@ export class AuthService {
   }
 
   async registerTutor(dto: RegisterTutorDto) {
-    const hashedPassword = await bcrypt.hash(dto.password, 10);
-    const user = await this.usersService.create({
-      ...dto,
-      password: hashedPassword,
-      role: UserRole.TUTOR,
-      tutorStatus: TutorStatus.PENDING, // Chờ admin duyệt
-    });
+    const passwordHash = await bcrypt.hash(dto.password, 10);
+    const user = await this.usersService.createTutor(
+      {
+        fullName: dto.fullName,
+        email: dto.email,
+        phone: dto.phone,
+        passwordHash: passwordHash,
+      },
+      {
+        educationLevel: dto.education,
+        experience: dto.experience,
+      },
+      dto.subjects || []
+    );
 
-    const { password, ...result } = user;
+    const { passwordHash: _, ...result } = user;
     return {
       message: 'Đăng ký thành công. Hồ sơ đang chờ xét duyệt.',
       user: result,
@@ -53,17 +61,20 @@ export class AuthService {
       throw new UnauthorizedException('Email hoặc mật khẩu không đúng');
     }
 
-    const isPasswordValid = await bcrypt.compare(dto.password, user.password);
+    const isPasswordValid = await bcrypt.compare(dto.password, user.passwordHash);
     if (!isPasswordValid) {
       throw new UnauthorizedException('Email hoặc mật khẩu không đúng');
     }
 
-    // Tutor chờ duyệt không thể đăng nhập
-    if (user.role === UserRole.TUTOR && user.tutorStatus === TutorStatus.PENDING) {
-      throw new UnauthorizedException('Hồ sơ của bạn đang chờ xét duyệt');
+    // Check tutor approval status
+    if (user.role && user.role.name === 'tutor') {
+      const tutor = await this.usersService.findTutorByUserId(user.id);
+      if (tutor && tutor.approvalStatus === ApprovalStatus.PENDING) {
+        throw new UnauthorizedException('Hồ sơ của bạn đang chờ xét duyệt');
+      }
     }
 
-    const { password, ...result } = user;
+    const { passwordHash, ...result } = user;
     return {
       message: 'Đăng nhập thành công',
       user: result,
@@ -75,7 +86,7 @@ export class AuthService {
     return this.jwtService.sign({
       sub: user.id,
       email: user.email,
-      role: user.role,
+      role: user.role?.name,
     });
   }
 }

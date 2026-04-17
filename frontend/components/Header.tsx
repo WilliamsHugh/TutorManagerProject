@@ -1,6 +1,7 @@
 "use client";
 
 import { GraduationCap, Menu, X } from "lucide-react";
+import Link from "next/link";
 import { useState } from "react";
 
 const navLinks = [
@@ -55,24 +56,28 @@ export default function Header() {
 
         {/* Auth Buttons - Desktop */}
         <div className="hidden sm:flex items-center gap-3">
-          <button
+          <Link
+            href="/login"
             className="inline-flex items-center justify-center h-10 px-4 text-sm font-semibold rounded-lg border cursor-pointer bg-transparent transition-colors hover:bg-gray-50"
             style={{
               borderColor: "var(--border)",
               color: "var(--foreground)",
+              textDecoration: "none",
             }}
           >
             Đăng nhập
-          </button>
-          <button
+          </Link>
+          <Link
+            href="/register"
             className="inline-flex items-center justify-center h-10 px-4 text-sm font-semibold rounded-lg cursor-pointer border-none transition-opacity hover:opacity-90"
             style={{
               backgroundColor: "var(--primary)",
               color: "var(--primary-foreground)",
+              textDecoration: "none",
             }}
           >
             Đăng ký
-          </button>
+          </Link>
         </div>
 
         {/* Mobile Menu Button */}
@@ -112,24 +117,28 @@ export default function Header() {
               ))}
             </nav>
             <div className="flex flex-col gap-2 border-t pt-4" style={{ borderColor: "var(--border)" }}>
-              <button
+              <Link
+                href="/login"
                 className="inline-flex items-center justify-center h-10 px-4 text-sm font-semibold rounded-lg border cursor-pointer bg-transparent transition-colors hover:bg-gray-50 w-full"
                 style={{
                   borderColor: "var(--border)",
                   color: "var(--foreground)",
+                  textDecoration: "none",
                 }}
               >
                 Đăng nhập
-              </button>
-              <button
+              </Link>
+              <Link
+                href="/register"
                 className="inline-flex items-center justify-center h-10 px-4 text-sm font-semibold rounded-lg cursor-pointer border-none transition-opacity hover:opacity-90 w-full"
                 style={{
                   backgroundColor: "var(--primary)",
                   color: "var(--primary-foreground)",
+                  textDecoration: "none",
                 }}
               >
                 Đăng ký
-              </button>
+              </Link>
             </div>
           </div>
         </div>

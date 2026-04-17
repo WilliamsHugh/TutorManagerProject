@@ -4,9 +4,8 @@ import { RegisterStudentDto } from './dto/register-student.dto';
 import { RegisterTutorDto } from './dto/register-tutor.dto';
 import { LoginDto } from './dto/login.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
-import { Roles } from './decorators/roles.decorator';
+import { Roles, RoleType } from './decorators/roles.decorator';
 import { RolesGuard } from './guards/roles.guard';
-import { UserRole } from '../users/user.entity';
 
 @Controller('auth')
 export class AuthController {
@@ -31,14 +30,14 @@ export class AuthController {
   @Get('me')
   @UseGuards(JwtAuthGuard)
   getProfile(@Request() req) {
-    const { password, ...user } = req.user;
+    const { passwordHash, ...user } = req.user;
     return user;
   }
 
   // Ví dụ route chỉ dành cho tutor
   @Get('tutor-only')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.TUTOR)
+  @Roles(RoleType.TUTOR)
   tutorRoute() {
     return { message: 'Chỉ gia sư mới thấy được' };
   }

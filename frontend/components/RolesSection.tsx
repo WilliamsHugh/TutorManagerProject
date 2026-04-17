@@ -33,18 +33,18 @@ const roles: Role[] = [
 
 export default function RolesSection() {
   return (
-    <section className="py-20">
-      <div className="w-full max-w-[1200px] mx-auto px-6">
+    <section className="py-12 sm:py-16 lg:py-20">
+      <div className="w-full max-w-[1200px] mx-auto px-4 sm:px-6">
         {/* Section Header */}
-        <div className="text-center mb-12 max-w-[600px] mx-auto">
+        <div className="text-center mb-8 sm:mb-12 max-w-[600px] mx-auto">
           <h2
-            className="text-[32px] font-bold mb-4"
+            className="text-2xl sm:text-[28px] lg:text-[32px] font-bold mb-3 sm:mb-4"
             style={{ color: "var(--foreground)" }}
           >
             Hệ Sinh Thái Giáo Dục Toàn Diện
           </h2>
           <p
-            className="text-base"
+            className="text-sm sm:text-base"
             style={{ color: "var(--muted-foreground)" }}
           >
             Nền tảng của chúng tôi cung cấp giao diện và công cụ chuyên biệt
@@ -53,42 +53,42 @@ export default function RolesSection() {
         </div>
 
         {/* Roles Grid */}
-        <div className="grid grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
           {roles.map((role) => {
             const Icon = role.icon;
             return (
               <div
                 key={role.title}
-                className="flex flex-col gap-4 p-8 rounded-lg border"
+                className="flex flex-col gap-4 p-5 sm:p-8 rounded-lg border"
                 style={{
                   backgroundColor: "var(--card)",
                   borderColor: "var(--border)",
                 }}
               >
                 <div
-                  className="w-14 h-14 flex items-center justify-center rounded-md mb-2"
+                  className="w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center rounded-md"
                   style={{
                     backgroundColor: "var(--primary)",
                     color: "var(--primary-foreground)",
                   }}
                 >
-                  <Icon size={28} />
+                  <Icon size={24} className="sm:w-7 sm:h-7" />
                 </div>
                 <h3
-                  className="text-xl font-semibold"
+                  className="text-lg sm:text-xl font-semibold"
                   style={{ color: "var(--foreground)" }}
                 >
                   {role.title}
                 </h3>
                 <p
-                  className="text-[15px] leading-relaxed flex-1"
+                  className="text-sm sm:text-[15px] leading-relaxed flex-1"
                   style={{ color: "var(--muted-foreground)" }}
                 >
                   {role.description}
                 </p>
                 <a
                   href="#"
-                  className="inline-flex items-center gap-2 text-sm font-semibold mt-2 no-underline transition-opacity hover:opacity-80"
+                  className="inline-flex items-center gap-2 text-xs sm:text-sm font-semibold mt-2 no-underline transition-opacity hover:opacity-80"
                   style={{ color: "var(--primary)" }}
                 >
                   {role.linkText}

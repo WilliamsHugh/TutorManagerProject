@@ -5,6 +5,7 @@ import SubjectsSection from "@/components/SubjectsSection";
 import TutorsSection from "@/components/TutorsSection";
 import RolesSection from "@/components/RolesSection";
 import CTASection from "@/components/CTASection";
+import Footer from "@/components/Footer";
 
 export default function Home() {
   return (
@@ -18,6 +19,7 @@ export default function Home() {
         <RolesSection />
         <CTASection />
       </main>
+      <Footer />
     </>
   );
 }

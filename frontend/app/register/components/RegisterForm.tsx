@@ -38,7 +38,7 @@ export default function RegisterForm() {
     const [password, setPassword] = useState("");
     const [education, setEducation] = useState("Sinh viên");
     const [experience, setExperience] = useState("1 - 3 năm");
-    
+
     const [subjectInput, setSubjectInput] = useState("");
 
     const [error, setError] = useState("");
@@ -173,6 +173,14 @@ export default function RegisterForm() {
                                     Dành cho học viên &amp; phụ huynh
                                 </p>
                             </div>
+                            {selectedRole === "student" && (
+                                <div
+                                    className="absolute top-4 right-4"
+                                    style={{ color: "var(--primary)" }}
+                                >
+                                    <CheckCircle2 size={20} />
+                                </div>
+                            )}
                         </div>
                     </button>
 
@@ -232,114 +240,13 @@ export default function RegisterForm() {
                         </Link>
                     </div>
                 ) : (
-                <form onSubmit={handleSubmit} className="space-y-8">
-                    {error && (
-                        <div className="p-4 rounded-md text-sm font-medium" style={{ backgroundColor: '#fef2f2', color: '#991b1b', border: '1px solid #fecaca' }}>
-                            {error}
-                        </div>
-                    )}
-                    {/* Section 1: Basic Info */}
-                    <div>
-                        <div
-                            className="flex items-center gap-2.5 text-base font-semibold mb-5 pb-3 border-b"
-                            style={{
-                                color: "var(--foreground)",
-                                borderColor: "var(--border)",
-                            }}
-                        >
-                            <UserCircle size={20} style={{ color: "var(--primary)" }} />
-                            Thông tin cơ bản
-                        </div>
-
-                        <div className="space-y-5">
-                            {/* Full Name - Full Width */}
-                            <div>
-                                <label className="block text-sm font-medium mb-2" style={{ color: "var(--foreground)" }}>
-                                    Họ và tên <span style={{ color: "var(--destructive)" }}>*</span>
-                                </label>
-                                <input
-                                    type="text"
-                                    value={fullName}
-                                    onChange={(e) => setFullName(e.target.value)}
-                                    required
-                                    placeholder="Nhập đầy đủ họ và tên của bạn"
-                                    className="w-full h-11 px-3.5 rounded-md border text-sm outline-none transition-colors focus:ring-2"
-                                    style={{
-                                        borderColor: "var(--border)",
-                                        backgroundColor: "var(--card)",
-                                        color: "var(--foreground)",
-                                        "--tw-ring-color": "var(--primary)",
-                                    } as React.CSSProperties}
-                                />
+                    <form onSubmit={handleSubmit} className="space-y-8">
+                        {error && (
+                            <div className="p-4 rounded-md text-sm font-medium" style={{ backgroundColor: '#fef2f2', color: '#991b1b', border: '1px solid #fecaca' }}>
+                                {error}
                             </div>
-
-                            {/* Email and Phone */}
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                                <div>
-                                    <label className="block text-sm font-medium mb-2" style={{ color: "var(--foreground)" }}>
-                                        Email <span style={{ color: "var(--destructive)" }}>*</span>
-                                    </label>
-                                    <input
-                                        type="email"
-                                        value={email}
-                                        onChange={(e) => setEmail(e.target.value)}
-                                        required
-                                        placeholder="you@example.com"
-                                        className="w-full h-11 px-3.5 rounded-md border text-sm outline-none transition-colors focus:ring-2"
-                                        style={{
-                                            borderColor: "var(--border)",
-                                            backgroundColor: "var(--card)",
-                                            color: "var(--foreground)",
-                                            "--tw-ring-color": "var(--primary)",
-                                        } as React.CSSProperties}
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium mb-2" style={{ color: "var(--foreground)" }}>
-                                        Số điện thoại <span style={{ color: "var(--destructive)" }}>*</span>
-                                    </label>
-                                    <input
-                                        type="tel"
-                                        value={phone}
-                                        onChange={(e) => setPhone(e.target.value)}
-                                        required
-                                        placeholder="09xx xxx xxx"
-                                        className="w-full h-11 px-3.5 rounded-md border text-sm outline-none transition-colors focus:ring-2"
-                                        style={{
-                                            borderColor: "var(--border)",
-                                            backgroundColor: "var(--card)",
-                                            color: "var(--foreground)",
-                                            "--tw-ring-color": "var(--primary)",
-                                        } as React.CSSProperties}
-                                    />
-                                </div>
-                            </div>
-
-                            {/* Password - Full Width */}
-                            <div>
-                                <label className="block text-sm font-medium mb-2" style={{ color: "var(--foreground)" }}>
-                                    Mật khẩu <span style={{ color: "var(--destructive)" }}>*</span>
-                                </label>
-                                <input
-                                    type="password"
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                    required
-                                    placeholder="Tối thiểu 8 ký tự"
-                                    className="w-full h-11 px-3.5 rounded-md border text-sm outline-none transition-colors focus:ring-2"
-                                    style={{
-                                        borderColor: "var(--border)",
-                                        backgroundColor: "var(--card)",
-                                        color: "var(--foreground)",
-                                        "--tw-ring-color": "var(--primary)",
-                                    } as React.CSSProperties}
-                                />
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Section 2: Professional Info (Tutor Only) */}
-                    {selectedRole === "tutor" && (
+                        )}
+                        {/* Section 1: Basic Info */}
                         <div>
                             <div
                                 className="flex items-center gap-2.5 text-base font-semibold mb-5 pb-3 border-b"
@@ -348,85 +255,22 @@ export default function RegisterForm() {
                                     borderColor: "var(--border)",
                                 }}
                             >
-                                <Briefcase size={20} style={{ color: "var(--primary)" }} />
-                                Hồ sơ chuyên môn (Dành cho gia sư)
+                                <UserCircle size={20} style={{ color: "var(--primary)" }} />
+                                Thông tin cơ bản
                             </div>
 
                             <div className="space-y-5">
-                                {/* Education and Experience */}
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                                    <div>
-                                        <label className="block text-sm font-medium mb-2" style={{ color: "var(--foreground)" }}>
-                                            Trình độ học vấn <span style={{ color: "var(--destructive)" }}>*</span>
-                                        </label>
-                                        <div className="relative">
-                                            <select
-                                                value={education}
-                                                onChange={(e) => setEducation(e.target.value)}
-                                                className="w-full h-11 px-3.5 pr-10 rounded-md border text-sm appearance-none outline-none transition-colors focus:ring-2"
-                                                style={{
-                                                    borderColor: "var(--border)",
-                                                    backgroundColor: "var(--card)",
-                                                    color: "var(--foreground)",
-                                                    "--tw-ring-color": "var(--primary)",
-                                                } as React.CSSProperties}
-                                            >
-                                                <option value="">Chọn trình độ...</option>
-                                                <option value="Sinh viên">Sinh viên</option>
-                                                <option value="Cử nhân">Cử nhân</option>
-                                                <option value="Thạc sĩ">Thạc sĩ</option>
-                                                <option value="Giáo viên">Giáo viên</option>
-                                                <option value="Chuyên gia">Chuyên gia</option>
-                                            </select>
-                                            <ChevronDown
-                                                size={18}
-                                                className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none"
-                                                style={{ color: "var(--muted-foreground)" }}
-                                            />
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium mb-2" style={{ color: "var(--foreground)" }}>
-                                            Kinh nghiệm giảng dạy <span style={{ color: "var(--destructive)" }}>*</span>
-                                        </label>
-                                        <div className="relative">
-                                            <select
-                                                value={experience}
-                                                onChange={(e) => setExperience(e.target.value)}
-                                                className="w-full h-11 px-3.5 pr-10 rounded-md border text-sm appearance-none outline-none transition-colors focus:ring-2"
-                                                style={{
-                                                    borderColor: "var(--border)",
-                                                    backgroundColor: "var(--card)",
-                                                    color: "var(--foreground)",
-                                                    "--tw-ring-color": "var(--primary)",
-                                                } as React.CSSProperties}
-                                            >
-                                                <option value="">Chọn số năm...</option>
-                                                <option value="Chưa có kinh nghiệm">Chưa có kinh nghiệm</option>
-                                                <option value="Dưới 1 năm">Dưới 1 năm</option>
-                                                <option value="1 - 3 năm">1 - 3 năm</option>
-                                                <option value="Trên 3 năm">Trên 3 năm</option>
-                                            </select>
-                                            <ChevronDown
-                                                size={18}
-                                                className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none"
-                                                style={{ color: "var(--muted-foreground)" }}
-                                            />
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Subjects - Full Width */}
+                                {/* Full Name - Full Width */}
                                 <div>
                                     <label className="block text-sm font-medium mb-2" style={{ color: "var(--foreground)" }}>
-                                        Các môn có thể dạy <span style={{ color: "var(--destructive)" }}>*</span>
+                                        Họ và tên <span style={{ color: "var(--destructive)" }}>*</span>
                                     </label>
                                     <input
                                         type="text"
-                                        value={subjectInput}
-                                        onChange={(e) => setSubjectInput(e.target.value)}
-                                        onKeyDown={handleSubjectKeyDown}
-                                        placeholder="Nhập môn học và ấn Enter..."
+                                        value={fullName}
+                                        onChange={(e) => setFullName(e.target.value)}
+                                        required
+                                        placeholder="Nhập đầy đủ họ và tên của bạn"
                                         className="w-full h-11 px-3.5 rounded-md border text-sm outline-none transition-colors focus:ring-2"
                                         style={{
                                             borderColor: "var(--border)",
@@ -435,128 +279,292 @@ export default function RegisterForm() {
                                             "--tw-ring-color": "var(--primary)",
                                         } as React.CSSProperties}
                                     />
-                                    {/* Tags */}
-                                    <div className="flex flex-wrap gap-2 mt-3">
-                                        {subjects_selected.map((subject) => (
-                                            <span
-                                                key={subject}
-                                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium"
-                                                style={{
-                                                    backgroundColor: "var(--muted)",
-                                                    color: "var(--foreground)",
-                                                }}
-                                            >
-                                                {subject}
-                                                <button
-                                                    type="button"
-                                                    onClick={() => removeSubject(subject)}
-                                                    className="border-none bg-transparent cursor-pointer p-0"
-                                                >
-                                                    <X size={14} />
-                                                </button>
-                                            </span>
-                                        ))}
-                                    </div>
                                 </div>
 
-                                {/* Certificate Upload - Full Width */}
-                                <div>
-                                    <label className="block text-sm font-medium mb-2" style={{ color: "var(--foreground)" }}>
-                                        Tải lên bằng cấp / chứng chỉ <span style={{ color: "var(--destructive)" }}>*</span>
-                                    </label>
-
-                                    {!file ? (
-                                        <div
-                                            className="flex flex-col items-center justify-center gap-2 p-8 rounded-lg border-2 border-dashed text-center cursor-pointer transition-colors hover:opacity-80"
-                                            style={{
-                                                borderColor: "var(--border)",
-                                                backgroundColor: "var(--background)",
-                                            }}
-                                        >
-                                            <UploadCloud size={32} style={{ color: "var(--primary)" }} />
-                                            <p className="text-sm" style={{ color: "var(--foreground)" }}>
-                                                Kéo thả file vào đây hoặc
-                                                <span
-                                                    className="font-medium"
-                                                    style={{ color: "var(--primary)" }}
-                                                >
-                                                    {" "}
-                                                    chọn file từ máy tính
-                                                </span>
-                                            </p>
-                                            <p className="text-xs" style={{ color: "var(--muted-foreground)" }}>
-                                                Hỗ trợ định dạng JPG, PNG, PDF (Tối đa 5MB)
-                                            </p>
-                                        </div>
-                                    ) : (
-                                        <div
-                                            className="flex items-center justify-between p-3.5 rounded-md border"
+                                {/* Email and Phone */}
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                                    <div>
+                                        <label className="block text-sm font-medium mb-2" style={{ color: "var(--foreground)" }}>
+                                            Email <span style={{ color: "var(--destructive)" }}>*</span>
+                                        </label>
+                                        <input
+                                            type="email"
+                                            value={email}
+                                            onChange={(e) => setEmail(e.target.value)}
+                                            required
+                                            placeholder="you@example.com"
+                                            className="w-full h-11 px-3.5 rounded-md border text-sm outline-none transition-colors focus:ring-2"
                                             style={{
                                                 borderColor: "var(--border)",
                                                 backgroundColor: "var(--card)",
-                                            }}
-                                        >
-                                            <div className="flex items-center gap-3">
-                                                <div style={{ color: "var(--primary)" }}>📄</div>
-                                                <div>
-                                                    <div className="text-sm font-medium" style={{ color: "var(--foreground)" }}>
-                                                        {file}
-                                                    </div>
-                                                    <div className="text-xs" style={{ color: "var(--muted-foreground)" }}>
-                                                        1.2 MB
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <button
-                                                type="button"
-                                                onClick={() => setFile(null)}
-                                                className="border-none bg-transparent cursor-pointer p-1"
-                                                style={{ color: "var(--destructive)" }}
-                                            >
-                                                <Trash2 size={18} />
-                                            </button>
-                                        </div>
-                                    )}
+                                                color: "var(--foreground)",
+                                                "--tw-ring-color": "var(--primary)",
+                                            } as React.CSSProperties}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium mb-2" style={{ color: "var(--foreground)" }}>
+                                            Số điện thoại <span style={{ color: "var(--destructive)" }}>*</span>
+                                        </label>
+                                        <input
+                                            type="tel"
+                                            value={phone}
+                                            onChange={(e) => setPhone(e.target.value)}
+                                            required
+                                            placeholder="09xx xxx xxx"
+                                            className="w-full h-11 px-3.5 rounded-md border text-sm outline-none transition-colors focus:ring-2"
+                                            style={{
+                                                borderColor: "var(--border)",
+                                                backgroundColor: "var(--card)",
+                                                color: "var(--foreground)",
+                                                "--tw-ring-color": "var(--primary)",
+                                            } as React.CSSProperties}
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Password - Full Width */}
+                                <div>
+                                    <label className="block text-sm font-medium mb-2" style={{ color: "var(--foreground)" }}>
+                                        Mật khẩu <span style={{ color: "var(--destructive)" }}>*</span>
+                                    </label>
+                                    <input
+                                        type="password"
+                                        value={password}
+                                        onChange={(e) => setPassword(e.target.value)}
+                                        required
+                                        placeholder="Tối thiểu 8 ký tự"
+                                        className="w-full h-11 px-3.5 rounded-md border text-sm outline-none transition-colors focus:ring-2"
+                                        style={{
+                                            borderColor: "var(--border)",
+                                            backgroundColor: "var(--card)",
+                                            color: "var(--foreground)",
+                                            "--tw-ring-color": "var(--primary)",
+                                        } as React.CSSProperties}
+                                    />
                                 </div>
                             </div>
                         </div>
-                    )}
 
-                    {/* Submit Button */}
-                    <button
-                        type="submit"
-                        disabled={loading}
-                        className="w-full h-12 rounded-lg border-none font-semibold text-base flex items-center justify-center gap-2 cursor-pointer transition-opacity hover:opacity-90 mt-8 disabled:opacity-50"
-                        style={{
-                            backgroundColor: "var(--primary)",
-                            color: "var(--primary-foreground)",
-                        }}
-                    >
-                        {loading ? "Đang xử lý..." : "Đăng ký tài khoản"}
-                        {!loading && <ArrowRight size={20} />}
-                    </button>
+                        {/* Section 2: Professional Info (Tutor Only) */}
+                        {selectedRole === "tutor" && (
+                            <div>
+                                <div
+                                    className="flex items-center gap-2.5 text-base font-semibold mb-5 pb-3 border-b"
+                                    style={{
+                                        color: "var(--foreground)",
+                                        borderColor: "var(--border)",
+                                    }}
+                                >
+                                    <Briefcase size={20} style={{ color: "var(--primary)" }} />
+                                    Hồ sơ chuyên môn (Dành cho gia sư)
+                                </div>
 
-                    {/* Terms */}
-                    <p className="text-sm text-center leading-relaxed" style={{ color: "var(--muted-foreground)" }}>
-                        Bằng việc đăng ký, bạn xác nhận đã đọc và đồng ý với <br />
-                        <Link
-                            href="#"
-                            className="font-medium no-underline"
-                            style={{ color: "var(--foreground)" }}
+                                <div className="space-y-5">
+                                    {/* Education and Experience */}
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                                        <div>
+                                            <label className="block text-sm font-medium mb-2" style={{ color: "var(--foreground)" }}>
+                                                Trình độ học vấn <span style={{ color: "var(--destructive)" }}>*</span>
+                                            </label>
+                                            <div className="relative">
+                                                <select
+                                                    value={education}
+                                                    onChange={(e) => setEducation(e.target.value)}
+                                                    className="w-full h-11 px-3.5 pr-10 rounded-md border text-sm appearance-none outline-none transition-colors focus:ring-2"
+                                                    style={{
+                                                        borderColor: "var(--border)",
+                                                        backgroundColor: "var(--card)",
+                                                        color: "var(--foreground)",
+                                                        "--tw-ring-color": "var(--primary)",
+                                                    } as React.CSSProperties}
+                                                >
+                                                    <option value="">Chọn trình độ...</option>
+                                                    <option value="Sinh viên">Sinh viên</option>
+                                                    <option value="Cử nhân">Cử nhân</option>
+                                                    <option value="Thạc sĩ">Thạc sĩ</option>
+                                                    <option value="Giáo viên">Giáo viên</option>
+                                                    <option value="Chuyên gia">Chuyên gia</option>
+                                                </select>
+                                                <ChevronDown
+                                                    size={18}
+                                                    className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none"
+                                                    style={{ color: "var(--muted-foreground)" }}
+                                                />
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium mb-2" style={{ color: "var(--foreground)" }}>
+                                                Kinh nghiệm giảng dạy <span style={{ color: "var(--destructive)" }}>*</span>
+                                            </label>
+                                            <div className="relative">
+                                                <select
+                                                    value={experience}
+                                                    onChange={(e) => setExperience(e.target.value)}
+                                                    className="w-full h-11 px-3.5 pr-10 rounded-md border text-sm appearance-none outline-none transition-colors focus:ring-2"
+                                                    style={{
+                                                        borderColor: "var(--border)",
+                                                        backgroundColor: "var(--card)",
+                                                        color: "var(--foreground)",
+                                                        "--tw-ring-color": "var(--primary)",
+                                                    } as React.CSSProperties}
+                                                >
+                                                    <option value="">Chọn số năm...</option>
+                                                    <option value="Chưa có kinh nghiệm">Chưa có kinh nghiệm</option>
+                                                    <option value="Dưới 1 năm">Dưới 1 năm</option>
+                                                    <option value="1 - 3 năm">1 - 3 năm</option>
+                                                    <option value="Trên 3 năm">Trên 3 năm</option>
+                                                </select>
+                                                <ChevronDown
+                                                    size={18}
+                                                    className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none"
+                                                    style={{ color: "var(--muted-foreground)" }}
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Subjects - Full Width */}
+                                    <div>
+                                        <label className="block text-sm font-medium mb-2" style={{ color: "var(--foreground)" }}>
+                                            Các môn có thể dạy <span style={{ color: "var(--destructive)" }}>*</span>
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={subjectInput}
+                                            onChange={(e) => setSubjectInput(e.target.value)}
+                                            onKeyDown={handleSubjectKeyDown}
+                                            placeholder="Nhập môn học và ấn Enter..."
+                                            className="w-full h-11 px-3.5 rounded-md border text-sm outline-none transition-colors focus:ring-2"
+                                            style={{
+                                                borderColor: "var(--border)",
+                                                backgroundColor: "var(--card)",
+                                                color: "var(--foreground)",
+                                                "--tw-ring-color": "var(--primary)",
+                                            } as React.CSSProperties}
+                                        />
+                                        {/* Tags */}
+                                        <div className="flex flex-wrap gap-2 mt-3">
+                                            {subjects_selected.map((subject) => (
+                                                <span
+                                                    key={subject}
+                                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium"
+                                                    style={{
+                                                        backgroundColor: "var(--muted)",
+                                                        color: "var(--foreground)",
+                                                    }}
+                                                >
+                                                    {subject}
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => removeSubject(subject)}
+                                                        className="border-none bg-transparent cursor-pointer p-0"
+                                                    >
+                                                        <X size={14} />
+                                                    </button>
+                                                </span>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* Certificate Upload - Full Width */}
+                                    <div>
+                                        <label className="block text-sm font-medium mb-2" style={{ color: "var(--foreground)" }}>
+                                            Tải lên bằng cấp / chứng chỉ <span style={{ color: "var(--destructive)" }}>*</span>
+                                        </label>
+
+                                        {!file ? (
+                                            <div
+                                                className="flex flex-col items-center justify-center gap-2 p-8 rounded-lg border-2 border-dashed text-center cursor-pointer transition-colors hover:opacity-80"
+                                                style={{
+                                                    borderColor: "var(--border)",
+                                                    backgroundColor: "var(--background)",
+                                                }}
+                                            >
+                                                <UploadCloud size={32} style={{ color: "var(--primary)" }} />
+                                                <p className="text-sm" style={{ color: "var(--foreground)" }}>
+                                                    Kéo thả file vào đây hoặc
+                                                    <span
+                                                        className="font-medium"
+                                                        style={{ color: "var(--primary)" }}
+                                                    >
+                                                        {" "}
+                                                        chọn file từ máy tính
+                                                    </span>
+                                                </p>
+                                                <p className="text-xs" style={{ color: "var(--muted-foreground)" }}>
+                                                    Hỗ trợ định dạng JPG, PNG, PDF (Tối đa 5MB)
+                                                </p>
+                                            </div>
+                                        ) : (
+                                            <div
+                                                className="flex items-center justify-between p-3.5 rounded-md border"
+                                                style={{
+                                                    borderColor: "var(--border)",
+                                                    backgroundColor: "var(--card)",
+                                                }}
+                                            >
+                                                <div className="flex items-center gap-3">
+                                                    <div style={{ color: "var(--primary)" }}>📄</div>
+                                                    <div>
+                                                        <div className="text-sm font-medium" style={{ color: "var(--foreground)" }}>
+                                                            {file}
+                                                        </div>
+                                                        <div className="text-xs" style={{ color: "var(--muted-foreground)" }}>
+                                                            1.2 MB
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setFile(null)}
+                                                    className="border-none bg-transparent cursor-pointer p-1"
+                                                    style={{ color: "var(--destructive)" }}
+                                                >
+                                                    <Trash2 size={18} />
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Submit Button */}
+                        <button
+                            type="submit"
+                            disabled={loading}
+                            className="w-full h-12 rounded-lg border-none font-semibold text-base flex items-center justify-center gap-2 cursor-pointer transition-opacity hover:opacity-90 mt-8 disabled:opacity-50"
+                            style={{
+                                backgroundColor: "var(--primary)",
+                                color: "var(--primary-foreground)",
+                            }}
                         >
-                            Điều khoản sử dụng
-                        </Link>
-                        {" "}và{" "}
-                        <Link
-                            href="#"
-                            className="font-medium no-underline"
-                            style={{ color: "var(--foreground)" }}
-                        >
-                            Chính sách bảo mật
-                        </Link>
-                        {" "}của chúng tôi.
-                    </p>
-                </form>
+                            {loading ? "Đang xử lý..." : "Đăng ký tài khoản"}
+                            {!loading && <ArrowRight size={20} />}
+                        </button>
+
+                        {/* Terms */}
+                        <p className="text-sm text-center leading-relaxed" style={{ color: "var(--muted-foreground)" }}>
+                            Bằng việc đăng ký, bạn xác nhận đã đọc và đồng ý với <br />
+                            <Link
+                                href="#"
+                                className="font-medium no-underline"
+                                style={{ color: "var(--foreground)" }}
+                            >
+                                Điều khoản sử dụng
+                            </Link>
+                            {" "}và{" "}
+                            <Link
+                                href="#"
+                                className="font-medium no-underline"
+                                style={{ color: "var(--foreground)" }}
+                            >
+                                Chính sách bảo mật
+                            </Link>
+                            {" "}của chúng tôi.
+                        </p>
+                    </form>
                 )}
             </div>
         </main>

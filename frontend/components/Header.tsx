@@ -3,16 +3,18 @@
 import { GraduationCap, Menu, X } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
+import { usePathname } from "next/navigation";
 
 const navLinks = [
-  { label: "Trang chủ", active: true },
-  { label: "Tìm gia sư", active: false },
-  { label: "Lớp học mới", active: false },
-  { label: "Giới thiệu", active: false },
+  { label: "Trang chủ", href: "/" },
+  { label: "Tìm gia sư", href: "/tutors" },
+  { label: "Lớp học mới", href: "/classes" },
+  { label: "Giới thiệu", href: "/about" },
 ];
 
 export default function Header() {
   const [isOpen, setIsOpen] = useState(false);
+  const pathname = usePathname();
 
   return (
     <header
@@ -40,17 +42,19 @@ export default function Header() {
         {/* Nav Links - Desktop */}
         <nav className="hidden md:flex items-center gap-8">
           {navLinks.map((link) => (
-            <button
+            <Link
               key={link.label}
-              className="text-[15px] font-medium cursor-pointer border-none bg-transparent transition-colors hover:opacity-80"
+              href={link.href}
+              className="text-[15px] font-medium transition-colors hover:opacity-80"
               style={{
-                color: link.active
+                color: pathname === link.href
                   ? "var(--foreground)"
                   : "var(--muted-foreground)",
+                textDecoration: "none",
               }}
             >
               {link.label}
-            </button>
+            </Link>
           ))}
         </nav>
 
@@ -103,17 +107,20 @@ export default function Header() {
           <div className="max-w-[1200px] mx-auto px-4 py-4">
             <nav className="flex flex-col gap-3 mb-4">
               {navLinks.map((link) => (
-                <button
+                <Link
                   key={link.label}
-                  className="text-[15px] font-medium cursor-pointer border-none bg-transparent transition-colors hover:opacity-80 w-full text-left py-2"
+                  href={link.href}
+                  className="text-[15px] font-medium transition-colors hover:opacity-80 w-full text-left py-2"
                   style={{
-                    color: link.active
+                    color: pathname === link.href
                       ? "var(--foreground)"
                       : "var(--muted-foreground)",
+                    textDecoration: "none",
+                    display: "block",
                   }}
                 >
                   {link.label}
-                </button>
+                </Link>
               ))}
             </nav>
             <div className="flex flex-col gap-2 border-t pt-4" style={{ borderColor: "var(--border)" }}>

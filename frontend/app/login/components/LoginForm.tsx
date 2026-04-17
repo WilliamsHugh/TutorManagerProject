@@ -1,11 +1,18 @@
 "use client";
 
-import { Eye, EyeOff, ArrowRight } from "lucide-react";
+import { Eye, EyeOff, ArrowRight, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { saveAuth } from "@/lib/auth";
+
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:3001";
 
 export default function LoginForm() {
+    const router = useRouter();
     const [showPassword, setShowPassword] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
+    const [errorMsg, setErrorMsg] = useState<string | null>(null);
     const [formData, setFormData] = useState({
         email: "",
         password: "",
@@ -14,16 +21,54 @@ export default function LoginForm() {
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value, type, checked } = e.target;
+        setErrorMsg(null);
         setFormData((prev) => ({
             ...prev,
             [name]: type === "checkbox" ? checked : value,
         }));
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        // Handle login logic here
-        console.log("Login:", formData);
+        setIsLoading(true);
+        setErrorMsg(null);
+
+        try {
+            const res = await fetch(`${BACKEND_URL}/auth/login`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    email: formData.email,
+                    password: formData.password,
+                }),
+            });
+
+            const data = await res.json();
+
+            if (!res.ok) {
+                // Backend trả 401 với message tiếng Việt
+                setErrorMsg(data.message ?? "Đăng nhập thất bại");
+                return;
+            }
+
+            // Lưu token và user vào localStorage
+            saveAuth(data.access_token, data.user);
+
+            // Điều hướng theo role
+            const role: string = data.user?.role?.name ?? "";
+            if (role === "tutor") {
+                router.push("/dashboard/tutor");
+            } else if (role === "student") {
+                router.push("/dashboard/student");
+            } else {
+                // Fallback nếu role không xác định
+                router.push("/");
+            }
+        } catch {
+            setErrorMsg("Không thể kết nối đến máy chủ. Vui lòng thử lại.");
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     return (
@@ -59,6 +104,21 @@ export default function LoginForm() {
                     Nhập thông tin tài khoản của bạn để tiếp tục
                 </p>
 
+                {/* Error banner */}
+                {errorMsg && (
+                    <div
+                        className="flex items-start gap-2 rounded-md px-4 py-3 text-sm mb-5"
+                        style={{
+                            backgroundColor: "rgba(239,68,68,0.1)",
+                            color: "#ef4444",
+                            border: "1px solid rgba(239,68,68,0.3)",
+                        }}
+                    >
+                        <span>⚠️</span>
+                        <span>{errorMsg}</span>
+                    </div>
+                )}
+
                 {/* Form */}
                 <form onSubmit={handleSubmit} className="space-y-5">
                     {/* Email Field */}
@@ -75,6 +135,8 @@ export default function LoginForm() {
                             value={formData.email}
                             onChange={handleChange}
                             placeholder="you@example.com"
+                            required
+                            disabled={isLoading}
                             className="w-full h-11 px-3.5 rounded-md border text-sm outline-none transition-colors focus:ring-2"
                             style={{
                                 borderColor: "var(--border)",
@@ -109,6 +171,8 @@ export default function LoginForm() {
                                 value={formData.password}
                                 onChange={handleChange}
                                 placeholder="Nhập mật khẩu của bạn"
+                                required
+                                disabled={isLoading}
                                 className="w-full h-11 px-3.5 pr-12 rounded-md border text-sm outline-none transition-colors focus:ring-2"
                                 style={{
                                     borderColor: "var(--border)",
@@ -154,14 +218,24 @@ export default function LoginForm() {
                     {/* Submit Button */}
                     <button
                         type="submit"
-                        className="w-full h-12 rounded-lg border-none font-semibold text-base flex items-center justify-center gap-2 cursor-pointer transition-opacity hover:opacity-90 mt-8"
+                        disabled={isLoading}
+                        className="w-full h-12 rounded-lg border-none font-semibold text-base flex items-center justify-center gap-2 cursor-pointer transition-opacity hover:opacity-90 mt-8 disabled:opacity-60 disabled:cursor-not-allowed"
                         style={{
                             backgroundColor: "var(--primary)",
                             color: "var(--primary-foreground)",
                         }}
                     >
-                        Đăng nhập
-                        <ArrowRight size={20} />
+                        {isLoading ? (
+                            <>
+                                <Loader2 size={20} className="animate-spin" />
+                                Đang đăng nhập...
+                            </>
+                        ) : (
+                            <>
+                                Đăng nhập
+                                <ArrowRight size={20} />
+                            </>
+                        )}
                     </button>
 
                     {/* Divider */}

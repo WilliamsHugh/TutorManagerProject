@@ -7,7 +7,7 @@ import Link from "next/link";
 export default function RegisterSidebar() {
     return (
         <aside
-            className="hidden lg:flex lg:w-[440px] flex-col px-12 py-12"
+            className="hidden lg:flex lg:w-[440px] flex-shrink-0 flex-col px-12 py-12 overflow-hidden"
             style={{
                 backgroundColor: "#1e3a8a",
                 color: "white",

@@ -5,7 +5,7 @@ import RegisterForm from "./components/RegisterForm";
 
 export default function RegisterPage() {
   return (
-    <div className="min-h-screen flex" style={{ backgroundColor: "var(--background)" }}>
+    <div className="h-screen flex overflow-hidden" style={{ backgroundColor: "var(--background)" }}>
       {/* Left Sidebar */}
       <RegisterSidebar />
 

@@ -2,12 +2,12 @@
 
 import { useMemo, useState } from "react"
 
-import { requests, tutors } from "@/components/staff/requestmanagement/data"
-import { MatchTutorDialog } from "@/components/staff/requestmanagement/MatchTutorDialog"
-import { RequestManagementPanel } from "@/components/staff/requestmanagement/RequestManagementPanel"
-import { StaffHeader } from "@/components/staff/requestmanagement/StaffHeader"
-import { StaffSidebar } from "@/components/staff/requestmanagement/StaffSidebar"
-import type { RequestItem } from "@/components/staff/requestmanagement/types"
+import { requests, tutors } from "../components/data"
+import { MatchTutorDialog } from "../components/MatchTutorDialog"
+import { RequestManagementPanel } from "../components/RequestManagementPanel"
+import { StaffHeader } from "../components/StaffHeader"
+import { StaffSidebar } from "../components/StaffSidebar"
+import type { RequestItem } from "../components/types"
 
 export default function RequestList() {
   const [search, setSearch] = useState("")

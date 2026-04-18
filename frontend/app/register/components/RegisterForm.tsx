@@ -13,14 +13,34 @@ import {
     ArrowRight,
 } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 
-const subjects = [
-    "Toán Cấp 3",
-    "Luyện thi ĐH",
-    "Vật Lý 12",
-    "Hóa Học",
-    "Tiếng Anh",
+// Danh sách đầy đủ các môn học
+const ALL_SUBJECTS = [
+    // Toán & Khoa học
+    "Toán", "Toán Cấp 1", "Toán Cấp 2", "Toán Cấp 3", "Luyện thi ĐH Toán",
+    "Vật Lý", "Vật Lý 10", "Vật Lý 11", "Vật Lý 12", "Luyện thi ĐH Lý",
+    "Hóa Học", "Hóa Học 10", "Hóa Học 11", "Hóa Học 12", "Luyện thi ĐH Hóa",
+    "Sinh Học", "Sinh Học 10", "Sinh Học 11", "Sinh Học 12",
+    "Tin Học", "Lập Trình", "Python", "JavaScript", "Java",
+    // Ngôn ngữ
+    "Tiếng Anh", "Tiếng Anh Giao Tiếp", "IELTS", "TOEFL", "TOEIC",
+    "Tiếng Việt", "Ngữ Văn", "Ngữ Văn Cấp 2", "Ngữ Văn Cấp 3",
+    "Tiếng Trung", "Tiếng Nhật", "Tiếng Hàn", "Tiếng Pháp", "Tiếng Đức",
+    // Khoa học xã hội
+    "Lịch Sử", "Địa Lý", "Giáo Dục Công Dân",
+    // Nghệ thuật & Thể chất
+    "Âm Nhạc", "Mỹ Thuật", "Thể Dục",
+    // Luyện thi
+    "Luyện thi ĐH", "Luyện thi THPT Quốc Gia", "Luyện thi Vào Lớp 10", "Luyện thi Vào Lớp 6",
+    // Kỹ năng
+    "Kỹ Năng Mềm", "Kỹ Năng Thuyết Trình", "Kỹ Năng Viết",
+];
+
+// Gợi ý nhanh hiển thị dưới ô nhập
+const QUICK_SUGGEST = [
+    "Toán Cấp 3", "Vật Lý 12", "Hóa Học 12", "Tiếng Anh", "IELTS",
+    "Ngữ Văn", "Luyện thi ĐH", "Lịch Sử", "Địa Lý", "Tin Học",
 ];
 
 export default function RegisterForm() {
@@ -40,21 +60,64 @@ export default function RegisterForm() {
     const [experience, setExperience] = useState("1 - 3 năm");
 
     const [subjectInput, setSubjectInput] = useState("");
+    const [showDropdown, setShowDropdown] = useState(false);
+    const subjectWrapperRef = useRef<HTMLDivElement>(null);
 
     const [error, setError] = useState("");
     const [success, setSuccess] = useState(false);
     const [loading, setLoading] = useState(false);
 
+    // Lọc danh sách môn học theo từ đang nhập (loại trừ đã chọn)
+    const filteredSubjects = ALL_SUBJECTS.filter(
+        (s) =>
+            s.toLowerCase().includes(subjectInput.toLowerCase()) &&
+            !subjects_selected.includes(s)
+    );
+
+    // Thêm môn học vào danh sách đã chọn
+    const addSubject = (subject: string) => {
+        if (!subjects_selected.includes(subject)) {
+            setSubjectsSelected([...subjects_selected, subject]);
+        }
+        setSubjectInput("");
+        setShowDropdown(false);
+    };
+
+    // Toggle môn gợi ý nhanh
+    const toggleQuickSubject = (subject: string) => {
+        if (subjects_selected.includes(subject)) {
+            setSubjectsSelected(subjects_selected.filter((s) => s !== subject));
+        } else {
+            setSubjectsSelected([...subjects_selected, subject]);
+        }
+    };
+
     const handleSubjectKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === "Enter") {
             e.preventDefault();
             const val = subjectInput.trim();
-            if (val && !subjects_selected.includes(val)) {
-                setSubjectsSelected([...subjects_selected, val]);
-                setSubjectInput("");
+            if (filteredSubjects.length > 0) {
+                // Chọn phần tử đầu tiên trong dropdown
+                addSubject(filteredSubjects[0]);
+            } else if (val && !subjects_selected.includes(val)) {
+                // Cho phép nhập tự do nếu không có gợi ý
+                addSubject(val);
             }
+        } else if (e.key === "Escape") {
+            setShowDropdown(false);
         }
     };
+
+    // Đóng dropdown khi click ra ngoài
+    useEffect(() => {
+        const handleClickOutside = (e: MouseEvent) => {
+            if (subjectWrapperRef.current && !subjectWrapperRef.current.contains(e.target as Node)) {
+                setShowDropdown(false);
+            }
+        };
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
 
     const removeSubject = (subject: string) => {
         setSubjectsSelected(subjects_selected.filter((s) => s !== subject));
@@ -425,45 +488,186 @@ export default function RegisterForm() {
                                     </div>
 
                                     {/* Subjects - Full Width */}
-                                    <div>
+                                    <div ref={subjectWrapperRef}>
                                         <label className="block text-sm font-medium mb-2" style={{ color: "var(--foreground)" }}>
                                             Các môn có thể dạy <span style={{ color: "var(--destructive)" }}>*</span>
                                         </label>
-                                        <input
-                                            type="text"
-                                            value={subjectInput}
-                                            onChange={(e) => setSubjectInput(e.target.value)}
-                                            onKeyDown={handleSubjectKeyDown}
-                                            placeholder="Nhập môn học và ấn Enter..."
-                                            className="w-full h-11 px-3.5 rounded-md border text-sm outline-none transition-colors focus:ring-2"
-                                            style={{
-                                                borderColor: "var(--border)",
-                                                backgroundColor: "var(--card)",
-                                                color: "var(--foreground)",
-                                                "--tw-ring-color": "var(--primary)",
-                                            } as React.CSSProperties}
-                                        />
-                                        {/* Tags */}
-                                        <div className="flex flex-wrap gap-2 mt-3">
-                                            {subjects_selected.map((subject) => (
-                                                <span
-                                                    key={subject}
-                                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium"
+
+                                        {/* Combobox wrapper */}
+                                        <div className="relative">
+                                            <div
+                                                className="flex items-center w-full min-h-11 px-3.5 rounded-md border text-sm transition-colors"
+                                                style={{
+                                                    borderColor: showDropdown ? "var(--primary)" : "var(--border)",
+                                                    backgroundColor: "var(--card)",
+                                                    boxShadow: showDropdown ? "0 0 0 2px color-mix(in srgb, var(--primary) 25%, transparent)" : "none",
+                                                    flexWrap: "wrap",
+                                                    gap: "6px",
+                                                    paddingTop: "6px",
+                                                    paddingBottom: "6px",
+                                                }}
+                                            >
+                                                {/* Selected tags inline trong khung nhập */}
+                                                {subjects_selected.map((subject) => (
+                                                    <span
+                                                        key={subject}
+                                                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold flex-shrink-0"
+                                                        style={{
+                                                            backgroundColor: "color-mix(in srgb, var(--primary) 15%, transparent)",
+                                                            color: "var(--primary)",
+                                                            border: "1px solid color-mix(in srgb, var(--primary) 35%, transparent)",
+                                                        }}
+                                                    >
+                                                        {subject}
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => removeSubject(subject)}
+                                                            className="border-none bg-transparent cursor-pointer p-0 leading-none flex items-center"
+                                                            style={{ color: "var(--primary)" }}
+                                                        >
+                                                            <X size={12} />
+                                                        </button>
+                                                    </span>
+                                                ))}
+
+                                                {/* Text input */}
+                                                <input
+                                                    type="text"
+                                                    value={subjectInput}
+                                                    onChange={(e) => {
+                                                        setSubjectInput(e.target.value);
+                                                        setShowDropdown(true);
+                                                    }}
+                                                    onFocus={() => setShowDropdown(true)}
+                                                    onKeyDown={handleSubjectKeyDown}
+                                                    placeholder={subjects_selected.length === 0 ? "Tìm kiếm hoặc nhập môn học..." : "Thêm môn khác..."}
+                                                    className="flex-1 min-w-32 outline-none bg-transparent text-sm"
+                                                    style={{ color: "var(--foreground)" }}
+                                                />
+                                            </div>
+
+                                            {/* Dropdown gợi ý */}
+                                            {showDropdown && filteredSubjects.length > 0 && (
+                                                <div
+                                                    className="absolute z-50 w-full mt-1.5 rounded-lg border overflow-hidden"
                                                     style={{
-                                                        backgroundColor: "var(--muted)",
-                                                        color: "var(--foreground)",
+                                                        borderColor: "var(--border)",
+                                                        backgroundColor: "var(--card)",
+                                                        boxShadow: "0 8px 24px rgba(0,0,0,0.12)",
+                                                        maxHeight: "200px",
+                                                        overflowY: "auto",
                                                     }}
                                                 >
-                                                    {subject}
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => removeSubject(subject)}
-                                                        className="border-none bg-transparent cursor-pointer p-0"
-                                                    >
-                                                        <X size={14} />
-                                                    </button>
-                                                </span>
-                                            ))}
+                                                    {filteredSubjects.slice(0, 10).map((subject) => (
+                                                        <button
+                                                            key={subject}
+                                                            type="button"
+                                                            onMouseDown={(e) => {
+                                                                e.preventDefault(); // giữ focus
+                                                                addSubject(subject);
+                                                            }}
+                                                            className="w-full text-left px-4 py-2.5 text-sm transition-colors hover:opacity-80"
+                                                            style={{
+                                                                color: "var(--foreground)",
+                                                                backgroundColor: "transparent",
+                                                                borderBottom: "1px solid var(--border)",
+                                                            }}
+                                                        >
+                                                            <span
+                                                                dangerouslySetInnerHTML={{
+                                                                    __html: subject.replace(
+                                                                        new RegExp(`(${subjectInput})`, "gi"),
+                                                                        `<strong style="color:var(--primary)">$1</strong>`
+                                                                    ),
+                                                                }}
+                                                            />
+                                                        </button>
+                                                    ))}
+                                                    {/* Cho phép nhập tùy chỉnh nếu không có kết quả chính xác */}
+                                                    {subjectInput.trim() && !ALL_SUBJECTS.some(
+                                                        (s) => s.toLowerCase() === subjectInput.trim().toLowerCase()
+                                                    ) && (
+                                                        <button
+                                                            type="button"
+                                                            onMouseDown={(e) => {
+                                                                e.preventDefault();
+                                                                addSubject(subjectInput.trim());
+                                                            }}
+                                                            className="w-full text-left px-4 py-2.5 text-sm flex items-center gap-2"
+                                                            style={{ color: "var(--primary)", backgroundColor: "transparent" }}
+                                                        >
+                                                            <span className="text-base">+</span>
+                                                            Thêm &ldquo;{subjectInput.trim()}&rdquo;
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            )}
+
+                                            {/* Dropdown khi input rỗng nhưng đang focus */}
+                                            {showDropdown && subjectInput === "" && filteredSubjects.length > 0 && (
+                                                <div
+                                                    className="absolute z-50 w-full mt-1.5 rounded-lg border overflow-hidden"
+                                                    style={{
+                                                        borderColor: "var(--border)",
+                                                        backgroundColor: "var(--card)",
+                                                        boxShadow: "0 8px 24px rgba(0,0,0,0.12)",
+                                                        maxHeight: "200px",
+                                                        overflowY: "auto",
+                                                    }}
+                                                >
+                                                    {filteredSubjects.slice(0, 8).map((subject) => (
+                                                        <button
+                                                            key={subject}
+                                                            type="button"
+                                                            onMouseDown={(e) => {
+                                                                e.preventDefault();
+                                                                addSubject(subject);
+                                                            }}
+                                                            className="w-full text-left px-4 py-2.5 text-sm transition-colors hover:opacity-80"
+                                                            style={{
+                                                                color: "var(--foreground)",
+                                                                backgroundColor: "transparent",
+                                                                borderBottom: "1px solid var(--border)",
+                                                            }}
+                                                        >
+                                                            {subject}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* Gợi ý nhanh */}
+                                        <div className="mt-3">
+                                            <p className="text-xs mb-2" style={{ color: "var(--muted-foreground)" }}>
+                                                Gợi ý phổ biến:
+                                            </p>
+                                            <div className="flex flex-wrap gap-2">
+                                                {QUICK_SUGGEST.map((subject) => {
+                                                    const isSelected = subjects_selected.includes(subject);
+                                                    return (
+                                                        <button
+                                                            key={subject}
+                                                            type="button"
+                                                            onClick={() => toggleQuickSubject(subject)}
+                                                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all cursor-pointer"
+                                                            style={{
+                                                                backgroundColor: isSelected
+                                                                    ? "color-mix(in srgb, var(--primary) 15%, transparent)"
+                                                                    : "var(--muted)",
+                                                                color: isSelected ? "var(--primary)" : "var(--muted-foreground)",
+                                                                border: isSelected
+                                                                    ? "1.5px solid color-mix(in srgb, var(--primary) 40%, transparent)"
+                                                                    : "1.5px solid transparent",
+                                                                transform: isSelected ? "scale(1.02)" : "scale(1)",
+                                                            }}
+                                                        >
+                                                            {isSelected && <CheckCircle2 size={12} />}
+                                                            {subject}
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
                                         </div>
                                     </div>
 

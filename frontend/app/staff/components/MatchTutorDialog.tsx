@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { RequestContactCard } from "./RequestContactCard"
 import { RequestDetailCard } from "./RequestDetailCard"
 import { TutorRecommendationCard } from "./TutorRecommendationCard"
-import type { RequestItem, TutorRecommendation } from "./types"
+import type { RequestItem, TutorRecommendation } from "@/types/class_request"
 
 type MatchTutorDialogProps = {
   request: RequestItem

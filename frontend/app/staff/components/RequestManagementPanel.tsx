@@ -3,7 +3,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { RequestPagination } from "./RequestPagination"
 import { RequestTable } from "./RequestTable"
 import { RequestToolbar } from "./RequestToolbar"
-import type { RequestItem } from "./types"
+import type { RequestItem } from "@/types/class_request"
 
 type RequestManagementPanelProps = {
   requests: RequestItem[]

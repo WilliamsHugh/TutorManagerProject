@@ -1,6 +1,6 @@
 import { BookOpen, CalendarDays, ListChecks } from "lucide-react"
 
-import type { RequestItem } from "./types"
+import type { RequestItem } from "@/types/class_request"
 
 type RequestDetailCardProps = {
   request: RequestItem

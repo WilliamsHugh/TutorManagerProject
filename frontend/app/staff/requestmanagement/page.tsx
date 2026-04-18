@@ -7,7 +7,7 @@ import { MatchTutorDialog } from "../components/MatchTutorDialog"
 import { RequestManagementPanel } from "../components/RequestManagementPanel"
 import { StaffHeader } from "../components/StaffHeader"
 import { StaffSidebar } from "../components/StaffSidebar"
-import type { RequestItem } from "../components/types"
+import type { RequestItem } from "../../../types/class_request"
 
 export default function RequestList() {
   const [search, setSearch] = useState("")

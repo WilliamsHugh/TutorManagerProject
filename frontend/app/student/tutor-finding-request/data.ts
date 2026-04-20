@@ -1,0 +1,96 @@
+import type { NavItem, TutorSuggestion } from "./types";
+
+export const subjects = [
+  "Toán học",
+  "Vật lý",
+  "Hóa học",
+  "Tiếng Anh",
+  "Ngữ văn",
+  "Sinh học",
+];
+
+export const tutors: TutorSuggestion[] = [
+  {
+    id: 1,
+    name: "Nguyễn Minh Anh",
+    avatar:
+      "https://storage.googleapis.com/banani-avatars/avatar%2Ffemale%2F25-35%2FSoutheast%20Asian%2F4",
+    match: 95,
+    experience: "5 năm kinh nghiệm",
+    education: "ĐH Bách Khoa TP.HCM",
+    location: "Quận 1, TP.HCM",
+    price: "250.000đ / buổi",
+    rating: 4.9,
+    reviews: 48,
+    teachingMode: "Online và học trực tiếp",
+    availableTime: "Tối Thứ 3, Thứ 5, Chủ nhật",
+    phone: "090 123 4567",
+    email: "minhanh.tutor@example.com",
+    bio: "Chuyên kèm Toán THPT, xây nền kiến thức và luyện đề theo năng lực từng học viên.",
+    tags: ["Toán THPT", "Luyện thi Đại học"],
+  },
+  {
+    id: 2,
+    name: "Trần Hoàng Phúc",
+    avatar:
+      "https://storage.googleapis.com/banani-avatars/avatar%2Fmale%2F25-35%2FSoutheast%20Asian%2F3",
+    match: 92,
+    experience: "4 năm kinh nghiệm",
+    education: "ThS. Toán ứng dụng",
+    location: "Quận 3, TP.HCM",
+    price: "280.000đ / buổi",
+    rating: 4.8,
+    reviews: 36,
+    teachingMode: "Online",
+    availableTime: "Tối Thứ 2, Thứ 4, Thứ 6",
+    phone: "091 234 5678",
+    email: "hoangphuc.tutor@example.com",
+    bio: "Có kinh nghiệm luyện thi và hệ thống hóa chuyên đề Toán lớp 10 đến lớp 12.",
+    tags: ["Toán lớp 10-12", "Luyện thi"],
+  },
+  {
+    id: 3,
+    name: "Lê Khánh Vy",
+    avatar:
+      "https://storage.googleapis.com/banani-avatars/avatar%2Ffemale%2F18-25%2FSoutheast%20Asian%2F5",
+    match: 89,
+    experience: "3 năm kinh nghiệm",
+    education: "Sinh viên sư phạm Toán",
+    location: "Bình Thạnh, TP.HCM",
+    price: "180.000đ / buổi",
+    rating: 4.7,
+    reviews: 29,
+    teachingMode: "Học trực tiếp",
+    availableTime: "Chiều Thứ 7, Chủ nhật",
+    phone: "092 345 6789",
+    email: "khanhvy.tutor@example.com",
+    bio: "Phù hợp với học viên cần củng cố kiến thức cơ bản, học chậm chắc và dễ hiểu.",
+    tags: ["Toán cơ bản", "Toán cấp 2"],
+  },
+  {
+    id: 4,
+    name: "Phạm Quốc Huy",
+    avatar:
+      "https://storage.googleapis.com/banani-avatars/avatar%2Fmale%2F18-25%2FSoutheast%20Asian%2F1",
+    match: 85,
+    experience: "2 năm kinh nghiệm",
+    education: "SV Xuất sắc KHTN",
+    location: "Thủ Đức, TP.HCM",
+    price: "200.000đ / buổi",
+    rating: 4.6,
+    reviews: 22,
+    teachingMode: "Online và học trực tiếp",
+    availableTime: "Tối Thứ 3, Thứ 7",
+    phone: "093 456 7890",
+    email: "quochuy.tutor@example.com",
+    bio: "Mạnh về dạy kèm 1-1, theo sát bài tập về nhà và mục tiêu điểm số của học viên.",
+    tags: ["Toán THPT", "Dạy kèm 1-1"],
+  },
+];
+
+export const navItems: NavItem[] = [
+  { label: "Trang chủ", href: "/dashboard/student" },
+  { label: "Tìm gia sư", href: "/student/tutorrequest" },
+  { label: "Lớp học của tôi", href: "/classes" },
+  { label: "Đánh giá", href: "/tutors" },
+];

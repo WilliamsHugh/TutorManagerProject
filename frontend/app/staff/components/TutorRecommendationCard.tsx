@@ -1,3 +1,5 @@
+import Link from "next/link"
+
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 
@@ -5,11 +7,13 @@ import type { TutorRecommendation } from "@/types/class_request"
 
 type TutorRecommendationCardProps = {
   actionLabel: string
+  href?: string
   tutor: TutorRecommendation
 }
 
 export function TutorRecommendationCard({
   actionLabel,
+  href,
   tutor,
 }: TutorRecommendationCardProps) {
   return (
@@ -46,7 +50,13 @@ export function TutorRecommendationCard({
         <span className="text-[11px] text-muted-foreground">
           {tutor.status}
         </span>
-        <Button className="h-8 rounded text-xs">{actionLabel}</Button>
+        {href ? (
+          <Button asChild className="h-8 rounded text-xs">
+            <Link href={href}>{actionLabel}</Link>
+          </Button>
+        ) : (
+          <Button className="h-8 rounded text-xs">{actionLabel}</Button>
+        )}
       </div>
     </div>
   )

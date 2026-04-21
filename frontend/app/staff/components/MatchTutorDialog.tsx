@@ -1,11 +1,16 @@
+"use client"
+
 import { ChevronDown, X } from "lucide-react"
+import { useState } from "react"
 
 import { Button } from "@/components/ui/button"
 
 import { RequestContactCard } from "./RequestContactCard"
 import { RequestDetailCard } from "./RequestDetailCard"
 import { TutorRecommendationCard } from "./TutorRecommendationCard"
-import type { RequestItem, TutorRecommendation } from "./types"
+import type { RequestItem, RequestStatus, TutorRecommendation } from "./types"
+
+const statusOptions: RequestStatus[] = ["Chờ xử lý", "Đang xử lý", "Đã ghép"]
 
 type MatchTutorDialogProps = {
   request: RequestItem
@@ -18,6 +23,8 @@ export function MatchTutorDialog({
   tutors,
   onClose,
 }: MatchTutorDialogProps) {
+  const [status, setStatus] = useState<RequestStatus>(request.status)
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/35 p-7"
@@ -42,10 +49,26 @@ export function MatchTutorDialog({
               </p>
             </div>
             <div className="flex shrink-0 items-center gap-2">
-              <Button className="h-8 rounded text-xs" variant="outline">
-                {request.status}
-                <ChevronDown size={12} />
-              </Button>
+              <label className="relative">
+                <span className="sr-only">Trạng thái yêu cầu</span>
+                <select
+                  className="h-8 appearance-none rounded border border-border bg-white pl-3 pr-8 text-xs font-semibold outline-none transition-colors hover:bg-muted focus:border-ring focus:ring-2 focus:ring-ring/30"
+                  value={status}
+                  onChange={(event) =>
+                    setStatus(event.target.value as RequestStatus)
+                  }
+                >
+                  {statusOptions.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown
+                  className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground"
+                  size={12}
+                />
+              </label>
               <button
                 aria-label="Đóng"
                 className="flex size-8 items-center justify-center rounded text-muted-foreground hover:bg-muted"
@@ -95,10 +118,13 @@ export function MatchTutorDialog({
             </div>
 
             <div className="mt-3 grid gap-3 md:grid-cols-2">
-              {tutors.map((tutor, index) => (
+              {tutors.map((tutor) => (
                 <TutorRecommendationCard
                   key={tutor.name}
-                  actionLabel={index === 0 ? "Đề xuất" : "Ghép lớp"}
+                  actionLabel="Ghép lớp"
+                  href={`/staff/requestmanagement/create-class?requestId=${encodeURIComponent(
+                    request.id
+                  )}&tutorName=${encodeURIComponent(tutor.name)}`}
                   tutor={tutor}
                 />
               ))}

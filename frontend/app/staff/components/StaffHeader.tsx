@@ -1,12 +1,20 @@
 import { Bell } from "lucide-react"
 
-export function StaffHeader() {
+type StaffHeaderProps = {
+  current?: string
+  parent?: string
+}
+
+export function StaffHeader({
+  current = "Danh sách",
+  parent = "Quản lý Yêu cầu",
+}: StaffHeaderProps) {
   return (
     <header className="flex h-12 items-center justify-between border-b border-border bg-white px-5">
       <div className="flex items-center gap-2 text-xs font-semibold">
-        <span className="text-muted-foreground">Quản lý Yêu cầu</span>
+        <span className="text-muted-foreground">{parent}</span>
         <span className="text-muted-foreground">›</span>
-        <span>Danh sách</span>
+        <span>{current}</span>
       </div>
       <div className="flex items-center gap-5">
         <Bell className="text-muted-foreground" size={15} />

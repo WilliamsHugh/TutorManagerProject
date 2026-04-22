@@ -5,10 +5,7 @@ import SubjectsSection from "@/components/SubjectsSection";
 import TutorsSection from "@/components/TutorsSection";
 import RolesSection from "@/components/RolesSection";
 import CTASection from "@/components/CTASection";
-<<<<<<< HEAD
 import Footer from "@/components/Footer";
-=======
->>>>>>> c575020 (Add staff request management)
 
 export default function Home() {
   return (

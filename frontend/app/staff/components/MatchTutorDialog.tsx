@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import { RequestContactCard } from "./RequestContactCard"
 import { RequestDetailCard } from "./RequestDetailCard"
 import { TutorRecommendationCard } from "./TutorRecommendationCard"
-import type { RequestItem, RequestStatus, TutorRecommendation } from "./types"
+import type { RequestItem, RequestStatus, TutorRecommendation } from "@/types/class_request"
 
 const statusOptions: RequestStatus[] = ["Chờ xử lý", "Đang xử lý", "Đã ghép"]
 

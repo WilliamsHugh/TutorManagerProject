@@ -1,7 +1,7 @@
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 
-import type { RequestItem, RequestStatus } from "./types"
+import type { RequestItem, RequestStatus } from "@/types/class_request"
 
 type RequestTableProps = {
   requests: RequestItem[]

@@ -3,7 +3,7 @@ import Link from "next/link"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 
-import type { TutorRecommendation } from "./types"
+import type { TutorRecommendation } from "@/types/class_request"
 
 type TutorRecommendationCardProps = {
   actionLabel: string

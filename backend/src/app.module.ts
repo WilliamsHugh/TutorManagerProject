@@ -3,6 +3,8 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
+import { ClassesModule } from './classes/classes.module';
+import { TutorsModule } from './tutors/tutors.module';
 
 // Entities
 import { Role } from './users/entities/role.entity';
@@ -42,6 +44,8 @@ import { Notification } from './notifications/notification.entity';
     }),
     AuthModule,
     UsersModule,
+    ClassesModule,
+    TutorsModule,
   ],
 })
 export class AppModule { }

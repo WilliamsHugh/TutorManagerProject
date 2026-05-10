@@ -1,4 +1,5 @@
-import { Controller, Post, Body, Get, UseGuards, Request } from '@nestjs/common';
+import { Controller, Post, Body, Get, UseGuards, Request, Res } from '@nestjs/common';
+import { Response } from 'express';
 import { AuthService } from './auth.service';
 import { RegisterStudentDto } from './dto/register-student.dto';
 import { RegisterTutorDto } from './dto/register-tutor.dto';
@@ -22,8 +23,18 @@ export class AuthController {
   }
 
   @Post('login')
-  login(@Body() dto: LoginDto) {
-    return this.authService.login(dto);
+  async login(@Body() dto: LoginDto, @Res({ passthrough: true }) response: Response) {
+    const result = await this.authService.login(dto);
+    
+    // Set cookie httpOnly cho bảo mật cao
+    response.cookie('access_token', result.access_token, {
+      httpOnly: true,
+      secure: false, // Để false cho môi trường dev localhost
+      sameSite: 'lax',
+      maxAge: 24 * 60 * 60 * 1000, // 1 ngày
+    });
+
+    return result;
   }
 
   // Route chỉ dành cho người đã đăng nhập - lấy thông tin bản thân

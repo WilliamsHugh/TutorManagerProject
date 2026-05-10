@@ -1,5 +1,6 @@
 import { Star, MapPin } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 
 interface Tutor {
   name: string;
@@ -159,15 +160,17 @@ export default function TutorsSection() {
                     / giờ
                   </span>
                 </div>
-                <button
-                  className="inline-flex items-center justify-center h-9 sm:h-10 px-3 sm:px-4 text-xs sm:text-sm font-semibold rounded-md border cursor-pointer bg-transparent transition-colors hover:bg-gray-50 w-full sm:w-auto"
-                  style={{
-                    borderColor: "var(--border)",
-                    color: "var(--foreground)",
-                  }}
-                >
-                  Xem chi tiết
-                </button>
+                <Link href="/tutors" className="w-full sm:w-auto no-underline">
+                  <button
+                    className="inline-flex items-center justify-center h-9 sm:h-10 px-3 sm:px-4 text-xs sm:text-sm font-semibold rounded-md border cursor-pointer bg-transparent transition-colors hover:bg-gray-50 w-full"
+                    style={{
+                      borderColor: "var(--border)",
+                      color: "var(--foreground)",
+                    }}
+                  >
+                    Xem chi tiết
+                  </button>
+                </Link>
               </div>
             </div>
           ))}

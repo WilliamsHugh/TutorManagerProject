@@ -1,4 +1,5 @@
 import { User, Briefcase, ShieldCheck, ArrowRight, type LucideIcon } from "lucide-react";
+import Link from "next/link";
 
 interface Role {
   icon: LucideIcon;
@@ -86,14 +87,14 @@ export default function RolesSection() {
                 >
                   {role.description}
                 </p>
-                <a
-                  href="#"
+                <Link
+                  href={role.title === "Học viên & Phụ huynh" ? "/tutors" : "#"}
                   className="inline-flex items-center gap-2 text-xs sm:text-sm font-semibold mt-2 no-underline transition-opacity hover:opacity-80"
                   style={{ color: "var(--primary)" }}
                 >
                   {role.linkText}
                   <ArrowRight size={16} />
-                </a>
+                </Link>
               </div>
             );
           })}

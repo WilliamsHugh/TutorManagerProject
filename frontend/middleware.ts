@@ -31,13 +31,13 @@ export async function middleware(request: NextRequest) {
 
       // Phân quyền chi tiết (RBAC)
       if (pathname.startsWith('/dashboard/tutor') && userRole !== 'tutor') {
-        return NextResponse.redirect(new URL('/dashboard/student', request.url));
+        return NextResponse.redirect(new URL('/403', request.url));
       }
       if (pathname.startsWith('/dashboard/student') && userRole !== 'student') {
-        return NextResponse.redirect(new URL('/dashboard/tutor', request.url));
+        return NextResponse.redirect(new URL('/403', request.url));
       }
       if (isStaffRoute && userRole !== 'admin') {
-        return NextResponse.redirect(new URL('/', request.url));
+        return NextResponse.redirect(new URL('/403', request.url));
       }
 
     } catch (error) {

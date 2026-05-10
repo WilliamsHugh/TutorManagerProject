@@ -26,11 +26,12 @@ import { Notification } from './notifications/notification.entity';
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
         type: 'postgres',
-        host: config.get('DB_HOST'),
-        port: config.get<number>('DB_PORT'),
-        username: config.get('DB_USERNAME'),
-        password: config.get('DB_PASSWORD'),
-        database: config.get('DB_NAME'),
+        url: config.get('DATABASE_URL'),
+        host: !config.get('DATABASE_URL') ? config.get('DB_HOST') : undefined,
+        port: !config.get('DATABASE_URL') ? config.get<number>('DB_PORT') : undefined,
+        username: !config.get('DATABASE_URL') ? config.get('DB_USERNAME') : undefined,
+        password: !config.get('DATABASE_URL') ? config.get('DB_PASSWORD') : undefined,
+        database: !config.get('DATABASE_URL') ? config.get('DB_NAME') : undefined,
         entities: [
           Role, User, Tutor, Student,
           Subject, TutorSubject,
@@ -38,6 +39,9 @@ import { Notification } from './notifications/notification.entity';
           LearningReport, Review, Notification,
         ],
         synchronize: true,
+        ssl: {
+          rejectUnauthorized: false, // Cần thiết cho Supabase
+        },
       }),
     }),
     AuthModule,

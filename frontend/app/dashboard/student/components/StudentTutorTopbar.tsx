@@ -25,7 +25,7 @@ export function StudentTutorTopbar() {
                 key={item.label}
                 href={item.href}
                 className={`rounded px-3 py-2 text-sm font-medium no-underline transition-colors ${
-                  item.href === "/student/tutorrequest"
+                  item.href === "/dashboard/student"
                     ? "bg-[#e6eef8] text-[#0b5fff]"
                     : "text-[#687185] hover:bg-[#f1f5f9]"
                 }`}

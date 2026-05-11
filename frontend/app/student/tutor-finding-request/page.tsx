@@ -6,7 +6,6 @@ import type { FormEvent } from "react";
 import { TutorRequestForm } from "./components/TutorRequestForm";
 import { TutorRequestPageHeader } from "./components/TutorRequestPageHeader";
 import { TutorSuggestionsPanel } from "./components/TutorSuggestionsPanel";
-import { StudentTutorTopbar } from "./components/StudentTutorTopbar";
 import { tutors } from "./data";
 
 export default function StudentTutorRequestPage() {
@@ -55,8 +54,6 @@ export default function StudentTutorRequestPage() {
       className="min-h-screen bg-[#f8fafc] text-[#0f172a]"
       style={{ fontFamily: "var(--font-family-body)" }}
     >
-      <StudentTutorTopbar />
-
       <main className="mx-auto w-full max-w-[1328px] px-4 py-6 sm:px-6 lg:px-8">
         <TutorRequestPageHeader />
 

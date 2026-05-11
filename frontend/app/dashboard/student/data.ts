@@ -90,7 +90,7 @@ export const tutors: TutorSuggestion[] = [
 
 export const navItems: NavItem[] = [
   { label: "Trang chủ", href: "/dashboard/student" },
-  { label: "Tìm gia sư", href: "/student/tutorrequest" },
-  { label: "Lớp học của tôi", href: "/classes" },
-  { label: "Đánh giá", href: "/tutors" },
+  { label: "Tìm gia sư", href: "/dashboard/student" }, // Vì Tìm gia sư giờ là trang chủ luôn
+  { label: "Lớp học của tôi", href: "/dashboard/student" }, // Tạm thời trỏ về dashboard
+  { label: "Thông tin gia sư", href: "/dashboard/student" },
 ];

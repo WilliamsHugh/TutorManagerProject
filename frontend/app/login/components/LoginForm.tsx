@@ -37,6 +37,7 @@ export default function LoginForm() {
             const res = await fetch(`${BACKEND_URL}/auth/login`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
+                credentials: "include",
                 body: JSON.stringify({
                     email: formData.email,
                     password: formData.password,

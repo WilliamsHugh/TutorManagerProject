@@ -1,32 +1,28 @@
 /**
- * Auth helper — quản lý token và thông tin người dùng trên client.
- * Sử dụng Cookie cho token (để Middleware có thể đọc) và localStorage cho User Info.
+ * Auth helper — quản lý thông tin người dùng trên client.
+ * Lưu ý: Token được quản lý bằng HttpOnly Cookie từ Backend để bảo mật tối đa.
+ * localStorage chỉ dùng để lưu trữ thông tin hiển thị (Tên, Email, Role).
  */
-import Cookies from "js-cookie";
 
 export interface AuthUser {
-  id: number;
+  id: string | number;
   email: string;
   fullName: string;
   role: { id: number; name: string } | null;
 }
 
-const TOKEN_KEY = "access_token";
 const USER_KEY = "auth_user";
 
+/** Lưu thông tin người dùng vào localStorage */
 export function saveAuth(token: string, user: AuthUser) {
-  // Lưu token vào cookie (Middleware sẽ dùng cái này)
-  Cookies.set(TOKEN_KEY, token, { expires: 1, path: '/' });
-  // Lưu user info vào localStorage để UI hiển thị nhanh
-  localStorage.setItem(USER_KEY, JSON.stringify(user));
+  // Chúng ta không lưu token vào cookie từ client nữa vì Backend đã set httpOnly cookie.
+  // localStorage chỉ lưu user info để UI hiển thị nhanh.
+  if (typeof window !== "undefined") {
+    localStorage.setItem(USER_KEY, JSON.stringify(user));
+  }
 }
 
-export function getToken(): string | null {
-  // Lưu ý: Nếu dùng httpOnly cookie, hàm này sẽ trả về null ở client.
-  // Tuy nhiên Middleware vẫn đọc được cookie này.
-  return Cookies.get(TOKEN_KEY) || null;
-}
-
+/** Lấy thông tin người dùng */
 export function getAuthUser(): AuthUser | null {
   if (typeof window === "undefined") return null;
   const raw = localStorage.getItem(USER_KEY);
@@ -38,11 +34,14 @@ export function getAuthUser(): AuthUser | null {
   }
 }
 
+/** Xóa thông tin người dùng (Đăng xuất ở Client) */
 export function clearAuth() {
-  Cookies.remove(TOKEN_KEY, { path: '/' });
-  localStorage.removeItem(USER_KEY);
+  if (typeof window !== "undefined") {
+    localStorage.removeItem(USER_KEY);
+  }
 }
 
+/** Kiểm tra trạng thái đăng nhập dựa trên sự tồn tại của User Info */
 export function isLoggedIn(): boolean {
   if (typeof window === "undefined") return false;
   return !!localStorage.getItem(USER_KEY);
@@ -52,4 +51,3 @@ export function isLoggedIn(): boolean {
 export function getUserRole(): string | null {
   return getAuthUser()?.role?.name ?? null;
 }
-

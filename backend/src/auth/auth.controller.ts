@@ -38,6 +38,7 @@ export class AuthController {
       httpOnly: true,
       secure: false, // Để false cho môi trường dev localhost
       sameSite: 'lax',
+      path: '/',
       maxAge: 24 * 60 * 60 * 1000, // 1 ngày
     });
 

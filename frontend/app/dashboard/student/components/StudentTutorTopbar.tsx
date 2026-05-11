@@ -7,7 +7,7 @@ import { navItems } from "../data";
 export function StudentTutorTopbar() {
   return (
     <header className="sticky top-0 z-20 border-b border-[#e2e8f0] bg-white">
-      <div className="mx-auto flex h-[72px] max-w-[1440px] items-center justify-between gap-6 px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto flex h-18 max-w-360 items-center justify-between gap-6 px-4 sm:px-6 lg:px-8">
         <div className="flex min-w-0 items-center gap-6 lg:gap-10">
           <Link
             href="/dashboard/student"

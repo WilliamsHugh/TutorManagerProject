@@ -135,7 +135,7 @@ export default function Header({
                     )}
                   </div>
                   <div className="hidden sm:block text-left">
-                    <span className="block text-sm font-semibold truncate max-w-[100px]" style={{ color: "var(--foreground)" }}>
+                    <span className="block text-sm font-semibold truncate max-w-25" style={{ color: "var(--foreground)" }}>
                       {user.fullName}
                     </span>
                     <span className="block text-[10px] uppercase tracking-wider font-bold opacity-50" style={{ color: "var(--muted-foreground)" }}>
@@ -223,7 +223,7 @@ export default function Header({
             zIndex: 50,
           }}
         >
-          <div className="max-w-[1200px] mx-auto px-4 py-4">
+          <div className="max-w-300 mx-auto px-4 py-4">
             <nav className="flex flex-col gap-1 mb-4">
               {navLinks.map((link) => (
                 <Link

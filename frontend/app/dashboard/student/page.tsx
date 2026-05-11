@@ -69,7 +69,7 @@ export default function StudentDashboardPage() {
     >
       <Header />
 
-      <main className="mx-auto w-full max-w-[1328px] px-4 py-6 sm:px-6 lg:px-8">
+      <main className="mx-auto w-full max-w-332 px-4 py-6 sm:px-6 lg:px-8">
         <TutorRequestPageHeader />
 
         <div className="grid grid-cols-1 items-start gap-6 xl:grid-cols-12">

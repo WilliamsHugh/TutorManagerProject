@@ -197,7 +197,7 @@ export default function RequestList() {
   return (
     <div className="min-h-screen bg-[#f4f7fb] text-foreground">
       <div className="flex min-h-screen">
-        <aside className="w-[200px] shrink-0 border-r border-border bg-white">
+        <aside className="w-50 shrink-0 border-r border-border bg-white">
           <div className="flex h-12 items-center gap-3 border-b border-border px-5">
             <div className="flex size-6 items-center justify-center rounded bg-primary text-primary-foreground">
               <GraduationCap size={14} />
@@ -253,7 +253,7 @@ export default function RequestList() {
                   </p>
                 </div>
 
-                <div className="flex max-w-[620px] gap-2">
+                <div className="flex max-w-155 gap-2">
                   <div className="relative flex-1">
                     <Search
                       className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
@@ -273,8 +273,8 @@ export default function RequestList() {
                 </div>
 
                 <div className="overflow-hidden rounded border border-border">
-                  <div className="max-h-[365px] overflow-auto">
-                    <div className="min-w-[960px]">
+                  <div className="max-h-91.25 overflow-auto">
+                    <div className="min-w-240">
                       <div className="grid grid-cols-[120px_170px_170px_1fr_100px_90px] bg-[#e9eff7] px-3 py-2 text-[11px] font-bold text-muted-foreground">
                         <div>Mã YC & Ngày tạo</div>
                         <div>Thông tin liên hệ</div>
@@ -326,7 +326,7 @@ export default function RequestList() {
 
                           <div className="pr-6">
                             <div className="font-bold">{request.schedule}</div>
-                            <p className="mt-2 line-clamp-2 max-w-[340px] text-muted-foreground">
+                            <p className="mt-2 line-clamp-2 max-w-85 text-muted-foreground">
                               {request.note}
                             </p>
                           </div>
@@ -390,7 +390,7 @@ export default function RequestList() {
         >
           <section
             aria-modal="true"
-            className="max-h-[78vh] w-full max-w-[680px] overflow-y-auto rounded-md bg-white shadow-xl"
+            className="max-h-[78vh] w-full max-w-170 overflow-y-auto rounded-md bg-white shadow-xl"
             role="dialog"
             onClick={(event) => event.stopPropagation()}
           >
@@ -516,7 +516,7 @@ export default function RequestList() {
                     </Button>
                     <label className="flex h-7 items-center gap-2 rounded border border-border px-2 text-[11px] font-semibold">
                       <input
-                        className="size-3 accent-[var(--primary)]"
+                        className="size-3 accent-primary"
                         defaultChecked
                         type="checkbox"
                       />

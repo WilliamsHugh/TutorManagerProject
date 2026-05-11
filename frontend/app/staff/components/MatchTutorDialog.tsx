@@ -32,7 +32,7 @@ export function MatchTutorDialog({
     >
       <section
         aria-modal="true"
-        className="max-h-[78vh] w-full max-w-[680px] overflow-y-auto rounded-md bg-white shadow-xl"
+        className="max-h-[78vh] w-full max-w-170 overflow-y-auto rounded-md bg-white shadow-xl"
         role="dialog"
         onClick={(event) => event.stopPropagation()}
       >
@@ -105,7 +105,7 @@ export function MatchTutorDialog({
                 </Button>
                 <label className="flex h-7 items-center gap-2 rounded border border-border px-2 text-[11px] font-semibold">
                   <input
-                    className="size-3 accent-[var(--primary)]"
+                    className="size-3 accent-primary"
                     defaultChecked
                     type="checkbox"
                   />

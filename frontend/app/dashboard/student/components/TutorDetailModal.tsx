@@ -185,7 +185,7 @@ function DetailContact({
         {icon}
         {label}
       </p>
-      <p className="mt-1 break-words text-sm font-semibold text-[#0f172a]">
+      <p className="mt-1 wrap-break-word text-sm font-semibold text-[#0f172a]">
         {value}
       </p>
     </div>

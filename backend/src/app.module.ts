@@ -17,6 +17,7 @@ import { Schedule } from './classes/schedule.entity';
 import { LearningReport } from './classes/learning-report.entity';
 import { Review } from './classes/review.entity';
 import { Notification } from './notifications/notification.entity';
+import { Otp } from './auth/entities/otp.entity';
 
 @Module({
   imports: [
@@ -24,25 +25,31 @@ import { Notification } from './notifications/notification.entity';
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: (config: ConfigService) => ({
-        type: 'postgres',
-        url: config.get('DATABASE_URL'),
-        host: !config.get('DATABASE_URL') ? config.get('DB_HOST') : undefined,
-        port: !config.get('DATABASE_URL') ? config.get<number>('DB_PORT') : undefined,
-        username: !config.get('DATABASE_URL') ? config.get('DB_USERNAME') : undefined,
-        password: !config.get('DATABASE_URL') ? config.get('DB_PASSWORD') : undefined,
-        database: !config.get('DATABASE_URL') ? config.get('DB_NAME') : undefined,
-        entities: [
-          Role, User, Tutor, Student,
-          Subject, TutorSubject,
-          ClassRequest, Class, Schedule,
-          LearningReport, Review, Notification,
-        ],
-        synchronize: true,
-        ssl: {
-          rejectUnauthorized: false, // Cần thiết cho Supabase
-        },
-      }),
+      useFactory: (config: ConfigService) => {
+        const dbUrl = config.get('DATABASE_URL');
+        
+        return {
+          type: 'postgres',
+          // Ưu tiên sử dụng DATABASE_URL nếu có (ví dụ từ Supabase)
+          url: dbUrl,
+          // Nếu không có URL thì dùng các biến lẻ (localhost)
+          host: !dbUrl ? config.get('DB_HOST') : undefined,
+          port: !dbUrl ? config.get<number>('DB_PORT') : undefined,
+          username: !dbUrl ? config.get('DB_USERNAME') : undefined,
+          password: !dbUrl ? config.get('DB_PASSWORD') : undefined,
+          database: !dbUrl ? config.get('DB_NAME') : undefined,
+          
+          entities: [
+            Role, User, Tutor, Student,
+            Subject, TutorSubject,
+            ClassRequest, Class, Schedule,
+            LearningReport, Review, Notification,
+            Otp
+          ],
+          synchronize: true, // Chỉ dùng trong môi trường phát triển
+          autoLoadEntities: true,
+        };
+      },
     }),
     AuthModule,
     UsersModule,

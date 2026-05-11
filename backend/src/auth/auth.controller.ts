@@ -46,7 +46,11 @@ export class AuthController {
 
   @Post('logout')
   async logout(@Res({ passthrough: true }) response: Response) {
-    response.clearCookie('access_token');
+    response.clearCookie('access_token', {
+      path: '/',
+      httpOnly: true,
+      sameSite: 'lax',
+    });
     return { message: 'Đăng xuất thành công' };
   }
 

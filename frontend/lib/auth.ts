@@ -44,8 +44,6 @@ export function clearAuth() {
 }
 
 export function isLoggedIn(): boolean {
-  // Vì access_token là httpOnly, JS không đọc được. 
-  // Ta dựa vào việc có USER_KEY trong localStorage để biết trạng thái đăng nhập.
   if (typeof window === "undefined") return false;
   return !!localStorage.getItem(USER_KEY);
 }

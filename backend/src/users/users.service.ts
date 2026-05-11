@@ -89,4 +89,18 @@ export class UsersService {
 
     return savedUser;
   }
+
+  async updatePassword(userId: string, passwordHash: string): Promise<void> {
+    await this.usersRepository.update(userId, { passwordHash });
+  }
+
+  async updateProfile(userId: string, data: { fullName?: string, phone?: string }): Promise<User> {
+    const user = await this.findById(userId);
+    if (!user) throw new Error('Không tìm thấy người dùng');
+
+    if (data.fullName) user.fullName = data.fullName;
+    if (data.phone) user.phone = data.phone;
+
+    return this.usersRepository.save(user);
+  }
 }

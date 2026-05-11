@@ -22,8 +22,7 @@ export async function middleware(request: NextRequest) {
     }
 
     try {
-      // Xác thực token (Optional: có thể bỏ qua bước này nếu chỉ muốn check existence, 
-      // nhưng verify thì an toàn hơn)
+      // Xác thực token
       const secret = new TextEncoder().encode(JWT_SECRET);
       const { payload } = await jwtVerify(token, secret);
       

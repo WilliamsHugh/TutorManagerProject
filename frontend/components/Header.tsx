@@ -1,6 +1,6 @@
 "use client";
 
-import { GraduationCap, Menu, X, Bell, ChevronDown, LogOut, User as UserIcon } from "lucide-react";
+import { GraduationCap, Menu, X, Bell, ChevronDown, LogOut, User as UserIcon, Shield } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { useState, useEffect } from "react";
@@ -44,7 +44,15 @@ export default function Header({
     setUser(getAuthUser());
   }, []);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:3001"}/auth/logout`, {
+        method: "POST",
+        credentials: "include",
+      });
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
     clearAuth();
     setIsLoggedIn(false);
     setUser(null);
@@ -142,10 +150,18 @@ export default function Header({
                   <div className="absolute right-0 mt-2 w-48 rounded-xl border shadow-xl py-2 z-50 overflow-hidden animate-in fade-in slide-in-from-top-2"
                     style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}>
                     <Link href={`/dashboard/${user.role?.name || 'student'}`} 
+                      onClick={() => setShowUserMenu(false)}
                       className="flex items-center gap-3 px-4 py-2.5 text-sm no-underline hover:bg-gray-50 transition-colors"
                       style={{ color: "var(--foreground)" }}>
                       <UserIcon size={16} />
                       Trang Dashboard
+                    </Link>
+                    <Link href="/dashboard/profile" 
+                      onClick={() => setShowUserMenu(false)}
+                      className="flex items-center gap-3 px-4 py-2.5 text-sm no-underline hover:bg-gray-50 transition-colors"
+                      style={{ color: "var(--foreground)" }}>
+                      <Shield size={16} />
+                      Cài đặt tài khoản
                     </Link>
                     <div className="h-px w-full my-1" style={{ backgroundColor: "var(--border)" }} />
                     <button

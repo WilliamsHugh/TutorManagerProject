@@ -6,11 +6,11 @@ import { usePathname } from 'next/navigation';
 import { Icon } from '@iconify/react';
 
 const NAV_ITEMS = [
-  { href: '/tutors/tutor/dashboard', icon: 'lucide:layout-dashboard', label: 'Dashboard' },
-  { href: '/tutors/tutor/calendar', icon: 'lucide:calendar', label: 'Lịch dạy' },
-  { href: '/tutors/tutor/new-classes', icon: 'lucide:search', label: 'Lớp học mới' },
-  { href: '/tutors/tutor/students', icon: 'lucide:users', label: 'Học viên của tôi' },
-  { href: '/tutors/tutor/profile', icon: 'lucide:user', label: 'Hồ sơ chuyên môn' },
+  { href: '/tutors/dashboard', icon: 'lucide:layout-dashboard', label: 'Dashboard' },
+  { href: '/tutors/calendar', icon: 'lucide:calendar', label: 'Lịch dạy' },
+  { href: '/tutors/new-classes', icon: 'lucide:search', label: 'Lớp học mới' },
+  { href: '/tutors/students', icon: 'lucide:users', label: 'Học viên của tôi' },
+  { href: '/tutors/profile', icon: 'lucide:user', label: 'Hồ sơ chuyên môn' },
 ];
 
 export default function Sidebar() {

@@ -4,6 +4,7 @@ import {
   Search, ShieldCheck, Calendar, Star,
   Award, Medal, BadgeCheck,
 } from "lucide-react";
+import Image from "next/image";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 
@@ -104,10 +105,13 @@ export default function AboutPage() {
           </div>
         </div>
         <div className="flex-1 w-full">
-          <img
+          <Image
             src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80"
             alt="Students studying in library"
-            className="rounded-2xl shadow-xl object-cover w-full h-[400px]"
+            width={1200}
+            height={800}
+            priority
+            className="rounded-2xl shadow-xl object-cover w-full h-auto max-h-[400px]"
           />
         </div>
       </section>

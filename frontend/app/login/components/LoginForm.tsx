@@ -6,8 +6,6 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { saveAuth } from "@/lib/auth";
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:3001";
-
 export default function LoginForm() {
     const router = useRouter();
     const [showPassword, setShowPassword] = useState(false);
@@ -34,9 +32,10 @@ export default function LoginForm() {
         setErrorMsg(null);
 
         try {
-            const res = await fetch(`${BACKEND_URL}/auth/login`, {
+            const res = await fetch(`/api/auth/login`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
+                credentials: "include",
                 body: JSON.stringify({
                     email: formData.email,
                     password: formData.password,
@@ -53,13 +52,17 @@ export default function LoginForm() {
 
             // Lưu token và user vào localStorage
             saveAuth(data.access_token, data.user);
+            
+            // Gán cookie để Middleware có thể đọc được token (Sửa lỗi không nhảy trang)
+            document.cookie = `access_token=${data.access_token}; path=/; max-age=86400; SameSite=Lax`;
 
             // Điều hướng theo role
             const role: string = data.user?.role?.name ?? "";
             if (role === "tutor") {
-                router.push("/dashboard/tutor");
+                router.push("/tutors/dashboard"); // Rút gọn đường dẫn
             } else if (role === "student") {
-                router.push("/dashboard/student");
+                // Đồng bộ với logic /student/dashboard trong middleware
+                router.push("/student/dashboard"); 
             } else {
                 // Fallback nếu role không xác định
                 router.push("/");

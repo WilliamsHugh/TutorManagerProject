@@ -15,7 +15,8 @@ export class AuthService {
   ) {}
 
   async registerStudent(dto: RegisterStudentDto) {
-    const passwordHash = await bcrypt.hash(dto.password, 10);
+    // const passwordHash = await bcrypt.hash(dto.password, 10);
+    const passwordHash = dto.password; // Lưu text thuần để test theo yêu cầu
     const user = await this.usersService.createStudent({
       fullName: dto.fullName,
       email: dto.email,
@@ -32,7 +33,8 @@ export class AuthService {
   }
 
   async registerTutor(dto: RegisterTutorDto) {
-    const passwordHash = await bcrypt.hash(dto.password, 10);
+    // const passwordHash = await bcrypt.hash(dto.password, 10);
+    const passwordHash = dto.password; // Lưu text thuần để test theo yêu cầu
     const user = await this.usersService.createTutor(
       {
         fullName: dto.fullName,
@@ -61,7 +63,12 @@ export class AuthService {
       throw new UnauthorizedException('Email hoặc mật khẩu không đúng');
     }
 
-    const isPasswordValid = await bcrypt.compare(dto.password, user.passwordHash);
+    // Kiểm tra bằng Bcrypt, nếu thất bại thì thử so sánh chuỗi thuần (để hỗ trợ dữ liệu SQL mẫu)
+    let isPasswordValid = await bcrypt.compare(dto.password, user.passwordHash).catch(() => false);
+    if (!isPasswordValid) {
+      isPasswordValid = dto.password === user.passwordHash;
+    }
+
     if (!isPasswordValid) {
       throw new UnauthorizedException('Email hoặc mật khẩu không đúng');
     }

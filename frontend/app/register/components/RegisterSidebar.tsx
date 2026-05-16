@@ -42,6 +42,7 @@ export default function RegisterSidebar() {
                     width={344}
                     height={258}
                     className="w-full rounded-xl shadow-2xl object-cover"
+                    style={{ width: 'auto', height: 'auto' }}
                     unoptimized
                 />
             </div>

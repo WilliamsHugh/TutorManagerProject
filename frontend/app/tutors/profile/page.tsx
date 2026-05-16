@@ -1,19 +1,25 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Header from '@/components/tutor/Header';
 import { Icon } from '@iconify/react';
-import { getTutorProfile } from '@/lib/api';
+import { getTutorProfile, updateTutorProfile } from '@/lib/api';
 
 export default function ProfessionalProfilePage() {
   const [profile, setProfile] = useState<any>(null);
+  const [formData, setFormData] = useState<any>({});
   const [loading, setLoading] = useState(true);
+  const [isSaving, setIsUpdating] = useState(false);
+
+  const avatarInputRef = useRef<HTMLInputElement>(null);
+  const certInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const data = await getTutorProfile();
-        setProfile(data);
+        const data = await getTutorProfile(); 
+        setProfile(data.profile);
+        setFormData(data.profile); // Khởi tạo dữ liệu form từ profile
       } catch (error) {
         console.error("Lỗi tải thông tin hồ sơ:", error);
       } finally {
@@ -23,9 +29,51 @@ export default function ProfessionalProfilePage() {
     fetchProfile();
   }, []);
 
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData((prev: any) => ({ ...prev, [name]: value }));
+  };
+
+  const handleSave = async () => {
+    try {
+      setIsUpdating(true);
+      await updateTutorProfile(formData);
+      setProfile(formData);
+      alert("Cập nhật hồ sơ thành công!");
+    } catch (error) {
+      console.error("Lỗi cập nhật:", error);
+      alert("Không thể lưu thay đổi. Vui lòng thử lại.");
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Logic giả lập: Tạo URL xem trước. Thực tế bạn sẽ upload file lên Cloud/Server.
+      const previewUrl = URL.createObjectURL(file);
+      setFormData((prev: any) => ({ ...prev, avatarUrl: previewUrl }));
+    }
+  };
+
+  const handleCertUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const newCert = {
+        title: file.name,
+        desc: `Đã tải lên vào ${new Date().toLocaleDateString('vi-VN')}`
+      };
+      setFormData((prev: any) => ({
+        ...prev,
+        certificates: [...(prev.certificates || []), newCert]
+      }));
+    }
+  };
+
   return (
-    <div className="flex-1 flex flex-col min-h-screen bg-[#f8fafc]">
-      <Header title="Hồ sơ chuyên môn" />
+    <>
+      <Header title="Hồ sơ chuyên môn" userProfile={profile} />
 
       {loading ? (
         <div className="flex-1 flex justify-center items-center">
@@ -42,11 +90,14 @@ export default function ProfessionalProfilePage() {
             </p>
           </div>
           <div className="flex gap-3">
-            <button className="px-4 py-2 border border-slate-200 rounded-md text-sm font-medium bg-white hover:bg-slate-50 transition-colors">
+            <button 
+              onClick={() => setFormData(profile)}
+              className="px-4 py-2 border border-slate-200 rounded-md text-sm font-medium bg-white hover:bg-slate-50 transition-colors"
+            >
               Hủy
             </button>
-            <button className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition-colors">
-              <Icon icon="lucide:save" />
+            <button onClick={handleSave} disabled={isSaving} className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition-colors disabled:opacity-50">
+              <Icon icon={isSaving ? "lucide:loader-2" : "lucide:save"} className={isSaving ? "animate-spin" : ""} />
               Lưu thay đổi
             </button>
           </div>
@@ -61,26 +112,28 @@ export default function ProfessionalProfilePage() {
             {/* Personal Info Card */}
             <SectionCard icon="lucide:user" title="Thông tin cá nhân">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <DisplayField label="Họ và tên" value={profile?.fullName || 'Chưa cập nhật'} />
-                <DisplayField label="Ngày sinh" value={profile?.dob || 'Chưa cập nhật'} />
-                <DisplayField label="Email" value={profile?.email || 'Chưa cập nhật'} />
-                <DisplayField label="Số điện thoại" value={profile?.phone || 'Chưa cập nhật'} />
+                <InputField label="Họ và tên" name="fullName" value={formData.fullName} onChange={handleInputChange} />
+                <InputField label="Ngày sinh" name="dob" value={formData.dob} onChange={handleInputChange} type="date" />
+                <InputField label="Email" name="email" value={formData.email} onChange={handleInputChange} />
+                <InputField label="Số điện thoại" name="phone" value={formData.phone} onChange={handleInputChange} />
               </div>
-              <DisplayField label="Địa chỉ hiện tại" value={profile?.address || 'Chưa cập nhật'} className="mt-4" />
+              <InputField label="Địa chỉ hiện tại" name="address" value={formData.address} onChange={handleInputChange} className="mt-4" />
               <div className="mt-4">
                 <label className="text-sm font-medium text-slate-900 mb-2 block">Giới thiệu bản thân</label>
-                <div className="p-3 border border-slate-200 rounded-md bg-slate-50 text-sm text-slate-700 leading-relaxed min-h-[100px]">
-                  {profile?.bio || 'Chưa cập nhật thông tin giới thiệu bản thân.'}
-                </div>
+                <textarea 
+                  name="bio" value={formData.bio || ''} onChange={handleInputChange}
+                  className="w-full p-3 border border-slate-200 rounded-md bg-slate-50 text-sm text-slate-700 leading-relaxed min-h-[100px] outline-none focus:border-blue-500 transition-colors"
+                  placeholder="Giới thiệu ngắn gọn về bản thân..."
+                />
               </div>
             </SectionCard>
 
             {/* Education Card */}
             <SectionCard icon="lucide:graduation-cap" title="Học vấn & Kinh nghiệm">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <DisplayField label="Trường Đại học / Cao đẳng" value={profile?.university || 'Chưa cập nhật'} />
-                <DisplayField label="Chuyên ngành" value={profile?.major || 'Chưa cập nhật'} />
-                <DisplayField label="Năm tốt nghiệp" value={profile?.graduationYear || 'Chưa cập nhật'} />
+                <InputField label="Trường Đại học / Cao đẳng" name="university" value={formData.university} onChange={handleInputChange} />
+                <InputField label="Chuyên ngành" name="major" value={formData.major} onChange={handleInputChange} />
+                <InputField label="Năm tốt nghiệp" name="graduationYear" value={formData.graduationYear} onChange={handleInputChange} />
                 <div className="flex flex-col gap-2">
                   <label className="text-sm font-medium text-slate-900">Nghề nghiệp hiện tại</label>
                   <div className="flex items-center justify-between p-2.5 border border-slate-200 rounded-md bg-slate-50 text-sm">
@@ -91,9 +144,11 @@ export default function ProfessionalProfilePage() {
               </div>
               <div className="mt-4">
                 <label className="text-sm font-medium text-slate-900 mb-2 block">Kinh nghiệm giảng dạy</label>
-                <div className="p-3 border border-slate-200 rounded-md bg-slate-50 text-sm text-slate-700 leading-relaxed min-h-[100px] whitespace-pre-line">
-                  {profile?.experience || 'Chưa cập nhật kinh nghiệm giảng dạy.'}
-                </div>
+                <textarea 
+                  name="experience" value={formData.experience || ''} onChange={handleInputChange}
+                  className="w-full p-3 border border-slate-200 rounded-md bg-slate-50 text-sm text-slate-700 leading-relaxed min-h-[100px] outline-none focus:border-blue-500 transition-colors"
+                  placeholder="Mô tả các lớp đã dạy, thành tích..."
+                />
               </div>
             </SectionCard>
           </div>
@@ -105,11 +160,12 @@ export default function ProfessionalProfilePage() {
             <div className="bg-white border border-slate-200 rounded-lg p-6 flex flex-col items-center text-center gap-4 shadow-sm">
               <div className="relative">
                 <img 
-                  src={profile?.avatarUrl || "https://storage.googleapis.com/banani-avatars/avatar%2Ffemale%2F25-35%2FSoutheast%20Asian%2F1"}
+                  src={formData.avatarUrl || "https://storage.googleapis.com/banani-avatars/avatar%2Ffemale%2F25-35%2FSoutheast%20Asian%2F1"}
                   alt="Tutor Avatar" 
                   className="w-32 h-32 rounded-full object-cover border-4 border-slate-100"
                 />
-                <button className="absolute bottom-0 right-0 bg-white border border-slate-200 rounded-full w-8 h-8 flex items-center justify-center text-blue-600 shadow-sm hover:bg-slate-50">
+                <input type="file" ref={avatarInputRef} className="hidden" accept="image/*" onChange={handleAvatarChange} />
+                <button onClick={() => avatarInputRef.current?.click()} className="absolute bottom-0 right-0 bg-white border border-slate-200 rounded-full w-8 h-8 flex items-center justify-center text-blue-600 shadow-sm hover:bg-slate-50">
                   <Icon icon="lucide:camera" />
                 </button>
               </div>
@@ -117,7 +173,7 @@ export default function ProfessionalProfilePage() {
                 <h4 className="text-base font-semibold text-slate-900 mb-1">Ảnh đại diện</h4>
                 <p className="text-xs text-slate-500">Định dạng JPG, PNG. Kích thước tối đa 5MB.</p>
               </div>
-              <button className="w-full py-2 border border-slate-200 rounded-md text-sm font-medium hover:bg-slate-50 transition-colors">
+              <button onClick={() => avatarInputRef.current?.click()} className="w-full py-2 border border-slate-200 rounded-md text-sm font-medium hover:bg-slate-50 transition-colors">
                 Tải ảnh mới
               </button>
             </div>
@@ -132,8 +188,8 @@ export default function ProfessionalProfilePage() {
                 <div>
                   <label className="text-xs text-slate-400 uppercase tracking-wider mb-2 block">Môn học giảng dạy</label>
                   <div className="flex flex-wrap gap-2">
-                    {profile?.subjects?.length > 0 
-                      ? profile.subjects.map((sub: any, i: number) => <Tag key={i} label={sub} primary />)
+                    {formData.subjects?.length > 0 
+                      ? formData.subjects.map((sub: any, i: number) => <Tag key={i} label={sub} primary />)
                       : <span className="text-sm text-slate-500">Chưa cập nhật</span>}
                   </div>
                 </div>
@@ -161,13 +217,14 @@ export default function ProfessionalProfilePage() {
             {/* Certificates Panel */}
             <SectionCard icon="lucide:award" title="Chứng chỉ & Bằng cấp">
               <div className="flex flex-col gap-3">
-                {profile?.certificates?.length > 0
-                  ? profile.certificates.map((cert: any, i: number) => (
+                {formData.certificates?.length > 0
+                  ? formData.certificates.map((cert: any, i: number) => (
                       <CertificateItem key={i} title={cert.title} desc={cert.desc} />
                     ))
                   : <div className="text-sm text-slate-500">Chưa tải lên chứng chỉ nào.</div>}
                 
-                <div className="mt-2 p-6 border-2 border-dashed border-slate-200 rounded-lg bg-slate-50 flex flex-col items-center gap-2 cursor-pointer hover:bg-slate-100 transition-colors">
+                <input type="file" ref={certInputRef} className="hidden" onChange={handleCertUpload} />
+                <div onClick={() => certInputRef.current?.click()} className="mt-2 p-6 border-2 border-dashed border-slate-200 rounded-lg bg-slate-50 flex flex-col items-center gap-2 cursor-pointer hover:bg-slate-100 transition-colors">
                   <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center text-blue-600 shadow-sm">
                     <Icon icon="lucide:upload-cloud" />
                   </div>
@@ -180,7 +237,7 @@ export default function ProfessionalProfilePage() {
         </div>
       </main>
       )}
-    </div>
+    </>
   );
 }
 
@@ -200,13 +257,15 @@ function SectionCard({ icon, title, children, action }: { icon: string; title: s
   );
 }
 
-function DisplayField({ label, value, className = "" }: { label: string; value: string; className?: string }) {
+function InputField({ label, value, name, onChange, className = "", type = "text" }: { label: string; value: string; name: string; onChange: any; className?: string; type?: string }) {
   return (
     <div className={`flex flex-col gap-2 ${className}`}>
       <label className="text-sm font-medium text-slate-900">{label}</label>
-      <div className="p-2.5 border border-slate-200 rounded-md bg-slate-50 text-sm text-slate-700 min-h-[40px] flex items-center">
-        {value}
-      </div>
+      <input 
+        type={type} name={name} value={value || ''} onChange={onChange}
+        className="p-2.5 border border-slate-200 rounded-md bg-slate-50 text-sm text-slate-700 outline-none focus:border-blue-500 focus:bg-white transition-all"
+        placeholder={`Nhập ${label.toLowerCase()}...`}
+      />
     </div>
   );
 }

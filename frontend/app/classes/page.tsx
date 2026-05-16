@@ -1,15 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ChevronDown, SlidersHorizontal, X } from "lucide-react";
 
-import Header from "@/components/Header";
+import Header from "@/components/tutor/Header";
 import FilterWidget from "@/components/FilterWidget";
 import Sidebar from "@/components/Sidebar";
 import Pagination from "@/components/Pagination";
 import ClassCard from "@/components/ClassCard";
 import Footer from "@/components/Footer";
 import { ClassListing } from "@/types/class";
+import { getNewClasses } from "@/lib/api";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 interface FilterSection {
@@ -17,82 +18,6 @@ interface FilterSection {
   label: string;
   options: { label: string; count?: number }[];
 }
-
-// ─── Data ────────────────────────────────────────────────────────────────────
-const CLASSES: ClassListing[] = [
-  {
-    id: 1,
-    code: "#LH1023",
-    title: "Tìm gia sư Tiếng Anh giao tiếp",
-    mode: "Online",
-    levelTag: "Người đi làm",
-    salary: "300,000đ - 350,000đ",
-    salaryNote: "/ buổi (1.5h)",
-    schedule: "2 buổi/tuần (Tối Thứ 3, Thứ 5)",
-    requirement: "Sinh viên ngôn ngữ Anh hoặc có kinh nghiệm sư phạm, IELTS 7.0+",
-    postedAt: "Đăng 2 giờ trước",
-  },
-  {
-    id: 2,
-    code: "#LH1024",
-    title: "Toán lớp 12 - Luyện thi Đại học",
-    mode: "Offline",
-    levelTag: "Lớp 12",
-    salary: "250,000đ",
-    salaryNote: "/ buổi (2h)",
-    location: "Quận Cầu Giấy, Hà Nội",
-    schedule: "3 buổi/tuần (Thứ 2, 4, 6)",
-    postedAt: "Đăng 5 giờ trước",
-  },
-  {
-    id: 3,
-    code: "#LH1025",
-    title: "Rèn chữ đẹp cho bé chuẩn bị vào lớp 1",
-    mode: "Offline",
-    levelTag: "Mầm non",
-    salary: "150,000đ",
-    salaryNote: "/ buổi (1.5h)",
-    location: "Quận Đống Đa, Hà Nội",
-    requirement: "Gia sư nữ, nhẹ nhàng, kiên nhẫn với trẻ em.",
-    postedAt: "Đăng hôm qua",
-  },
-  {
-    id: 4,
-    code: "#LH1026",
-    title: "Lập trình C++ Cơ bản",
-    mode: "Online",
-    levelTag: "Sinh viên",
-    salary: "200,000đ",
-    salaryNote: "/ buổi (2h)",
-    schedule: "2 buổi/tuần (Thời gian linh hoạt)",
-    requirement: "Sinh viên CNTT năm 3 hoặc năm 4, nắm vững thuật toán.",
-    postedAt: "Đăng hôm qua",
-  },
-  {
-    id: 5,
-    code: "#LH1027",
-    title: "Hóa Học lớp 9 - Ôn thi vào lớp 10",
-    mode: "Offline",
-    levelTag: "Lớp 9",
-    salary: "250,000đ",
-    salaryNote: "/ buổi (2h)",
-    location: "Quận 1, TP.HCM",
-    schedule: "2 buổi/tuần (Cuối tuần)",
-    postedAt: "Đăng 2 ngày trước",
-  },
-  {
-    id: 6,
-    code: "#LH1028",
-    title: "Tiếng Hàn Giao Tiếp (Sơ cấp)",
-    mode: "Online",
-    levelTag: "Người đi làm",
-    salary: "300,000đ",
-    salaryNote: "/ buổi (1.5h)",
-    schedule: "3 buổi/tuần (Các buổi tối trong tuần)",
-    requirement: "TOPIK 4 trở lên, ưu tiên có kinh nghiệm dạy online.",
-    postedAt: "Đăng 2 ngày trước",
-  },
-];
 
 const FILTERS: FilterSection[] = [
   {
@@ -133,7 +58,9 @@ const TOTAL_PAGES = 12;
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function ClassesPage() {
+  const [classes, setClasses] = useState<ClassListing[]>([]);
   const [search, setSearch] = useState("");
+  const [profile, setProfile] = useState<any>(null);
   const [checked, setChecked] = useState<Record<string, boolean>>({
     "subject:Toán": true,
     "level:Cấp 2 (THCS)": true,
@@ -143,6 +70,21 @@ export default function ClassesPage() {
   const [showSort, setShowSort] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [showMobileFilter, setShowMobileFilter] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    getNewClasses()
+      .then((data) => {
+        // API trả về { classes, profile }
+        setClasses(data.classes || []);
+        setProfile(data.profile);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error("Lỗi tải lớp mới:", err);
+        setLoading(false);
+      });
+  }, []);
 
   const toggleFilter = (key: string) =>
     setChecked((prev) => ({ ...prev, [key]: !prev[key] }));
@@ -155,7 +97,7 @@ export default function ClassesPage() {
       style={{ backgroundColor: "var(--background)", fontFamily: "var(--font-family-body)" }}
     >
       {/* ── Header ── */}
-      <Header />
+      <Header title="Lớp học mới" showSearch={true} userProfile={profile} />
 
       {/* ── Page Hero ── */}
       <section
@@ -180,7 +122,7 @@ export default function ClassesPage() {
 
         {/* Mobile filter toggle */}
         <div className="flex md:hidden justify-between items-center mb-5">
-          <span className="text-sm font-semibold text-gray-700">342 lớp đang chờ gia sư</span>
+          <span className="text-sm font-semibold text-gray-700">{classes.length} lớp đang chờ gia sư</span>
           <button
             onClick={() => setShowMobileFilter(true)}
             className="flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-xl border"
@@ -233,7 +175,7 @@ export default function ClassesPage() {
             {/* Results header */}
             <div className="flex items-center justify-between mb-6 bg-white rounded-2xl border border-gray-100 px-5 py-4">
               <span className="font-semibold text-gray-900 text-sm">
-                Đang có <span style={{ color: "var(--primary)" }}>342</span> lớp chờ gia sư
+                Đang có <span style={{ color: "var(--primary)" }}>{classes.length}</span> lớp chờ gia sư
               </span>
               <div className="relative">
                 <button
@@ -267,11 +209,26 @@ export default function ClassesPage() {
             </div>
 
             {/* Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-              {CLASSES.map((cls) => (
-                <ClassCard key={cls.id} cls={cls} />
-              ))}
-            </div>
+            {loading ? (
+              <div className="text-center py-20 text-gray-500">Đang tải danh sách lớp học...</div>
+            ) : (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                {classes.length > 0 ? (
+                  classes.map((cls, index) => (
+                    <ClassCard 
+                      key={cls.id} 
+                      cls={cls} 
+                      // Ưu tiên tải hình ảnh cho 2 lớp học đầu tiên để tối ưu LCP
+                      priority={index < 2} 
+                    />
+                  ))
+                ) : (
+                  <div className="col-span-full text-center py-20 text-gray-500 bg-white rounded-2xl border border-dashed border-gray-300">
+                    Không tìm thấy lớp học nào phù hợp.
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Pagination */}
             <Pagination

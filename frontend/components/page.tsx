@@ -4,6 +4,8 @@ import React, { useState, useEffect } from 'react';
 import Header from '@/components/tutor/Header';
 import { Icon } from '@iconify/react';
 import { getTutorDashboard } from '@/lib/api'; 
+import { getAuthUser } from '@/lib/auth';
+import Link from 'next/link';
 
 export default function TutorDashboard() {
   // 1. Khởi tạo State rỗng để đợi dữ liệu từ backend
@@ -12,18 +14,23 @@ export default function TutorDashboard() {
   const [suggestedClasses, setSuggestedClasses] = useState<any[]>([]);
   const [currentClasses, setCurrentClasses] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [profile, setProfile] = useState<any>(null);
+  const [currentDate, setCurrentDate] = useState(new Date());
 
   // 2. Tự động lấy dữ liệu từ Backend khi load trang
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
+        setLoading(true);
+
         // Gọi API thực tế
-        const data = await getTutorDashboard();
+        const data = await getTutorDashboard(currentDate.toISOString().split('T')[0]);
         
         setStats(data.stats || []);
         setCalendar(data.calendar || []);
         setSuggestedClasses(data.suggestedClasses || []);
         setCurrentClasses(data.currentClasses || []);
+        setProfile(data.profile);
       } catch (error) {
         console.error("Lỗi tải dữ liệu dashboard:", error);
       } finally {
@@ -32,13 +39,45 @@ export default function TutorDashboard() {
     };
 
     fetchDashboardData();
-  }, []);
+  }, [currentDate]);
+
+  const changeWeek = (offset: number) => {
+    const newDate = new Date(currentDate);
+    newDate.setDate(currentDate.getDate() + offset * 7);
+    setCurrentDate(newDate);
+  };
+
+  const formatWeekRange = () => {
+    const day = currentDate.getDay();
+    const diff = currentDate.getDate() - day + (day === 0 ? -6 : 1);
+    const monday = new Date(currentDate);
+    monday.setDate(diff);
+    
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+
+    return `${monday.getDate()}/${monday.getMonth() + 1} - ${sunday.getDate()}/${sunday.getMonth() + 1}`;
+  };
 
   return (
     <>
-      <Header title="Dashboard Gia sư" showSearch={true} />
+      <Header title="Dashboard Gia sư" showSearch={true} userProfile={profile} />
       
       <div className="content" style={{ padding: '32px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+        
+        {/* User Info Welcome Area */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '8px' }}>
+          <div style={{ 
+            width: '48px', height: '48px', borderRadius: '50%', backgroundColor: 'var(--primary)', 
+            color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', fontWeight: 'bold'
+          }}>
+            {profile?.fullName?.charAt(0) || 'G'}
+          </div>
+          <div>
+            <h1 style={{ fontSize: '20px', fontWeight: 700, margin: 0 }}>Chào mừng trở lại, {profile?.fullName || 'Gia sư'}!</h1>
+            <p style={{ fontSize: '14px', color: '#64748b', margin: 0 }}>Hôm nay là {new Date().toLocaleDateString('vi-VN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+          </div>
+        </div>
         
         {loading ? (
           <div style={{ textAlign: 'center', padding: '48px', color: '#64748b' }}>
@@ -75,9 +114,15 @@ export default function TutorDashboard() {
                 <div className="card-header" style={{ padding: '20px 24px', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <h2 className="card-title" style={{ fontSize: '16px', fontWeight: 600 }}>Lịch dạy tuần này</h2>
                   <div className="card-actions" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <button style={{ border: '1px solid #e2e8f0', background: 'none', padding: '4px 8px', borderRadius: '4px' }}><Icon icon="lucide:chevron-left" /></button>
-                    <span style={{ fontSize: '13px' }}>16/10 - 22/10</span>
-                    <button style={{ border: '1px solid #e2e8f0', background: 'none', padding: '4px 8px', borderRadius: '4px' }}><Icon icon="lucide:chevron-right" /></button>
+                    <button 
+                      onClick={() => changeWeek(-1)}
+                      style={{ border: '1px solid #e2e8f0', background: 'none', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer' }}
+                    ><Icon icon="lucide:chevron-left" /></button>
+                    <span style={{ fontSize: '13px', fontWeight: 500 }}>{formatWeekRange()}</span>
+                    <button 
+                      onClick={() => changeWeek(1)}
+                      style={{ border: '1px solid #e2e8f0', background: 'none', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer' }}
+                    ><Icon icon="lucide:chevron-right" /></button>
                   </div>
                 </div>
                 <div className="calendar-container" style={{ padding: '24px' }}>
@@ -109,7 +154,7 @@ export default function TutorDashboard() {
               <div className="card" style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px' }}>
                 <div className="card-header" style={{ padding: '20px 24px', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between' }}>
                   <h2 className="card-title" style={{ fontSize: '16px', fontWeight: 600 }}>Lớp học mới gợi ý</h2>
-                  <a href="#" style={{ fontSize: '13px', color: '#2563eb', textDecoration: 'none' }}>Xem tất cả</a>
+                  <Link href="/classes" style={{ fontSize: '13px', color: '#2563eb', textDecoration: 'none' }}>Xem tất cả</Link>
                 </div>
                 <div className="suggested-list" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
                   {suggestedClasses.length > 0 ? suggestedClasses.map((cls, i) => (

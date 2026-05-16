@@ -38,10 +38,12 @@ export default function LoginSidebar() {
             <div className="mt-auto w-full">
                 <Image
                     src="https://storage.googleapis.com/banani-generated-images/generated-images/85f6ae38-4476-462d-883e-521daf93b7af.jpg"
+                    loading="eager"
                     alt="Learning Illustration"
                     width={344}
                     height={258}
                     className="w-full rounded-xl shadow-2xl object-cover"
+                    style={{ width: 'auto', height: 'auto' }}
                     unoptimized
                 />
             </div>

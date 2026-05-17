@@ -75,54 +75,86 @@ export async function getTutorDashboard(date?: string) {
 }
 
 // Hàm lấy lịch dạy (Kết nối với màn hình Schedule.html)
-export async function getTutorSchedule(date?: string) {
+export async function getTutorSchedule(date?: string, view: string = 'week') {
   const token = getToken();
-  const url = date ? `${API_URL}/tutor/schedule?date=${date}` : `${API_URL}/tutor/schedule`;
-  const res = await fetch(url, {
+  const url = new URL(`${window.location.origin}${API_URL}/tutor/schedule`);
+  if (date) url.searchParams.append('date', date);
+  url.searchParams.append('view', view);
+
+  const res = await fetch(url.toString(), {
     headers: { 'Authorization': `Bearer ${token}` },
   });
   if (!res.ok) throw new Error('Không thể tải lịch dạy');
   return res.json();
 }
 
+// Hàm nộp báo cáo (Kết nối với màn hình Studentdetail.html)
+export async function submitLearningReport(data: any) {
+  // Chuẩn hóa dữ liệu: Đảm bảo classId là chuỗi sạch (không khoảng trắng)
+  const payload = {
+    ...data,
+    classId: typeof data.classId === 'string' ? data.classId.trim() : data.classId
+  };
+
+  const token = getToken();
+  const res = await fetch(`${API_URL}/tutor/report`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}` 
+    },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({ message: 'Lỗi không xác định từ server' }));
+    const message = Array.isArray(errorData.message) 
+      ? errorData.message.join(', ') 
+      : (errorData.message || 'Không thể nộp báo cáo');
+    
+    console.error("Chi tiết lỗi từ Backend:", errorData);
+    // Quăng lỗi với nội dung cụ thể (ví dụ: "classId must be a UUID")
+    throw new Error(message);
+  }
+  return res.json();
+}
+
+// Hàm lấy danh sách báo cáo của một lớp
 export async function getLearningReports(classId: string) {
   const token = getToken();
   const res = await fetch(`${API_URL}/tutor/classes/${classId}/reports`, {
     headers: { 'Authorization': `Bearer ${token}` },
   });
+  if (!res.ok) {
+    const errData = await res.json().catch(() => ({}));
+    console.error("Fetch Reports Error:", errData);
+    throw new Error(errData.message || 'Không thể tải danh sách báo cáo');
+  }
   return res.json();
 }
 
+// Hàm cập nhật báo cáo
 export async function updateLearningReport(id: string, data: any) {
   const token = getToken();
   const res = await fetch(`${API_URL}/tutor/reports/${id}`, {
     method: 'PATCH',
-    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-    body: JSON.stringify(data),
-  });
-  return res.json();
-}
-
-export async function deleteLearningReport(id: string) {
-  const token = getToken();
-  const res = await fetch(`${API_URL}/tutor/reports/${id}`, {
-    method: 'DELETE',
-    headers: { 'Authorization': `Bearer ${token}` },
-  });
-  return res.json();
-}
-
-// Hàm nộp báo cáo (Kết nối với màn hình Studentdetail.html)
-export async function submitLearningReport(data: any) {
-  const token = getToken();
-  const res = await fetch(`${API_URL}/tutor/report`, {
-    method: 'POST',
     headers: { 
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${token}` 
     },
     body: JSON.stringify(data),
   });
+  if (!res.ok) throw new Error('Không thể cập nhật báo cáo');
+  return res.json();
+}
+
+// Hàm xóa báo cáo
+export async function deleteLearningReport(id: string) {
+  const token = getToken();
+  const res = await fetch(`${API_URL}/tutor/reports/${id}`, {
+    method: 'DELETE',
+    headers: { 'Authorization': `Bearer ${token}` },
+  });
+  if (!res.ok) throw new Error('Không thể xóa báo cáo');
   return res.json();
 }
 
@@ -157,6 +189,7 @@ export async function updateTutorProfile(data: any) {
     },
     body: JSON.stringify(data),
   });
+  if (!res.ok) throw new Error('Không thể cập nhật hồ sơ');
   return res.json();
 }
 

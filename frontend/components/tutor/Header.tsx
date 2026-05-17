@@ -12,7 +12,8 @@ interface HeaderProps {
   userProfile?: {
     fullName: string;
     roleName: string;
-    avatar: string;
+    avatar?: string;
+    avatarUrl?: string;
   };
 }
 
@@ -38,7 +39,7 @@ export default function Header({ title, showSearch = false, userProfile }: Heade
       .catch(err => console.error("Lỗi tải thông báo:", err));
   }, []);
 
-  const unreadCount = notifications.filter(n => !n.isRead).length;
+  const unreadCount = Array.isArray(notifications) ? notifications.filter(n => !n.isRead).length : 0;
 
   const handleLogout = () => {
     clearAuth(); // Xóa localStorage
@@ -86,13 +87,15 @@ export default function Header({ title, showSearch = false, userProfile }: Heade
                 <button style={{ fontSize: '12px', color: '#2563eb', border: 'none', background: 'none', cursor: 'pointer' }}>Đánh dấu đã đọc</button>
               </div>
               <div style={{ maxHeight: '360px', overflowY: 'auto' }}>
-                {notifications.map((noti: any) => (
+                {notifications.length > 0 ? notifications.map((noti: any) => (
                   <div key={noti.id} style={{ padding: '12px 16px', borderBottom: '1px solid #f8fafc', backgroundColor: noti.isRead ? 'transparent' : '#f0f7ff', transition: 'background 0.2s' }}>
                     <div style={{ fontWeight: 600, fontSize: '13px', marginBottom: '2px', color: '#1e293b' }}>{noti.title}</div>
                     <div style={{ fontSize: '12px', color: '#64748b', lineHeight: '1.5', marginBottom: '4px' }}>{noti.message}</div>
                     <div style={{ fontSize: '10px', color: '#94a3b8' }}>{new Date(noti.createdAt).toLocaleString('vi-VN')}</div>
                   </div>
-                ))}
+                )) : (
+                  <div style={{ padding: '32px 16px', textAlign: 'center', color: '#94a3b8', fontSize: '13px' }}>Không có thông báo mới</div>
+                )}
               </div>
               <div style={{ padding: '12px', textAlign: 'center', borderTop: '1px solid #f1f5f9' }}>
                 <button style={{ fontSize: '13px', fontWeight: 500, color: '#64748b', border: 'none', background: 'none', cursor: 'pointer' }}>Xem tất cả thông báo</button>
@@ -110,7 +113,7 @@ export default function Header({ title, showSearch = false, userProfile }: Heade
               setIsNotificationsOpen(false);
             }}
           >
-            <img className="avatar" src={userProfile?.avatarUrl || userProfile?.avatar || "https://storage.googleapis.com/banani-avatars/avatar%2Ffemale%2F25-35%2FSoutheast%20Asian%2F1"} alt="Avatar" style={{ width: '40px', height: '40px', borderRadius: '50%' }} />
+            <img className="avatar" src={userProfile?.avatarUrl || userProfile?.avatar || user?.avatarUrl || "https://storage.googleapis.com/banani-avatars/avatar%2Ffemale%2F25-35%2FSoutheast%20Asian%2F1"} alt="Avatar" style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover' }} />
             <div className="user-info" style={{ display: 'flex', flexDirection: 'column' }}>
               <span className="name" style={{ fontWeight: 600, fontSize: '14px' }}>{userProfile?.fullName || user?.fullName || 'Gia sư'}</span>
               <span className="role" style={{ fontSize: '12px', color: '#64748b' }}>{userProfile?.roleName || 'Gia sư hệ thống'}</span>

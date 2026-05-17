@@ -2,7 +2,7 @@
 import { IsString, IsNotEmpty, IsNumber, IsBoolean, IsUUID } from 'class-validator';
 
 export class CreateLearningReportDto {
-  @IsUUID()
+  @IsString()
   @IsNotEmpty({ message: 'ID lớp học không được để trống' })
   classId!: string;
 

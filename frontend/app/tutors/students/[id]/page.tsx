@@ -57,7 +57,7 @@ export default function StudentDetailPage() {
       <>
         <Header title="Chi tiết học viên" userProfile={profile} />
         <div className="content" style={{ padding: '32px', textAlign: 'center', color: '#64748b' }}>
-          <Icon icon="lucide:loader-2" className="animate-spin" style={{ fontSize: '32px', margin: '0 auto' }} />
+          <Icon icon="lucide:loader-2" className="animate-spin" style={{ fontSize: '32px', margin: '0 auto', display: 'block' }} />
           <p style={{ marginTop: '12px' }}>Đang tải thông tin học viên...</p>
         </div>
       </>
@@ -145,10 +145,10 @@ export default function StudentDetailPage() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
             <SectionPanel title="Thống kê nhanh" icon={<BarChart2 size={20} color="#2563eb" />}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}> {/* Dữ liệu cứng */}
-                <StatBox value="0" label="Đã học (buổi)" /> {/* Dữ liệu cứng */}
-                <StatBox value="0%" label="Làm BTVN" /> {/* Dữ liệu cứng */}
-                <StatBox value="0" label="Vắng mặt" color="#ef4444" /> {/* Dữ liệu cứng */}
-                <StatBox value="0" label="Điểm chuyên cần" color="#f59e0b" hasStar /> {/* Dữ liệu cứng */}
+                <StatBox value="13" label="Đã học (buổi)" /> {/* Dữ liệu cứng */}
+                <StatBox value="95%" label="Làm BTVN" /> {/* Dữ liệu cứng */}
+                <StatBox value="01" label="Vắng mặt" color="#ef4444" /> {/* Dữ liệu cứng */}
+                <StatBox value="4.8" label="Điểm chuyên cần" color="#f59e0b" hasStar /> {/* Dữ liệu cứng */}
               </div>
             </SectionPanel>
 

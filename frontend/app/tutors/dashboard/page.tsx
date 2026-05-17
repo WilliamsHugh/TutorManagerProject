@@ -33,7 +33,12 @@ export default function TutorDashboard() {
   const [reportingClass, setReportingClass] = useState<any>(null);
   const [reports, setReports] = useState<any[]>([]);
   const [isEditingReport, setIsEditingReport] = useState<string | null>(null);
-  const [reportFormData, setReportFormData] = useState({ content: '', homework: '', progressRating: 'good' });
+  const [reportFormData, setReportFormData] = useState({ 
+    content: '', 
+    homework: '', 
+    progressRating: 'good',
+    attendanceStatus: true 
+  });
 
   // 2. Tự động lấy dữ liệu từ Backend khi load trang
   useEffect(() => {
@@ -67,24 +72,43 @@ export default function TutorDashboard() {
 
   // Tải danh sách báo cáo khi chọn lớp
   useEffect(() => {
-    if (reportingClass) {
-      getLearningReports(reportingClass.dbId).then(setReports);
+    if (reportingClass?.classId) {
+      getLearningReports(reportingClass.classId).then(setReports);
     }
   }, [reportingClass]);
 
   const handleSaveReport = async () => {
+    if (!reportingClass?.classId) {
+      alert("Không tìm thấy mã định danh lớp học (UUID). Vui lòng thử tải lại trang.");
+      return;
+    }
+
     try {
       if (isEditingReport) {
         await updateLearningReport(isEditingReport, reportFormData);
       } else {
-        await submitLearningReport({ classId: reportingClass.dbId, ...reportFormData });
+        if (!reportingClass.classId || typeof reportingClass.classId !== 'string') {
+          throw new Error("Mã định danh lớp học không hợp lệ.");
+        }
+
+        await submitLearningReport({
+          classId: reportingClass.classId.trim(),
+          ...reportFormData
+        });
       }
-      // Refresh list
-      const updated = await getLearningReports(reportingClass.dbId);
+
+      alert(isEditingReport ? "Cập nhật báo cáo thành công!" : "Gửi báo cáo thành công!");
+      
+      // Tải lại danh sách báo cáo và đóng Modal
+      const updated = await getLearningReports(reportingClass.classId);
       setReports(updated);
+      setReportingClass(null); // Đóng modal sau khi thành công
       setIsEditingReport(null);
-      setReportFormData({ content: '', homework: '', progressRating: 'good' });
-    } catch (err) { alert("Lỗi khi lưu báo cáo"); }
+      setReportFormData({ content: '', homework: '', progressRating: 'good', attendanceStatus: true });
+    } catch (err: any) { 
+      console.error("Report Save Error:", err);
+      alert(err.message || "Lỗi khi lưu báo cáo. Vui lòng kiểm tra lại dữ liệu."); 
+    }
   };
 
   const handleDeleteReport = async (id: string) => {
@@ -288,7 +312,7 @@ export default function TutorDashboard() {
                       </td>
                       <td style={{ padding: '16px 24px' }}>
                         <button 
-                          onClick={() => setReportingClass({ id: cls.id, dbId: cls.rawId, name: cls.subject })}
+                          onClick={() => setReportingClass({ id: cls.id, classId: cls.rawId, name: cls.subject })}
                           style={{ background: 'none', border: 'none', cursor: 'pointer', marginRight: '8px' }} 
                           title="Báo cáo"
                         ><Icon icon="lucide:file-text" fontSize={18} /></button>
@@ -317,7 +341,7 @@ export default function TutorDashboard() {
               <div className="p-6 border-b flex justify-between items-center bg-slate-50">
                 <div>
                   <h3 className="text-xl font-bold text-slate-900">Quản lý báo cáo: {reportingClass.name}</h3>
-                  <p className="text-xs text-slate-500 mt-1">Mã lớp: {reportingClass.id}</p>
+                  <p className="text-xs text-slate-500 mt-1">Mã lớp: {reportingClass.id} (UUID: {reportingClass.classId})</p>
                 </div>
                 <button onClick={() => { setReportingClass(null); setIsEditingReport(null); }} className="text-slate-400 hover:text-slate-600">
                   <Icon icon="lucide:x" fontSize={24} />
@@ -325,7 +349,7 @@ export default function TutorDashboard() {
               </div>
               
               <div className="p-6 overflow-y-auto flex-1 space-y-6">
-                {/* Form Nhập liệu (Dùng cho cả Thêm và Sửa) */}
+                {/* Form Nhập liệu */}
                 <div className="bg-blue-50/50 p-5 rounded-xl border border-blue-100">
                   <h4 className="font-semibold text-blue-900 mb-3 flex items-center gap-2">
                     <Icon icon={isEditingReport ? "lucide:edit-3" : "lucide:plus-circle"} />
@@ -333,19 +357,28 @@ export default function TutorDashboard() {
                   </h4>
                   <textarea 
                     className="w-full p-3 border border-slate-200 rounded-lg mb-3 min-h-[100px] text-sm outline-none focus:border-blue-500 transition-all" 
-                    placeholder="Nội dung kiến thức đã dạy trong buổi học..."
+                    placeholder="Nội dung kiến thức đã dạy..."
                     value={reportFormData.content}
                     onChange={(e) => setReportFormData({...reportFormData, content: e.target.value})}
                   />
                   <input 
                     className="w-full p-3 border border-slate-200 rounded-lg mb-3 text-sm outline-none focus:border-blue-500" 
-                    placeholder="Bài tập về nhà giao cho học viên (nếu có)..."
+                    placeholder="Bài tập về nhà..."
                     value={reportFormData.homework}
                     onChange={(e) => setReportFormData({...reportFormData, homework: e.target.value})}
                   />
                   <div className="flex justify-between items-center gap-4">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input 
+                        type="checkbox" 
+                        checked={reportFormData.attendanceStatus}
+                        onChange={(e) => setReportFormData({...reportFormData, attendanceStatus: e.target.checked})}
+                        className="w-4 h-4 text-blue-600 rounded"
+                      />
+                      <span className="text-sm font-medium text-slate-700">Học viên có đi học</span>
+                    </label>
                     <select 
-                       className="p-2.5 border border-slate-200 rounded-lg text-sm bg-white outline-none focus:border-blue-500"
+                       className="p-2.5 border border-slate-200 rounded-lg text-sm bg-white"
                        value={reportFormData.progressRating}
                        onChange={(e) => setReportFormData({...reportFormData, progressRating: e.target.value})}
                     >
@@ -354,49 +387,25 @@ export default function TutorDashboard() {
                       <option value="excellent">Đánh giá: Xuất sắc</option>
                       <option value="poor">Đánh giá: Cần cố gắng</option>
                     </select>
-                    <button onClick={handleSaveReport} className="bg-blue-600 text-white px-8 py-2.5 rounded-lg font-medium hover:bg-blue-700 transition-colors shadow-sm">
-                      {isEditingReport ? 'Cập nhật' : 'Gửi báo cáo'}
-                    </button>
+                    <button onClick={handleSaveReport} className="bg-blue-600 text-white px-8 py-2.5 rounded-lg font-medium hover:bg-blue-700 transition-colors">Lưu</button>
                   </div>
                 </div>
 
-                {/* Danh sách lịch sử báo cáo thực tế từ Database */}
+                {/* Danh sách lịch sử */}
                 <div className="space-y-4">
-                  <h4 className="font-semibold text-slate-700 flex items-center gap-2">
-                    <Icon icon="lucide:history" /> Lịch sử báo cáo gần đây
-                  </h4>
-                  {reports.length > 0 ? reports.map((r: any) => (
-                    <div key={r.id} className="border border-slate-100 p-4 rounded-lg hover:border-blue-200 transition-all bg-white shadow-sm">
-                      <div className="flex justify-between items-start mb-2">
-                        <span className="text-[11px] font-bold text-slate-400 bg-slate-50 px-2 py-1 rounded uppercase tracking-wider">
-                          {new Date(r.reportDate).toLocaleDateString('vi-VN')}
-                        </span>
+                  <h4 className="font-semibold text-slate-700 flex items-center gap-2"><Icon icon="lucide:history" /> Lịch sử báo cáo</h4>
+                  {reports.map((r: any) => (
+                    <div key={r.id || Math.random()} className="border border-slate-100 p-4 rounded-lg bg-white shadow-sm">
+                      <div className="flex justify-between items-start mb-2 text-xs text-slate-400">
+                        <span>{new Date(r.reportDate).toLocaleDateString('vi-VN')}</span>
                         <div className="flex gap-3">
-                          <button 
-                            onClick={() => {
-                              setIsEditingReport(r.id);
-                              setReportFormData({ content: r.content, homework: r.homework, progressRating: r.progressRating });
-                            }} 
-                            className="text-blue-600 text-xs font-semibold hover:underline"
-                          >Sửa</button>
-                          <button 
-                            onClick={() => handleDeleteReport(r.id)} 
-                            className="text-red-500 text-xs font-semibold hover:underline"
-                          >Xóa</button>
+                          <button onClick={() => { setIsEditingReport(r.id); setReportFormData({ content: r.content, homework: r.homework, progressRating: r.progressRating, attendanceStatus: r.attendanceStatus ?? true }); }} className="text-blue-600 font-semibold">Sửa</button>
+                          <button onClick={() => handleDeleteReport(r.id)} className="text-red-500 font-semibold">Xóa</button>
                         </div>
                       </div>
-                      <p className="text-sm text-slate-700 font-medium leading-relaxed">{r.content}</p>
-                      {r.homework && (
-                        <div className="mt-2 flex items-center gap-2 text-xs text-slate-500 bg-slate-50 p-2 rounded">
-                          <Icon icon="lucide:book" /> <b>BT:</b> {r.homework}
-                        </div>
-                      )}
+                      <p className="text-sm text-slate-700 font-medium">{r.content}</p>
                     </div>
-                  )) : (
-                    <div className="text-center py-8 text-slate-400 text-sm border border-dashed rounded-lg">
-                      Chưa có lịch sử báo cáo cho lớp học này.
-                    </div>
-                  )}
+                  ))}
                 </div>
               </div>
             </div>

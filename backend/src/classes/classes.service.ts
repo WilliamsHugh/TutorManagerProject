@@ -176,7 +176,7 @@ export class ClassesService implements OnModuleInit {
 
       return {
         id: `#L${cls.id?.substring(0, 4).toUpperCase() || 'XXXX'}`,
-        rawId: cls.id, // Bổ sung ID gốc để Frontend gọi API
+        rawId: String(cls.id), // Đảm bảo trả về chuỗi UUID chính xác
         subject: cls.subject?.name || 'Chưa cập nhật',
         type: cls.location?.toLowerCase().includes('online') ? 'Trực tuyến' : 'Tại nhà', 
         student: cls.student?.user?.fullName || 'Chưa có',
@@ -216,52 +216,66 @@ export class ClassesService implements OnModuleInit {
     return { classes, profile };
   }
 
-  async findScheduleByTutor(userId: string, targetDate?: string) {
+  async findScheduleByTutor(userId: string, targetDate?: string, view: string = 'week'): Promise<any> {
     const profile = await this.getTutorProfileData(userId);
     const tutorId = profile.id;
 
-    // Logic tính toán tuần giống Dashboard
     const baseDate = targetDate ? new Date(targetDate) : new Date();
-    const currentDay = baseDate.getDay(); 
-    const distanceToMonday = currentDay === 0 ? -6 : 1 - currentDay;
-    
-    const monday = new Date(baseDate);
-    monday.setDate(baseDate.getDate() + distanceToMonday);
-    monday.setHours(0, 0, 0, 0);
+    let start: Date;
+    let end: Date;
 
-    const sunday = new Date(monday);
-    sunday.setDate(monday.getDate() + 6);
-    sunday.setHours(23, 59, 59, 999);
+    if (view === 'month') {
+      start = new Date(baseDate.getFullYear(), baseDate.getMonth(), 1);
+      end = new Date(baseDate.getFullYear(), baseDate.getMonth() + 1, 0, 23, 59, 59);
+    } else if (view === 'day') {
+      start = new Date(baseDate);
+      start.setHours(0, 0, 0, 0);
+      end = new Date(baseDate);
+      end.setHours(23, 59, 59, 999);
+    } else {
+      const day = baseDate.getDay();
+      const diff = day === 0 ? -6 : 1 - day;
+      start = new Date(baseDate);
+      start.setDate(baseDate.getDate() + diff);
+      start.setHours(0, 0, 0, 0);
+      end = new Date(start);
+      end.setDate(start.getDate() + 6);
+      end.setHours(23, 59, 59, 999);
+    }
 
-    const weeklySchedules = await this.scheduleRepository.find({
-      where: {
-        class: { tutor: { id: tutorId } },
-        sessionDate: Between(monday, sunday),
-      },
+    const schedules = await this.scheduleRepository.find({
+      where: { class: { tutor: { id: tutorId } }, sessionDate: Between(start, end) },
       relations: ['class', 'class.student', 'class.student.user', 'class.subject'],
       order: { startTime: 'ASC' }
     });
 
+    const mapEvent = (s: Schedule) => ({
+      id: s.id,
+      date: s.sessionDate,
+      time: `${s.startTime.substring(0, 5)} - ${s.endTime.substring(0, 5)}`,
+      subject: s.class?.subject?.name || 'Môn học',
+      student: s.class?.student?.user?.fullName || 'Học viên',
+      location: s.class?.location || 'Online',
+      status: s.sessionStatus
+    });
+
+    if (view === 'month' || view === 'day') {
+      return { events: schedules.map(mapEvent), profile };
+    }
+
     const daysOfWeek = ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'Chủ nhật'];
     const calendar = daysOfWeek.map((dayLabel, index) => {
-      const dateOfThisDay = new Date(monday);
-      dateOfThisDay.setDate(monday.getDate() + index);
-      
-      const daySchedules = weeklySchedules.filter(
-        (s) => s.sessionDate && new Date(s.sessionDate).toDateString() === dateOfThisDay.toDateString()
+      const date = new Date(start);
+      date.setDate(start.getDate() + index);
+      const daySchedules = schedules.filter(s => 
+        s.sessionDate && new Date(s.sessionDate).toDateString() === date.toDateString()
       );
 
       return {
         day: dayLabel,
-        date: dateOfThisDay.getDate().toString(),
-        isToday: dateOfThisDay.toDateString() === new Date().toDateString(),
-        events: daySchedules.map(s => ({
-          id: s.id,
-          time: `${s.startTime.substring(0, 5)} - ${s.endTime.substring(0, 5)}`,
-          subject: s.class?.subject?.name || 'Môn học',
-          student: s.class?.student?.user?.fullName || 'Học viên',
-          location: s.class?.location || 'Online',
-        }))
+        date: date.getDate().toString(),
+        isToday: date.toDateString() === new Date().toDateString(),
+        events: daySchedules.map(mapEvent)
       };
     });
 

@@ -20,9 +20,9 @@ export class TutorController {
 
   // Lấy lịch dạy cá nhân (TUTOR_QĐ2)
   @Get('schedule')
-  async getMySchedule(@Request() req, @Query('date') date?: string) {
+  async getMySchedule(@Request() req, @Query('date') date?: string, @Query('view') view?: string) {
     const tutorId = req.user.id || req.user.sub;
-    return this.classesService.findScheduleByTutor(tutorId, date);
+    return this.classesService.findScheduleByTutor(tutorId, date, view);
   }
 
   // Lấy danh sách học viên của tôi

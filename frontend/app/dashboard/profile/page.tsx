@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { User, Phone, Mail, Shield, Save, Loader2, CheckCircle } from "lucide-react";
-import { getAuthUser, saveAuth, isLoggedIn, getToken } from "@/lib/auth";
+import { getAuthUser, saveAuth, isLoggedIn } from "@/lib/auth";
 import Header from "../../../components/Header";
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:3001";

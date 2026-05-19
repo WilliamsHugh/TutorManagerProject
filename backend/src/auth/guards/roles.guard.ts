@@ -15,8 +15,12 @@ export class RolesGuard implements CanActivate {
     if (!requiredRoles) return true;
 
     const { user } = context.switchToHttp().getRequest();
-    // user.role is now a string from the JWT payload
-    if (!requiredRoles.includes(user.role)) {
+    if (!user || !user.role) {
+      throw new ForbiddenException('Bạn không có quyền truy cập');
+    }
+    
+    const userRoleName = typeof user.role === 'object' ? user.role.name : user.role;
+    if (!requiredRoles.includes(userRoleName)) {
       throw new ForbiddenException('Bạn không có quyền truy cập');
     }
     return true;

@@ -71,8 +71,22 @@ export class AuthService {
       throw new UnauthorizedException('Email hoặc mật khẩu không đúng');
     }
 
+    const roleName = user.role?.name ?? '';
+
+    // Phân luồng đăng nhập dựa theo Portal
+    if (dto.portal === 'hub') {
+      if (roleName !== 'admin' && roleName !== 'staff') {
+        throw new UnauthorizedException('Tài khoản này không có quyền truy cập cổng quản trị nội bộ.');
+      }
+    } else {
+      // Đăng nhập từ cổng công cộng (hoặc không truyền portal)
+      if (roleName === 'admin' || roleName === 'staff') {
+        throw new UnauthorizedException('Tài khoản quản trị. Vui lòng đăng nhập tại cổng nội bộ: /hub/login');
+      }
+    }
+
     // Check tutor approval status
-    if (user.role && user.role.name === 'tutor') {
+    if (roleName === 'tutor') {
       const tutor = await this.usersService.findTutorByUserId(user.id);
       if (tutor && tutor.approvalStatus === ApprovalStatus.PENDING) {
         throw new UnauthorizedException('Hồ sơ của bạn đang chờ xét duyệt');

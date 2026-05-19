@@ -63,7 +63,7 @@ function CreateClassContent() {
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
     window.alert(`Đã tạo lớp ${classCode} cho yêu cầu ${request.id}.`)
-    router.push("/staff/requestmanagement")
+    router.push("/hub/request-management")
   }
 
   return (
@@ -170,7 +170,7 @@ function CreateClassContent() {
                         className="h-9 rounded-md px-4"
                         type="button"
                         variant="outline"
-                        onClick={() => router.push("/staff/requestmanagement")}
+                        onClick={() => router.push("/hub/request-management")}
                       >
                         Hủy bỏ
                       </Button>

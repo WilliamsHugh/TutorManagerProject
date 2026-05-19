@@ -3,24 +3,52 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Shield, Users, BookOpen, Settings, LogOut, ArrowRight } from "lucide-react";
-import { getAuthUser, getUserRole, clearAuth, isLoggedIn } from "@/lib/auth";
+import { getAuthUser, getUserRole, clearAuth, isLoggedIn, saveAuth } from "@/lib/auth";
+
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:3001";
 
 export default function AdminDashboardPage() {
     const router = useRouter();
     const [user, setUser] = useState<{ fullName: string; email: string } | null>(null);
 
     useEffect(() => {
-        if (!isLoggedIn() || getUserRole() !== "admin") {
-            router.replace("/hub/login");
-            return;
-        }
-        const authUser = getAuthUser();
-        if (authUser) {
-            setUser({ fullName: authUser.fullName, email: authUser.email });
-        }
+        const verifySession = async () => {
+            try {
+                const res = await fetch(`${BACKEND_URL}/auth/me`, {
+                    headers: { "Content-Type": "application/json" },
+                    credentials: "include",
+                });
+                if (!res.ok) {
+                    throw new Error("Session invalid");
+                }
+                const data = await res.json();
+                
+                // Khôi phục localStorage
+                saveAuth("", data);
+                setUser({ fullName: data.fullName, email: data.email });
+                
+                if (data.role?.name !== "admin") {
+                    router.replace("/403");
+                }
+            } catch (err) {
+                console.error("Verification failed:", err);
+                clearAuth();
+                router.replace("/hub/login");
+            }
+        };
+
+        verifySession();
     }, [router]);
 
-    const handleLogout = () => {
+    const handleLogout = async () => {
+        try {
+            await fetch(`${BACKEND_URL}/auth/logout`, {
+                method: "POST",
+                credentials: "include",
+            });
+        } catch (error) {
+            console.error("Logout error:", error);
+        }
         clearAuth();
         router.push("/hub/login");
     };
@@ -121,7 +149,7 @@ export default function AdminDashboardPage() {
                             Xem danh sách yêu cầu tìm gia sư từ học viên, so khớp và tạo lớp mới.
                         </p>
                         <button
-                            onClick={() => router.push("/staff/request-management")}
+                            onClick={() => router.push("/hub/request-management")}
                             className="flex items-center gap-1.5 text-sm font-semibold text-yellow-500 border-none bg-transparent cursor-pointer group-hover:underline"
                         >
                             Truy cập quản lý

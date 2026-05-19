@@ -1,6 +1,8 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useMemo, useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
+import { saveAuth, clearAuth } from "@/lib/auth"
 import {
   Bell,
   BookOpen,
@@ -167,10 +169,41 @@ const getStatusClasses = (status: RequestStatus) => {
 }
 
 export default function RequestList() {
+  const router = useRouter()
+  const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState("")
   const [selectedRequest, setSelectedRequest] = useState<RequestItem | null>(
     null
   )
+
+  useEffect(() => {
+    const verifySession = async () => {
+      try {
+        const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:3001";
+        const res = await fetch(`${BACKEND_URL}/auth/me`, {
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+        });
+        if (!res.ok) {
+          throw new Error("Session invalid");
+        }
+        const data = await res.json();
+        saveAuth("", data);
+        
+        if (data.role?.name !== "admin" && data.role?.name !== "staff") {
+          router.replace("/403");
+        } else {
+          setLoading(false);
+        }
+      } catch (err) {
+        console.error("Verification failed:", err);
+        clearAuth();
+        router.replace("/hub/login");
+      }
+    };
+
+    verifySession();
+  }, [router]);
 
   const filteredRequests = useMemo(() => {
     const query = search.trim().toLowerCase()
@@ -190,9 +223,10 @@ export default function RequestList() {
       ]
         .join(" ")
         .toLowerCase()
-        .includes(query)
     )
   }, [search])
+
+  if (loading) return null;
 
   return (
     <div className="min-h-screen bg-[#f4f7fb] text-foreground">

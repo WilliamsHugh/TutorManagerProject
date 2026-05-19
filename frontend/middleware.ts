@@ -99,7 +99,7 @@ export async function middleware(request: NextRequest) {
       if (userRole === 'tutor') return NextResponse.redirect(new URL('/dashboard/tutor', request.url));
       if (userRole === 'student') return NextResponse.redirect(new URL('/dashboard/student', request.url));
       if (userRole === 'admin') return NextResponse.redirect(new URL('/hub/dashboard', request.url));
-      if (userRole === 'staff') return NextResponse.redirect(new URL('/staff/request-management', request.url));
+      if (userRole === 'staff') return NextResponse.redirect(new URL('/hub/request-management', request.url));
     } catch {
       // Token hỏng -> cho phép ở lại trang đăng nhập để đăng nhập lại
     }
@@ -113,7 +113,7 @@ export async function middleware(request: NextRequest) {
       const userRole = (payload as any).role;
       
       if (userRole === 'admin') return NextResponse.redirect(new URL('/hub/dashboard', request.url));
-      if (userRole === 'staff') return NextResponse.redirect(new URL('/staff/request-management', request.url));
+      if (userRole === 'staff') return NextResponse.redirect(new URL('/hub/request-management', request.url));
       if (userRole === 'tutor' || userRole === 'student') return NextResponse.redirect(new URL('/403', request.url));
     } catch {
       // Token hỏng -> cho phép đăng nhập lại

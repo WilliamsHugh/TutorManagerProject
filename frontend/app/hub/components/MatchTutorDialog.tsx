@@ -122,7 +122,7 @@ export function MatchTutorDialog({
                 <TutorRecommendationCard
                   key={tutor.name}
                   actionLabel="Ghép lớp"
-                  href={`/staff/requestmanagement/create-class?requestId=${encodeURIComponent(
+                  href={`/hub/request-management/create-class?requestId=${encodeURIComponent(
                     request.id
                   )}&tutorName=${encodeURIComponent(tutor.name)}`}
                   tutor={tutor}

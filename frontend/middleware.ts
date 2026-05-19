@@ -34,6 +34,11 @@ export async function middleware(request: NextRequest) {
       if (userRole !== 'admin' && userRole !== 'staff') {
         return NextResponse.redirect(new URL('/403', request.url));
       }
+
+      // Trang Admin Dashboard chỉ cho phép role admin
+      if (pathname === '/hub/dashboard' && userRole !== 'admin') {
+        return NextResponse.redirect(new URL('/hub/request-management', request.url));
+      }
     } catch (error) {
       console.error('Middleware Hub JWT Error:', error);
       const response = NextResponse.redirect(new URL('/hub/login', request.url));

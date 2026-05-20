@@ -173,8 +173,11 @@ export class AdminController {
           where: { tutor: { id: tutor.id } },
           relations: ['subject'],
         });
+        // Convert enum to lowercase for frontend compatibility
+        const statusLower = tutor.approvalStatus.toLowerCase();
         return {
           ...tutor,
+          approvalStatus: statusLower,
           subjects: tutorSubjects.map((ts) => ts.subject?.name).filter(Boolean),
         };
       }),
@@ -186,7 +189,7 @@ export class AdminController {
   @Patch('tutors/:id/approve')
   async approveTutor(
     @Param('id') id: string,
-    @Body() body: { status: ApprovalStatus },
+    @Body() body: { status: string },
     @Request() req: any,
   ) {
     const tutor = await this.tutorsRepo.findOne({
@@ -195,16 +198,13 @@ export class AdminController {
     });
     if (!tutor) throw new NotFoundException('Không tìm thấy gia sư');
 
-    const { status } = body;
-    if (
-      status !== ApprovalStatus.APPROVED &&
-      status !== ApprovalStatus.REJECTED &&
-      status !== ApprovalStatus.PENDING
-    ) {
+    const statusInput = body.status?.toUpperCase();
+    if (!Object.values(ApprovalStatus).includes(statusInput as any)) {
       throw new ConflictException('Trạng thái phê duyệt không hợp lệ');
     }
+    const statusEnum = statusInput as ApprovalStatus;
 
-    tutor.approvalStatus = status;
+    tutor.approvalStatus = statusEnum;
     tutor.approvedAt = new Date();
     tutor.approvedBy = req.user;
 

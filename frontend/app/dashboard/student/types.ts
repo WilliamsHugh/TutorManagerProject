@@ -17,3 +17,7 @@ export type TutorSuggestion = {
   tags: string[];
 };
 
+export type NavItem = {
+  label: string;
+  href: string;
+};

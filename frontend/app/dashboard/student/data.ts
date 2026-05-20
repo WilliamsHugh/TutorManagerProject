@@ -1,4 +1,4 @@
-import type { TutorSuggestion } from "./types";
+import type { NavItem, TutorSuggestion } from "./types";
 
 export const subjects = [
   "Toán học",
@@ -88,3 +88,9 @@ export const tutors: TutorSuggestion[] = [
   },
 ];
 
+export const navItems: NavItem[] = [
+  { label: "Trang chủ", href: "/dashboard/student" },
+  { label: "Tìm gia sư", href: "/student/tutorrequest" },
+  { label: "Lớp học của tôi", href: "/classes" },
+  { label: "Đánh giá", href: "/tutors" },
+];

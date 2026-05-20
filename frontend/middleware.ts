@@ -10,68 +10,130 @@ export async function middleware(request: NextRequest) {
   // 1. Lấy token từ cookie
   const token = request.cookies.get('access_token')?.value;
 
-  // 2. Định nghĩa các route cần bảo vệ
+  // 2. Định nghĩa các nhóm route
+  const isHubRoute = pathname.startsWith('/hub');
+  const isHubLoginRoute = pathname === '/hub/login';
+  
   const isDashboardRoute = pathname.startsWith('/dashboard');
-  const isStaffRoute = pathname.startsWith('/staff') || pathname.startsWith('/dashboard/admin');
-  const isAuthRoute = pathname.startsWith('/login') || pathname.startsWith('/register');
+  const isStaffRoute = pathname.startsWith('/staff');
+  
+  const isClientAuthRoute = pathname === '/login' || pathname === '/register';
 
-  // 3. Xử lý redirect nếu chưa đăng nhập
-  if (isDashboardRoute || isStaffRoute) {
+  // 3. Xử lý bảo vệ các route nội bộ của Hub (/hub/*)
+  if (isHubRoute && !isHubLoginRoute) {
+    if (!token) {
+      return NextResponse.redirect(new URL('/hub/login', request.url));
+    }
+
+    try {
+      const secret = new TextEncoder().encode(JWT_SECRET);
+      const { payload } = await jwtVerify(token, secret);
+      const userRole = (payload as any).role;
+
+      // Chỉ có admin hoặc staff mới được vào cổng nội bộ
+      if (userRole !== 'admin' && userRole !== 'staff') {
+        return NextResponse.redirect(new URL('/403', request.url));
+      }
+
+      // Trang Admin Dashboard chỉ cho phép role admin
+      if (pathname === '/hub/dashboard' && userRole !== 'admin') {
+        return NextResponse.redirect(new URL('/hub/request-management', request.url));
+      }
+    } catch (error) {
+      console.error('Middleware Hub JWT Error:', error);
+      const response = NextResponse.redirect(new URL('/hub/login', request.url));
+      response.cookies.delete('access_token');
+      return response;
+    }
+  }
+
+  // 4. Xử lý bảo vệ các route /staff/*
+  if (isStaffRoute) {
+    if (!token) {
+      return NextResponse.redirect(new URL('/hub/login', request.url));
+    }
+
+    try {
+      const secret = new TextEncoder().encode(JWT_SECRET);
+      const { payload } = await jwtVerify(token, secret);
+      const userRole = (payload as any).role;
+
+      if (userRole !== 'admin' && userRole !== 'staff') {
+        return NextResponse.redirect(new URL('/403', request.url));
+      }
+    } catch (error) {
+      console.error('Middleware Staff JWT Error:', error);
+      const response = NextResponse.redirect(new URL('/hub/login', request.url));
+      response.cookies.delete('access_token');
+      return response;
+    }
+  }
+
+  // 5. Xử lý bảo vệ các route /dashboard/*
+  if (isDashboardRoute) {
     if (!token) {
       return NextResponse.redirect(new URL('/login', request.url));
     }
 
     try {
-      // Xác thực token (Optional: có thể bỏ qua bước này nếu chỉ muốn check existence, 
-      // nhưng verify thì an toàn hơn)
       const secret = new TextEncoder().encode(JWT_SECRET);
       const { payload } = await jwtVerify(token, secret);
-      
       const userRole = (payload as any).role;
 
-      // Phân quyền chi tiết (RBAC)
       if (pathname.startsWith('/dashboard/tutor') && userRole !== 'tutor') {
         return NextResponse.redirect(new URL('/403', request.url));
       }
       if (pathname.startsWith('/dashboard/student') && userRole !== 'student') {
         return NextResponse.redirect(new URL('/403', request.url));
       }
-      if (isStaffRoute && userRole !== 'admin') {
-        return NextResponse.redirect(new URL('/403', request.url));
-      }
-
     } catch (error) {
-      // Token không hợp lệ hoặc hết hạn
-      console.error('Middleware JWT Error:', error);
+      console.error('Middleware Dashboard JWT Error:', error);
       const response = NextResponse.redirect(new URL('/login', request.url));
       response.cookies.delete('access_token');
       return response;
     }
   }
 
-  // 4. Nếu đã đăng nhập mà cố vào trang login/register -> redirect về dashboard
-  if (isAuthRoute && token) {
+  // 6. Đã đăng nhập nhưng truy cập các trang đăng nhập công cộng (/login, /register)
+  if (isClientAuthRoute && token) {
     try {
-        const secret = new TextEncoder().encode(JWT_SECRET);
-        const { payload } = await jwtVerify(token, secret);
-        const userRole = (payload as any).role;
-        
-        if (userRole === 'tutor') return NextResponse.redirect(new URL('/dashboard/tutor', request.url));
-        if (userRole === 'student') return NextResponse.redirect(new URL('/dashboard/student', request.url));
-        if (userRole === 'admin') return NextResponse.redirect(new URL('/dashboard/admin', request.url));
+      const secret = new TextEncoder().encode(JWT_SECRET);
+      const { payload } = await jwtVerify(token, secret);
+      const userRole = (payload as any).role;
+      
+      if (userRole === 'tutor') return NextResponse.redirect(new URL('/dashboard/tutor', request.url));
+      if (userRole === 'student') return NextResponse.redirect(new URL('/dashboard/student', request.url));
+      if (userRole === 'admin') return NextResponse.redirect(new URL('/hub/dashboard', request.url));
+      if (userRole === 'staff') return NextResponse.redirect(new URL('/hub/request-management', request.url));
     } catch {
-        // Token lỗi -> cho phép ở lại trang auth để login lại
+      // Token hỏng -> cho phép ở lại trang đăng nhập để đăng nhập lại
+    }
+  }
+
+  // 7. Đã đăng nhập nhưng truy cập trang đăng nhập nội bộ (/hub/login)
+  if (isHubLoginRoute && token) {
+    try {
+      const secret = new TextEncoder().encode(JWT_SECRET);
+      const { payload } = await jwtVerify(token, secret);
+      const userRole = (payload as any).role;
+      
+      if (userRole === 'admin') return NextResponse.redirect(new URL('/hub/dashboard', request.url));
+      if (userRole === 'staff') return NextResponse.redirect(new URL('/hub/request-management', request.url));
+      if (userRole === 'tutor' || userRole === 'student') return NextResponse.redirect(new URL('/403', request.url));
+    } catch {
+      // Token hỏng -> cho phép đăng nhập lại
     }
   }
 
   return NextResponse.next();
 }
 
-// Chỉ áp dụng middleware cho các route cụ thể để tối ưu hiệu năng
+// Áp dụng middleware cho các route phù hợp
 export const config = {
   matcher: [
     '/dashboard/:path*',
     '/staff/:path*',
+    '/hub/:path*',
     '/login',
     '/register'
   ],

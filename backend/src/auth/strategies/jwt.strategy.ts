@@ -26,6 +26,21 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   async validate(payload: { sub: string; email: string; role: string }) {
     const user = await this.usersService.findById(payload.sub);
     if (!user) throw new UnauthorizedException();
+    
+    // Kiểm tra user còn hoạt động không
+    if (!user.isActive) {
+      throw new UnauthorizedException('Tài khoản của bạn đã bị vô hiệu hóa');
+    }
+
+    // Xác thực role từ database để ngăn chặn role escalation attack
+    // (người dùng không thể tự sửa role trong JWT)
+    const userRoleName = typeof user.role === 'object' ? user.role.name : user.role;
+    if (userRoleName !== payload.role) {
+      throw new UnauthorizedException(
+        'Quyền truy cập không hợp lệ. Vui lòng đăng nhập lại.'
+      );
+    }
+    
     return user;
   }
 }

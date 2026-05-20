@@ -2,6 +2,7 @@ import { Controller, Post, Body, Get, UseGuards, Request, Res, Patch } from '@ne
 import type { Response } from 'express';
 import { AuthService } from './auth.service';
 import { UsersService } from '../users/users.service';
+import { AccessControlService } from './services/access-control.service';
 import { RegisterStudentDto } from './dto/register-student.dto';
 import { RegisterTutorDto } from './dto/register-tutor.dto';
 import { LoginDto } from './dto/login.dto';
@@ -17,6 +18,7 @@ export class AuthController {
   constructor(
     private readonly authService: AuthService,
     private readonly usersService: UsersService,
+    private readonly accessControl: AccessControlService,
   ) {}
 
   @Post('register/student')
@@ -36,8 +38,8 @@ export class AuthController {
     // Set cookie httpOnly cho bảo mật cao
     response.cookie('access_token', result.access_token, {
       httpOnly: true,
-      secure: false, // Để false cho môi trường dev localhost
-      sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production', // Chỉ HTTPS trong production
+      sameSite: 'strict', // Ngăn chặn CSRF
       path: '/',
       maxAge: 24 * 60 * 60 * 1000, // 1 ngày
     });
@@ -76,6 +78,8 @@ export class AuthController {
   @Patch('profile')
   @UseGuards(JwtAuthGuard)
   updateProfile(@Request() req, @Body() dto: UpdateProfileDto) {
+    // Kiểm tra resource ownership - user chỉ được update profile của chính họ
+    this.accessControl.ensureResourceOwnership(req.user.id, req.user.id);
     return this.usersService.updateProfile(req.user.id, dto);
   }
 

@@ -2,7 +2,11 @@ import { NextResponse, NextRequest } from 'next/server';
 import { jwtVerify } from 'jose';
 
 // Phải trùng với JWT_SECRET trong backend
-const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-this';
+const JWT_SECRET = process.env.JWT_SECRET;
+
+if (!JWT_SECRET) {
+  throw new Error('JWT_SECRET environment variable is not defined');
+}
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;

@@ -134,7 +134,7 @@ export default function Header({
                       <UserIcon size={18} className="text-indigo-600" />
                     )}
                   </div>
-                  <div className="hidden lg:block text-left max-w-[150px]">
+                  <div className="hidden lg:block text-left max-w-37.5">
                     <span className="block text-sm font-bold truncate" style={{ color: "var(--foreground)" }}>
                       {user.fullName}
                     </span>
@@ -228,7 +228,7 @@ export default function Header({
             zIndex: 50,
           }}
         >
-          <div className="max-w-[1200px] mx-auto px-4 py-6">
+          <div className="max-w-300 mx-auto px-4 py-6">
             <nav className="flex flex-col gap-2 mb-6">
               {navLinks.map((link) => (
                 <Link

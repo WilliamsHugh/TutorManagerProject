@@ -75,6 +75,7 @@ export default function AdminDashboardPage() {
   // Date Filters for Stats
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
+  const [reportDate, setReportDate] = useState("");
 
   // Notification Toast Helper
   const [toastMsg, setToastMsg] = useState<{ text: string; type: "success" | "error" } | null>(null);
@@ -110,6 +111,10 @@ export default function AdminDashboardPage() {
 
     verifySession();
   }, [router]);
+
+  useEffect(() => {
+    setReportDate(new Date().toLocaleDateString("vi-VN"));
+  }, []);
 
   // 2. Fetch data based on active view
   useEffect(() => {
@@ -923,7 +928,7 @@ export default function AdminDashboardPage() {
                       <tr key={sub.id} className="hover:bg-[#25354e]/40 transition-colors">
                         <td className="px-4 py-3 font-semibold text-white">{sub.name}</td>
                         <td className="px-4 py-3 text-slate-300">{sub.gradeLevel || "Tất cả"}</td>
-                        <td className="px-4 py-3 text-slate-400 truncate max-w-[150px]" title={sub.description}>
+                        <td className="px-4 py-3 text-slate-400 truncate max-w-37.5" title={sub.description}>
                           {sub.description || "—"}
                         </td>
                         <td className="px-4 py-3">
@@ -1058,7 +1063,7 @@ export default function AdminDashboardPage() {
 
               {/* Signatures */}
               <div className="flex items-center justify-between pt-8 border-t border-slate-800 text-xs text-slate-400">
-                <span>Ngày lập báo cáo: {new Date().toLocaleDateString("vi-VN")}</span>
+                <span>Ngày lập báo cáo: {reportDate || "..."}</span>
                 <div className="text-center space-y-8 pr-8">
                   <span>Người lập báo cáo (Admin)</span>
                   <p className="font-bold text-white text-sm">{user.fullName}</p>

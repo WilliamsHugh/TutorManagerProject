@@ -9,9 +9,9 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 
-import { requests, tutors } from "../../components/data"
-import { StaffHeader } from "../../components/StaffHeader"
-import { StaffSidebar } from "../../components/StaffSidebar"
+import { requests, tutors } from "@/app/hub/components/data"
+import { StaffHeader } from "@/app/hub/components/StaffHeader"
+import { StaffSidebar } from "@/app/hub/components/StaffSidebar"
 
 type ClassForm = {
   location: string

@@ -9,10 +9,16 @@ export default function ClientLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const shouldShowPublicHeader =
+    pathname.startsWith("/dashboard/student") ||
+    (!pathname.startsWith("/hub") &&
+      !pathname.startsWith("/staff") &&
+      pathname !== "/login" &&
+      pathname !== "/register");
 
   return (
     <>
-      {pathname.includes("/student") && <Header />}
+      {shouldShowPublicHeader && <Header />}
       {children}
     </>
   );

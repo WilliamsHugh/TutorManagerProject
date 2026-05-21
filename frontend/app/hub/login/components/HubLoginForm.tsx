@@ -6,7 +6,11 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { saveAuth } from "@/lib/auth";
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:3001";
+const BACKEND_URL =
+    process.env.NEXT_PUBLIC_API_URL ??
+    (process.env.NEXT_PUBLIC_BACKEND_URL
+        ? `${process.env.NEXT_PUBLIC_BACKEND_URL.replace(/\/$/, "")}/api`
+        : "http://localhost:3001/api");
 
 export default function HubLoginForm() {
     const router = useRouter();
@@ -56,7 +60,7 @@ export default function HubLoginForm() {
             if (role === "admin") {
                 router.push("/hub/dashboard");
             } else if (role === "staff") {
-                router.push("/hub/request-management");
+                router.push("/staff/request-management");
             } else {
                 // Tài khoản không phải nội bộ
                 setErrorMsg("Tài khoản này không có quyền truy cập cổng quản trị nội bộ.");

@@ -5,39 +5,18 @@ import { useRouter } from "next/navigation";
 import { Shield, Users, BookOpen, Settings, LogOut, ArrowRight } from "lucide-react";
 import { getAuthUser, getUserRole, clearAuth, isLoggedIn, saveAuth } from "@/lib/auth";
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:3001";
+const BACKEND_URL =
+    process.env.NEXT_PUBLIC_API_URL ??
+    (process.env.NEXT_PUBLIC_BACKEND_URL
+        ? `${process.env.NEXT_PUBLIC_BACKEND_URL.replace(/\/$/, "")}/api`
+        : "http://localhost:3001/api");
 
 export default function AdminDashboardPage() {
     const router = useRouter();
     const [user, setUser] = useState<{ fullName: string; email: string } | null>(null);
 
     useEffect(() => {
-        const verifySession = async () => {
-            try {
-                const res = await fetch(`${BACKEND_URL}/auth/me`, {
-                    headers: { "Content-Type": "application/json" },
-                    credentials: "include",
-                });
-                if (!res.ok) {
-                    throw new Error("Session invalid");
-                }
-                const data = await res.json();
-                
-                // Khôi phục localStorage
-                saveAuth("", data);
-                setUser({ fullName: data.fullName, email: data.email });
-                
-                if (data.role?.name !== "admin") {
-                    router.replace("/403");
-                }
-            } catch (err) {
-                console.error("Verification failed:", err);
-                clearAuth();
-                router.replace("/hub/login");
-            }
-        };
-
-        verifySession();
+        setUser({ fullName: "Staff Preview", email: "staff@preview.local" });
     }, [router]);
 
     const handleLogout = async () => {
@@ -149,7 +128,7 @@ export default function AdminDashboardPage() {
                             Xem danh sách yêu cầu tìm gia sư từ học viên, so khớp và tạo lớp mới.
                         </p>
                         <button
-                            onClick={() => router.push("/hub/request-management")}
+                            onClick={() => router.push("/staff/request-management")}
                             className="flex items-center gap-1.5 text-sm font-semibold text-yellow-500 border-none bg-transparent cursor-pointer group-hover:underline"
                         >
                             Truy cập quản lý

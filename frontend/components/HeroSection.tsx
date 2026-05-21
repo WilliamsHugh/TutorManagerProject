@@ -1,6 +1,7 @@
 "use client";
 
 import { BookOpen, MapPin, ChevronDown, Search } from "lucide-react";
+import Link from "next/link";
 
 export default function HeroSection() {
   return (
@@ -88,16 +89,18 @@ export default function HeroSection() {
           </div>
 
           {/* Search Button */}
-          <button
-            className="flex items-center justify-center gap-2 h-10 sm:h-14 px-4 sm:px-8 text-sm sm:text-base font-semibold rounded-lg sm:rounded-xl border-none cursor-pointer transition-opacity hover:opacity-90 shrink-0 w-full sm:w-auto"
-            style={{
-              backgroundColor: "var(--primary)",
-              color: "var(--primary-foreground)",
-            }}
-          >
-            <Search size={18} className="sm:w-5 sm:h-5" />
-            <span>Tìm kiếm</span>
-          </button>
+          <Link href="/tutors" className="w-full sm:w-auto no-underline">
+            <button
+              className="flex items-center justify-center gap-2 h-10 sm:h-14 px-4 sm:px-8 text-sm sm:text-base font-semibold rounded-lg sm:rounded-xl border-none cursor-pointer transition-opacity hover:opacity-90 shrink-0 w-full"
+              style={{
+                backgroundColor: "var(--primary)",
+                color: "var(--primary-foreground)",
+              }}
+            >
+              <Search size={18} className="sm:w-5 sm:h-5" />
+              <span>Tìm kiếm</span>
+            </button>
+          </Link>
         </div>
       </div>
     </section>

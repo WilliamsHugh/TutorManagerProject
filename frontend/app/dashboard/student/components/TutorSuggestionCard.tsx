@@ -45,7 +45,7 @@ export function TutorSuggestionCard({
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-2 sm:w-[140px] sm:grid-cols-1">
+      <div className="grid grid-cols-2 gap-2 sm:w-35 sm:grid-cols-1">
         <button
           className="h-9 rounded-md border border-[#e2e8f0] bg-transparent px-3 text-[13px] font-medium text-[#0f172a] transition-colors hover:bg-[#f8fafc]"
           onClick={() => onViewDetails(tutor)}

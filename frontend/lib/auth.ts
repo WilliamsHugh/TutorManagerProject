@@ -1,29 +1,28 @@
 /**
- * Auth helper — quản lý token và thông tin người dùng trên client.
- * Lưu trữ bằng localStorage để đơn giản cho giai đoạn kiểm thử.
- * Production nên chuyển sang httpOnly cookie.
+ * Auth helper — quản lý thông tin người dùng trên client.
+ * Lưu ý: Token được quản lý bằng HttpOnly Cookie từ Backend để bảo mật tối đa.
+ * localStorage chỉ dùng để lưu trữ thông tin hiển thị (Tên, Email, Role).
  */
 
 export interface AuthUser {
-  id: number;
+  id: string | number;
   email: string;
   fullName: string;
   role: { id: number; name: string } | null;
 }
 
-const TOKEN_KEY = "access_token";
 const USER_KEY = "auth_user";
 
+/** Lưu thông tin người dùng vào localStorage */
 export function saveAuth(token: string, user: AuthUser) {
-  localStorage.setItem(TOKEN_KEY, token);
-  localStorage.setItem(USER_KEY, JSON.stringify(user));
+  // Chúng ta không lưu token vào cookie từ client nữa vì Backend đã set httpOnly cookie.
+  // localStorage chỉ lưu user info để UI hiển thị nhanh.
+  if (typeof window !== "undefined") {
+    localStorage.setItem(USER_KEY, JSON.stringify(user));
+  }
 }
 
-export function getToken(): string | null {
-  if (typeof window === "undefined") return null;
-  return localStorage.getItem(TOKEN_KEY);
-}
-
+/** Lấy thông tin người dùng */
 export function getAuthUser(): AuthUser | null {
   if (typeof window === "undefined") return null;
   const raw = localStorage.getItem(USER_KEY);
@@ -35,16 +34,20 @@ export function getAuthUser(): AuthUser | null {
   }
 }
 
+/** Xóa thông tin người dùng (Đăng xuất ở Client) */
 export function clearAuth() {
-  localStorage.removeItem(TOKEN_KEY);
-  localStorage.removeItem(USER_KEY);
+  if (typeof window !== "undefined") {
+    localStorage.removeItem(USER_KEY);
+  }
 }
 
+/** Kiểm tra trạng thái đăng nhập dựa trên sự tồn tại của User Info */
 export function isLoggedIn(): boolean {
-  return !!getToken();
+  if (typeof window === "undefined") return false;
+  return !!localStorage.getItem(USER_KEY);
 }
 
-/** Trả về role name ("student" | "tutor" | null) */
+/** Trả về role name ("student" | "tutor" | "admin" | null) */
 export function getUserRole(): string | null {
   return getAuthUser()?.role?.name ?? null;
 }

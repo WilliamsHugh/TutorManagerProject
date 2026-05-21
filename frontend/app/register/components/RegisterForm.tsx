@@ -149,6 +149,7 @@ export default function RegisterForm() {
             const res = await fetch(endpoint, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
+                credentials: "include",
                 body: JSON.stringify(payload)
             });
 
@@ -217,7 +218,7 @@ export default function RegisterForm() {
                     >
                         <div className="flex items-start gap-3.5">
                             <div
-                                className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0"
+                                className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
                                 style={{
                                     backgroundColor: selectedRole === "student" ? "var(--primary)" : "var(--muted)",
                                     color: selectedRole === "student" ? "white" : "var(--muted-foreground)",
@@ -259,7 +260,7 @@ export default function RegisterForm() {
                     >
                         <div className="flex items-start gap-3.5">
                             <div
-                                className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0"
+                                className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
                                 style={{
                                     backgroundColor: selectedRole === "tutor" ? "var(--primary)" : "var(--muted)",
                                     color: selectedRole === "tutor" ? "white" : "var(--muted-foreground)",
@@ -511,7 +512,7 @@ export default function RegisterForm() {
                                                 {subjects_selected.map((subject) => (
                                                     <span
                                                         key={subject}
-                                                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold flex-shrink-0"
+                                                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold shrink-0"
                                                         style={{
                                                             backgroundColor: "color-mix(in srgb, var(--primary) 15%, transparent)",
                                                             color: "var(--primary)",

@@ -1,6 +1,6 @@
 import { Clock3, MapPin, UserRound } from "lucide-react"
 
-import type { RequestItem } from "./types"
+import type { RequestItem } from "@/types/class_request"
 
 type RequestContactCardProps = {
   request: RequestItem

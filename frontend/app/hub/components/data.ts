@@ -1,4 +1,4 @@
-import type { RequestItem, TutorRecommendation } from "./types"
+import type { RequestItem, TutorRecommendation } from "@/types/class_request"
 
 export const requests: RequestItem[] = [
   {

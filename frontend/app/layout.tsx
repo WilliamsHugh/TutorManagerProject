@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
+import ClientLayOut from "@/components/ClientLayOut";
 import "./globals.css";
+import SessionTimeoutHandler from "@/components/auth/SessionTimeoutHandler";
 
 export const metadata: Metadata = {
   title: "TutorEdu – Khám Phá Tiềm Năng Cùng Gia Sư Xuất Sắc",
@@ -14,7 +16,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="vi" className="h-full antialiased font-sans">
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        <SessionTimeoutHandler />
+        <ClientLayOut>{children}</ClientLayOut>
+      </body>
     </html>
   );
 }

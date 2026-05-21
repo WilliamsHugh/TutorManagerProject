@@ -51,6 +51,35 @@ export async function middleware(request: NextRequest) {
     }
   }
 
+  if (isDashboardRoute) {
+    if (!token) {
+      return NextResponse.redirect(new URL('/login', request.url));
+    }
+
+    try {
+      const secret = new TextEncoder().encode(JWT_SECRET);
+      const { payload } = await jwtVerify(token, secret);
+      const userRole = (payload as any).role;
+
+      // ✅ Chặn admin/staff hoàn toàn khỏi mọi route /dashboard/*
+      if (userRole === 'admin' || userRole === 'staff') {
+        return NextResponse.redirect(new URL('/hub/dashboard', request.url));
+      }
+
+      if (pathname.startsWith('/dashboard/tutor') && userRole !== 'tutor') {
+        return NextResponse.redirect(new URL('/403', request.url));
+      }
+      if (pathname.startsWith('/dashboard/student') && userRole !== 'student') {
+        return NextResponse.redirect(new URL('/403', request.url));
+      }
+    } catch (error) {
+      console.error('Middleware Dashboard JWT Error:', error);
+      const response = NextResponse.redirect(new URL('/login', request.url));
+      response.cookies.delete('access_token');
+      return response;
+    }
+  }
+
   // 4. Xử lý bảo vệ các route /staff/*
   if (isStaffRoute) {
     if (!token) {

@@ -39,9 +39,9 @@ export class AuthController {
     response.cookie('access_token', result.access_token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production', // Chỉ HTTPS trong production
-      sameSite: 'strict', // Ngăn chặn CSRF
+      sameSite: 'lax', // 'lax' cho phép cross-port trong development
       path: '/',
-      maxAge: 24 * 60 * 60 * 1000, // 1 ngày
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 ngày
     });
 
     return result;

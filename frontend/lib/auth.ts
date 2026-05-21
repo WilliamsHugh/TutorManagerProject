@@ -4,6 +4,31 @@
  * localStorage chỉ dùng để lưu trữ thông tin hiển thị (Tên, Email, Role).
  */
 
+import { jwtDecode } from "jwt-decode";
+
+interface JwtPayload {
+  sub: string;
+  email: string;
+  role: string;
+}
+
+/**
+ * Lấy role từ JWT cookie (decode phía client, không verify).
+ * Chỉ dùng để hiển thị UI — bảo vệ thật vẫn do middleware.ts và backend guard.
+ */
+export function getUserRoleFromToken(): string | null {
+  if (typeof window === 'undefined') return null;
+  // Đọc cookie (non-httpOnly cookie dùng để UI đọc role)
+  const match = document.cookie.match(/(?:^|;\s*)access_token=([^;]*)/);
+  if (!match) return null;
+  try {
+    const decoded = jwtDecode<JwtPayload>(match[1]);
+    return decoded.role ?? null;
+  } catch {
+    return null;
+  }
+}
+
 export interface AuthUser {
   id: string | number;
   email: string;

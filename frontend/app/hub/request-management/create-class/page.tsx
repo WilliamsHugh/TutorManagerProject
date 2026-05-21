@@ -75,7 +75,7 @@ function CreateClassContent() {
           <StaffHeader current="Tạo lớp học" />
 
           <main className="px-5 py-3">
-            <section className="mx-auto w-full max-w-[820px]">
+            <section className="mx-auto w-full max-w-205">
               <Card className="rounded-xl border-border shadow-none">
                 <CardContent className="space-y-4 p-5">
                   <div className="flex flex-wrap items-start justify-between gap-3">
@@ -197,7 +197,7 @@ function CreateClassLoading() {
         <div className="min-w-0 flex-1">
           <StaffHeader current="Tạo lớp học" />
           <main className="px-5 py-3">
-            <section className="mx-auto w-full max-w-[820px]">
+            <section className="mx-auto w-full max-w-205">
               <Card className="rounded-xl border-border shadow-none">
                 <CardContent className="p-5">
                   <div className="h-7 w-56 rounded bg-muted" />

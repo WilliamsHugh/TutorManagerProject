@@ -4,7 +4,6 @@ import {
   Search, ShieldCheck, Calendar, Star,
   Award, Medal, BadgeCheck,
 } from "lucide-react";
-import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 
 // ─── Data ────────────────────────────────────────────────────────────────────
@@ -73,8 +72,6 @@ export default function AboutPage() {
       className="min-h-screen"
       style={{ backgroundColor: "var(--background)", fontFamily: "var(--font-family-body)" }}
     >
-      {/* ── Header ── */}
-      <Header />
 
       {/* ── Hero ── */}
       <section className="py-24 text-center text-white px-6 relative overflow-hidden" style={{ backgroundColor: "var(--primary)" }}>
@@ -107,7 +104,7 @@ export default function AboutPage() {
           <img
             src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80"
             alt="Students studying in library"
-            className="rounded-2xl shadow-xl object-cover w-full h-[400px]"
+            className="rounded-2xl shadow-xl object-cover w-full h-100"
           />
         </div>
       </section>

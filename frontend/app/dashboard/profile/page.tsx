@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { User, Phone, Mail, Shield, Save, Loader2, CheckCircle } from "lucide-react";
 import { getAuthUser, saveAuth, isLoggedIn } from "@/lib/auth";
-import Header from "../../../components/Header";
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:3001";
 
@@ -91,7 +90,6 @@ export default function ProfilePage() {
 
     return (
         <div className="min-h-screen bg-[#f8fafc]">
-            <Header />
 
             <main className="mx-auto w-full max-w-4xl px-4 py-12">
                 <div className="mb-10">

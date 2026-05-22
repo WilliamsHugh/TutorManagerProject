@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { ChevronDown, SlidersHorizontal, X } from "lucide-react";
-import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import Sidebar from "@/components/Sidebar";
 import FilterWidget from "@/components/FilterWidget";
@@ -80,8 +79,6 @@ export default function ListingLayout<T>({
       className="min-h-screen"
       style={{ backgroundColor: "var(--background)", fontFamily: "var(--font-family-body)" }}
     >
-      <Header />
-
       {/* ── Page Hero ── */}
       <section
         className="py-14 text-center text-white relative overflow-hidden"

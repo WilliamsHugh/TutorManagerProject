@@ -8,7 +8,6 @@ import { isLoggedIn, getUserRole } from "@/lib/auth";
 import { TutorRequestForm } from "./components/TutorRequestForm";
 import { TutorRequestPageHeader } from "./components/TutorRequestPageHeader";
 import { TutorSuggestionsPanel } from "./components/TutorSuggestionsPanel";
-import Header from "../../../components/Header";
 import { tutors } from "./data";
 
 export default function StudentDashboardPage() {
@@ -67,7 +66,6 @@ export default function StudentDashboardPage() {
       className="min-h-screen bg-[#f8fafc] text-[#0f172a]"
       style={{ fontFamily: "var(--font-family-body)" }}
     >
-      <Header />
 
       <main className="mx-auto w-full max-w-332 px-4 py-6 sm:px-6 lg:px-8">
         <TutorRequestPageHeader />

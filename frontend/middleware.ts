@@ -80,7 +80,13 @@ export async function middleware(request: NextRequest) {
       const { payload } = await jwtVerify(token, secret);
       const userRole = (payload as any).role;
 
-      if ((pathname.startsWith('/dashboard/tutor') || pathname.startsWith('/tutors')) && userRole !== 'tutor') {
+      if (pathname.startsWith('/dashboard/tutor')) {
+        if (userRole !== 'tutor') {
+          return NextResponse.redirect(new URL('/403', request.url));
+        }
+        return NextResponse.redirect(new URL('/tutors/dashboard', request.url));
+      }
+      if (pathname.startsWith('/tutors') && userRole !== 'tutor') {
         return NextResponse.redirect(new URL('/403', request.url));
       }
       if ((pathname.startsWith('/dashboard/student') || pathname.startsWith('/student')) && userRole !== 'student') {
@@ -101,7 +107,7 @@ export async function middleware(request: NextRequest) {
       const userRole = (payload as any).role;
       
       if (userRole === 'tutor') return NextResponse.redirect(new URL('/tutors/dashboard', request.url));
-      if (userRole === 'student') return NextResponse.redirect(new URL('/student/dashboard', request.url));
+      if (userRole === 'student') return NextResponse.redirect(new URL('/dashboard/student', request.url));
       if (userRole === 'admin') return NextResponse.redirect(new URL('/hub/dashboard', request.url));
       if (userRole === 'staff') return NextResponse.redirect(new URL('/hub/request-management', request.url));
     } catch {

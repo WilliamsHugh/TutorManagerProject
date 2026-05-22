@@ -1,3 +1,5 @@
+import { getToken } from './auth';
+
 const API_URL = '/api';
 
 export async function registerStudent(data: {
@@ -51,8 +53,6 @@ export async function login(data: { email: string; password: string }) {
   }
   return res.json();
 }
-
-import { getToken } from './auth';
 
 // Hàm lấy thông tin chung cho Dashboard
 export async function getTutorStats() {

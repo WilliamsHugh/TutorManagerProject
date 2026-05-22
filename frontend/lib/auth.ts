@@ -12,13 +12,13 @@ export interface AuthUser {
 }
 
 const USER_KEY = "auth_user";
+const TOKEN_KEY = "access_token";
 
 /** Lưu thông tin người dùng vào localStorage */
 export function saveAuth(token: string, user: AuthUser) {
-  // Chúng ta không lưu token vào cookie từ client nữa vì Backend đã set httpOnly cookie.
-  // localStorage chỉ lưu user info để UI hiển thị nhanh.
   if (typeof window !== "undefined") {
     localStorage.setItem(USER_KEY, JSON.stringify(user));
+    localStorage.setItem(TOKEN_KEY, token);
   }
 }
 
@@ -34,10 +34,17 @@ export function getAuthUser(): AuthUser | null {
   }
 }
 
+/** Lấy token từ localStorage cho các yêu cầu API */
+export function getToken(): string | null {
+  if (typeof window === "undefined") return null;
+  return localStorage.getItem(TOKEN_KEY);
+}
+
 /** Xóa thông tin người dùng (Đăng xuất ở Client) */
 export function clearAuth() {
   if (typeof window !== "undefined") {
     localStorage.removeItem(USER_KEY);
+    localStorage.removeItem(TOKEN_KEY);
   }
 }
 

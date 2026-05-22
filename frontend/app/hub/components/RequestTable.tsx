@@ -104,5 +104,7 @@ function getStatusClasses(status: RequestStatus) {
       return "bg-secondary text-secondary-foreground border-secondary"
     case "Đã ghép":
       return "bg-green-600 text-white border-green-600"
+    case "Đã hủy":
+      return "bg-slate-500 text-white border-slate-500"
   }
 }

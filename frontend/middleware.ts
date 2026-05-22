@@ -8,6 +8,8 @@ if (!JWT_SECRET) {
   throw new Error('JWT_SECRET environment variable is not defined');
 }
 
+const TEMP_DISABLE_STAFF_AUTH = true;
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   
@@ -22,6 +24,11 @@ export async function middleware(request: NextRequest) {
   const isStaffRoute = pathname.startsWith('/staff');
   
   const isClientAuthRoute = pathname === '/login' || pathname === '/register';
+
+  // Temporary frontend preview mode: allow Staff/Hub screens without login.
+  if (TEMP_DISABLE_STAFF_AUTH && (isHubRoute || isStaffRoute)) {
+    return NextResponse.next();
+  }
 
   // 3. Xử lý bảo vệ các route nội bộ của Hub (/hub/*)
   if (isHubRoute && !isHubLoginRoute) {
@@ -41,7 +48,7 @@ export async function middleware(request: NextRequest) {
 
       // Trang Admin Dashboard chỉ cho phép role admin
       if (pathname === '/hub/dashboard' && userRole !== 'admin') {
-        return NextResponse.redirect(new URL('/hub/request-management', request.url));
+        return NextResponse.redirect(new URL('/staff/request-management', request.url));
       }
     } catch (error) {
       console.error('Middleware Hub JWT Error:', error);
@@ -137,7 +144,7 @@ export async function middleware(request: NextRequest) {
       if (userRole === 'tutor') return NextResponse.redirect(new URL('/dashboard/tutor', request.url));
       if (userRole === 'student') return NextResponse.redirect(new URL('/dashboard/student', request.url));
       if (userRole === 'admin') return NextResponse.redirect(new URL('/hub/dashboard', request.url));
-      if (userRole === 'staff') return NextResponse.redirect(new URL('/hub/request-management', request.url));
+      if (userRole === 'staff') return NextResponse.redirect(new URL('/staff/request-management', request.url));
     } catch {
       // Token hỏng -> cho phép ở lại trang đăng nhập để đăng nhập lại
     }
@@ -151,7 +158,7 @@ export async function middleware(request: NextRequest) {
       const userRole = (payload as any).role;
       
       if (userRole === 'admin') return NextResponse.redirect(new URL('/hub/dashboard', request.url));
-      if (userRole === 'staff') return NextResponse.redirect(new URL('/hub/request-management', request.url));
+      if (userRole === 'staff') return NextResponse.redirect(new URL('/staff/request-management', request.url));
       if (userRole === 'tutor' || userRole === 'student') return NextResponse.redirect(new URL('/403', request.url));
     } catch {
       // Token hỏng -> cho phép đăng nhập lại

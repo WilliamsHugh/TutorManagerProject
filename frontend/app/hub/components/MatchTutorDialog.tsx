@@ -10,20 +10,39 @@ import { RequestDetailCard } from "./RequestDetailCard"
 import { TutorRecommendationCard } from "./TutorRecommendationCard"
 import type { RequestItem, RequestStatus, TutorRecommendation } from "@/types/class_request"
 
-const statusOptions: RequestStatus[] = ["Chờ xử lý", "Đang xử lý", "Đã ghép"]
+const statusOptions: RequestStatus[] = ["Chờ xử lý", "Đang xử lý", "Đã ghép", "Đã hủy"]
 
 type MatchTutorDialogProps = {
   request: RequestItem
   tutors: TutorRecommendation[]
+  loadingTutors?: boolean
+  onRefreshTutors?: () => void
+  onStatusChange?: (status: RequestStatus) => Promise<void>
   onClose: () => void
 }
 
 export function MatchTutorDialog({
   request,
   tutors,
+  loadingTutors = false,
+  onRefreshTutors,
+  onStatusChange,
   onClose,
 }: MatchTutorDialogProps) {
   const [status, setStatus] = useState<RequestStatus>(request.status)
+  const [savingStatus, setSavingStatus] = useState(false)
+
+  async function handleStatusChange(value: RequestStatus) {
+    setStatus(value)
+    if (!onStatusChange) return
+
+    setSavingStatus(true)
+    try {
+      await onStatusChange(value)
+    } finally {
+      setSavingStatus(false)
+    }
+  }
 
   return (
     <div
@@ -53,10 +72,9 @@ export function MatchTutorDialog({
                 <span className="sr-only">Trạng thái yêu cầu</span>
                 <select
                   className="h-8 appearance-none rounded border border-border bg-white pl-3 pr-8 text-xs font-semibold outline-none transition-colors hover:bg-muted focus:border-ring focus:ring-2 focus:ring-ring/30"
+                  disabled={savingStatus}
                   value={status}
-                  onChange={(event) =>
-                    setStatus(event.target.value as RequestStatus)
-                  }
+                  onChange={(event) => handleStatusChange(event.target.value as RequestStatus)}
                 >
                   {statusOptions.map((option) => (
                     <option key={option} value={option}>
@@ -96,11 +114,11 @@ export function MatchTutorDialog({
                   <ChevronDown size={11} />
                 </Button>
                 <Button className="h-7 rounded text-[11px]" variant="outline">
-                  Toán học
+                  {request.subject}
                   <ChevronDown size={11} />
                 </Button>
                 <Button className="h-7 rounded text-[11px]" variant="outline">
-                  Quận 1
+                  {request.area}
                   <ChevronDown size={11} />
                 </Button>
                 <label className="flex h-7 items-center gap-2 rounded border border-border px-2 text-[11px] font-semibold">
@@ -111,23 +129,40 @@ export function MatchTutorDialog({
                   />
                   Ưu tiên khớp lịch rảnh
                 </label>
-                <Button className="h-7 rounded text-[11px]" variant="outline">
+                <Button
+                  className="h-7 rounded text-[11px]"
+                  type="button"
+                  variant="outline"
+                  onClick={onRefreshTutors}
+                >
                   Làm mới gợi ý
                 </Button>
               </div>
             </div>
 
             <div className="mt-3 grid gap-3 md:grid-cols-2">
-              {tutors.map((tutor) => (
-                <TutorRecommendationCard
-                  key={tutor.name}
-                  actionLabel="Ghép lớp"
-                  href={`/hub/request-management/create-class?requestId=${encodeURIComponent(
-                    request.id
-                  )}&tutorName=${encodeURIComponent(tutor.name)}`}
-                  tutor={tutor}
-                />
-              ))}
+              {loadingTutors ? (
+                <div className="col-span-full rounded border border-dashed border-border p-4 text-xs text-muted-foreground">
+                  Đang tải danh sách gia sư phù hợp...
+                </div>
+              ) : tutors.length ? (
+                tutors.map((tutor) => (
+                  <TutorRecommendationCard
+                    key={tutor.rawTutorId}
+                    actionLabel="Ghép lớp"
+                    href={`/staff/request-management/create-class?requestId=${encodeURIComponent(
+                      request.rawId
+                    )}&tutorId=${encodeURIComponent(tutor.rawTutorId)}&tutorName=${encodeURIComponent(
+                      tutor.name
+                    )}`}
+                    tutor={tutor}
+                  />
+                ))
+              ) : (
+                <div className="col-span-full rounded border border-dashed border-border p-4 text-xs text-muted-foreground">
+                  Chưa có gia sư phù hợp theo dữ liệu hiện tại.
+                </div>
+              )}
             </div>
           </div>
         </div>

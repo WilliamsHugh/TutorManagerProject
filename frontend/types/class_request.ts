@@ -1,7 +1,44 @@
-export type RequestStatus = "Chờ xử lý" | "Đang xử lý" | "Đã ghép"
+export type ApiRequestStatus = "pending" | "processing" | "matched" | "cancelled"
+export type RequestStatus = "Chờ xử lý" | "Đang xử lý" | "Đã ghép" | "Đã hủy"
+
+export type ApiUser = {
+  id: string
+  fullName?: string
+  email?: string
+  phone?: string | null
+}
+
+export type ApiStudent = {
+  id: string
+  gradeLevel?: string | null
+  schoolName?: string | null
+  parentName?: string | null
+  parentPhone?: string | null
+  user?: ApiUser
+}
+
+export type ApiSubject = {
+  id: string
+  name: string
+  gradeLevel?: string | null
+}
+
+export type ApiClassRequest = {
+  id: string
+  createdAt: string
+  updatedAt?: string
+  preferredArea?: string | null
+  preferredSchedule?: string | null
+  requirements?: string | null
+  status: ApiRequestStatus
+  student?: ApiStudent
+  subject?: ApiSubject
+  handledBy?: ApiUser | null
+}
 
 export type RequestItem = {
   id: string
+  rawId: string
   createdAt: string
   name: string
   role: string
@@ -14,7 +51,26 @@ export type RequestItem = {
   status: RequestStatus
 }
 
+export type ApiTutorRecommendation = {
+  tutor: {
+    id: string
+    approvalStatus?: string
+    availableAreas?: string | null
+    educationLevel?: string | null
+    major?: string | null
+    experience?: string | null
+    user?: ApiUser
+  }
+  subject?: ApiSubject
+  proficiencyLevel?: string | null
+  yearsExperience?: number | null
+  score: number
+  areaMatched: boolean
+}
+
 export type TutorRecommendation = {
+  id: string
+  rawTutorId: string
   name: string
   meta: string
   match: string

@@ -30,7 +30,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:3001";
+const BACKEND_URL =
+    process.env.NEXT_PUBLIC_API_URL ??
+    (process.env.NEXT_PUBLIC_BACKEND_URL
+        ? `${process.env.NEXT_PUBLIC_BACKEND_URL.replace(/\/$/, "")}/api`
+        : "http://localhost:3001/api");
 
 type ViewType = "dashboard" | "users" | "tutors" | "subjects" | "reports" | "create-account";
 
@@ -55,6 +59,9 @@ export default function AdminDashboardPage() {
   const [searchUser, setSearchUser] = useState("");
   const [filterRole, setFilterRole] = useState("all");
   const [filterTutorStatus, setFilterTutorStatus] = useState("all");
+    useEffect(() => {
+        setUser({ fullName: "Staff Preview", email: "staff@preview.local" });
+    }, [router]);
 
   // Modals / Editing States
   const [selectedTutor, setSelectedTutor] = useState<any | null>(null);
@@ -1036,10 +1043,71 @@ export default function AdminDashboardPage() {
                   <div className="text-3xl font-extrabold text-yellow-500 pt-2">{stats.activeClasses}</div>
                 </div>
 
-                <div className="bg-[#1e293b] p-5 rounded-lg border border-slate-800 text-center space-y-1">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">STT 2</span>
-                  <h4 className="text-xs text-slate-300 font-semibold h-8 flex items-center justify-center">Tổng số lớp hoàn thành</h4>
-                  <div className="text-3xl font-extrabold text-green-400 pt-2">{stats.completedClasses}</div>
+                {/* Navigation Blocks */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {/* Block 1 */}
+                    <div
+                        className="p-6 rounded-xl border space-y-4 hover:border-yellow-500/50 transition-all group"
+                        style={{ backgroundColor: "#1e293b", borderColor: "rgba(255,255,255,0.08)" }}
+                    >
+                        <div
+                            className="w-10 h-10 rounded-lg flex items-center justify-center"
+                            style={{ backgroundColor: "rgba(245,158,11,0.12)" }}
+                        >
+                            <Users size={20} className="text-yellow-500" />
+                        </div>
+                        <h3 className="font-bold text-lg">Quản lý Yêu cầu (Staff)</h3>
+                        <p className="text-sm opacity-60 leading-relaxed">
+                            Xem danh sách yêu cầu tìm gia sư từ học viên, so khớp và tạo lớp mới.
+                        </p>
+                        <button
+                            onClick={() => router.push("/staff/request-management")}
+                            className="flex items-center gap-1.5 text-sm font-semibold text-yellow-500 border-none bg-transparent cursor-pointer group-hover:underline"
+                        >
+                            Truy cập quản lý
+                            <ArrowRight size={16} />
+                        </button>
+                    </div>
+
+                    {/* Block 2 */}
+                    <div
+                        className="p-6 rounded-xl border space-y-4 hover:border-yellow-500/50 transition-all group"
+                        style={{ backgroundColor: "#1e293b", borderColor: "rgba(255,255,255,0.08)" }}
+                    >
+                        <div
+                            className="w-10 h-10 rounded-lg flex items-center justify-center"
+                            style={{ backgroundColor: "rgba(59,130,246,0.12)" }}
+                        >
+                            <BookOpen size={20} className="text-blue-400" />
+                        </div>
+                        <h3 className="font-bold text-lg">Duyệt hồ sơ gia sư</h3>
+                        <p className="text-sm opacity-60 leading-relaxed">
+                            Kiểm duyệt, phê duyệt hoặc từ chối các yêu cầu đăng ký hồ sơ giảng dạy của gia sư mới.
+                        </p>
+                        <span className="text-xs font-semibold px-2 py-1 rounded bg-slate-800 text-slate-400 uppercase tracking-widest inline-block">
+                            Tính năng phát triển tiếp theo
+                        </span>
+                    </div>
+
+                    {/* Block 3 */}
+                    <div
+                        className="p-6 rounded-xl border space-y-4 hover:border-yellow-500/50 transition-all group"
+                        style={{ backgroundColor: "#1e293b", borderColor: "rgba(255,255,255,0.08)" }}
+                    >
+                        <div
+                            className="w-10 h-10 rounded-lg flex items-center justify-center"
+                            style={{ backgroundColor: "rgba(168,85,247,0.12)" }}
+                        >
+                            <Settings size={20} className="text-purple-400" />
+                        </div>
+                        <h3 className="font-bold text-lg">Cấu hình Hệ thống</h3>
+                        <p className="text-sm opacity-60 leading-relaxed">
+                            Điều chỉnh biểu phí môn học, quản lý danh sách môn, khóa/mở khóa các tài khoản người dùng.
+                        </p>
+                        <span className="text-xs font-semibold px-2 py-1 rounded bg-slate-800 text-slate-400 uppercase tracking-widest inline-block">
+                            Tính năng phát triển tiếp theo
+                        </span>
+                    </div>
                 </div>
 
                 <div className="bg-[#1e293b] p-5 rounded-lg border border-slate-800 text-center space-y-1">

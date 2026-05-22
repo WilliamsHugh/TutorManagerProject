@@ -32,9 +32,8 @@ import { Input } from "@/components/ui/input";
 
 const BACKEND_URL =
     process.env.NEXT_PUBLIC_API_URL ??
-    (process.env.NEXT_PUBLIC_BACKEND_URL
-        ? `${process.env.NEXT_PUBLIC_BACKEND_URL.replace(/\/$/, "")}/api`
-        : "http://localhost:3001/api");
+    process.env.NEXT_PUBLIC_BACKEND_URL ??
+    "http://localhost:3001/api";
 
 type ViewType = "dashboard" | "users" | "tutors" | "subjects" | "reports" | "create-account";
 

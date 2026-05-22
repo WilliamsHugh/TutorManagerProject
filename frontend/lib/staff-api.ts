@@ -6,7 +6,8 @@ const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL
 
 export const STAFF_API_URL =
   explicitApiUrl ??
-  (backendUrl ? `${backendUrl.replace(/\/$/, "")}/api` : "http://localhost:3001/api")
+  backendUrl ??
+  "http://localhost:3001/api"
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${STAFF_API_URL}${path}`, {

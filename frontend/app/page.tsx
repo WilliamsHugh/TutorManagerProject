@@ -6,10 +6,12 @@ import TutorsSection from "@/components/TutorsSection";
 import RolesSection from "@/components/RolesSection";
 import CTASection from "@/components/CTASection";
 import Footer from "@/components/Footer";
+import AdminGuard from "@/app/hub/components/AdminGuard";
 
 export default function Home() {
   return (
     <>
+      <AdminGuard />
       <Header />
       <main className="flex-1">
         <HeroSection />

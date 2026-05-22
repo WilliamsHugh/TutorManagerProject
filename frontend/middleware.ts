@@ -2,7 +2,11 @@ import { NextResponse, NextRequest } from 'next/server';
 import { jwtVerify } from 'jose';
 
 // Phải trùng với JWT_SECRET trong backend
-const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-this';
+const JWT_SECRET = process.env.JWT_SECRET;
+
+if (!JWT_SECRET) {
+  throw new Error('JWT_SECRET environment variable is not defined');
+}
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -42,6 +46,35 @@ export async function middleware(request: NextRequest) {
     } catch (error) {
       console.error('Middleware Hub JWT Error:', error);
       const response = NextResponse.redirect(new URL('/hub/login', request.url));
+      response.cookies.delete('access_token');
+      return response;
+    }
+  }
+
+  if (isDashboardRoute) {
+    if (!token) {
+      return NextResponse.redirect(new URL('/login', request.url));
+    }
+
+    try {
+      const secret = new TextEncoder().encode(JWT_SECRET);
+      const { payload } = await jwtVerify(token, secret);
+      const userRole = (payload as any).role;
+
+      // ✅ Chặn admin/staff hoàn toàn khỏi mọi route /dashboard/*
+      if (userRole === 'admin' || userRole === 'staff') {
+        return NextResponse.redirect(new URL('/hub/dashboard', request.url));
+      }
+
+      if (pathname.startsWith('/dashboard/tutor') && userRole !== 'tutor') {
+        return NextResponse.redirect(new URL('/403', request.url));
+      }
+      if (pathname.startsWith('/dashboard/student') && userRole !== 'student') {
+        return NextResponse.redirect(new URL('/403', request.url));
+      }
+    } catch (error) {
+      console.error('Middleware Dashboard JWT Error:', error);
+      const response = NextResponse.redirect(new URL('/login', request.url));
       response.cookies.delete('access_token');
       return response;
     }

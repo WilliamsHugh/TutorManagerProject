@@ -518,7 +518,7 @@ export default function AdminDashboardPage() {
               <div
                 className="p-6 rounded-xl border space-y-4 hover:border-yellow-500/50 transition-all group cursor-pointer"
                 style={{ backgroundColor: "#1e293b", borderColor: "rgba(255,255,255,0.08)" }}
-                onClick={() => router.push("/hub/request-management")}
+                onClick={() => router.push("/staff/request-management")}
               >
                 <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-yellow-500/10">
                   <FileText size={20} className="text-yellow-500" />

@@ -1,6 +1,6 @@
 import { Card, CardContent } from "@/components/ui/card"
 
-import { StaffShell } from "../../hub/components/StaffShell"
+import { StaffShell } from "../_components/StaffShell"
 
 export default function StaffTutorsPage() {
   return (

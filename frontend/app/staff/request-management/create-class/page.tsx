@@ -12,14 +12,8 @@ import { createClass, getClassRequest } from "@/lib/staff-api"
 import type { RequestItem } from "@/types/class_request"
 import { mapClassRequest } from "@/types/staff"
 
-<<<<<<< HEAD
-import { requests, tutors } from "@/app/hub/components/data"
-import { StaffHeader } from "@/app/hub/components/StaffHeader"
-import { StaffSidebar } from "@/app/hub/components/StaffSidebar"
-=======
-import { requests as mockRequests } from "../../../hub/components/data"
-import { StaffShell } from "../../../hub/components/StaffShell"
->>>>>>> origin/feature/staff-class-module
+import { requests as mockRequests } from "../../_components/mock-data"
+import { StaffShell } from "../../_components/StaffShell"
 
 type ClassForm = {
   location: string
@@ -155,28 +149,6 @@ function CreateClassContent() {
               </div>
             ) : null}
 
-<<<<<<< HEAD
-          <main className="px-5 py-3">
-            <section className="mx-auto w-full max-w-205">
-              <Card className="rounded-xl border-border shadow-none">
-                <CardContent className="space-y-4 p-5">
-                  <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div className="space-y-1.5">
-                      <h1 className="text-2xl font-bold tracking-tight">
-                        Tạo Lớp Học Mới
-                      </h1>
-                      <div className="flex flex-wrap items-center gap-2">
-                        <p className="text-xs text-muted-foreground">
-                          Dựa trên yêu cầu ghép lớp {request.id}
-                        </p>
-                        <Badge className="gap-2 rounded-full bg-green-100 px-3 py-0.5 text-[11px] text-green-700 hover:bg-green-100">
-                          <span className="size-2 rounded-full bg-current" />
-                          Đã duyệt gia sư
-                        </Badge>
-                      </div>
-                    </div>
-                  </div>
-=======
             <form className="space-y-4" onSubmit={handleSubmit}>
               <FormSection
                 description="Nhóm dữ liệu chỉ đọc để đảm bảo tính toàn vẹn khi tạo lớp học."
@@ -192,7 +164,6 @@ function CreateClassContent() {
                   />
                 </div>
               </FormSection>
->>>>>>> origin/feature/staff-class-module
 
               <FormSection
                 description="Hoàn thiện các thông tin vận hành lớp trước khi xác nhận tạo mới."
@@ -261,34 +232,6 @@ function CreateClassContent() {
 
 function CreateClassLoading() {
   return (
-<<<<<<< HEAD
-    <div className="min-h-screen bg-[#f4f7fb] text-foreground">
-      <div className="flex min-h-screen">
-        <StaffSidebar />
-        <div className="min-w-0 flex-1">
-          <StaffHeader current="Tạo lớp học" />
-          <main className="px-5 py-3">
-            <section className="mx-auto w-full max-w-205">
-              <Card className="rounded-xl border-border shadow-none">
-                <CardContent className="p-5">
-                  <div className="h-7 w-56 rounded bg-muted" />
-                  <div className="mt-3 h-4 w-80 rounded bg-muted" />
-                  <div className="mt-5 grid gap-3 md:grid-cols-2">
-                    {Array.from({ length: 8 }).map((_, index) => (
-                      <div key={index} className="space-y-1.5">
-                        <div className="h-3.5 w-28 rounded bg-muted" />
-                        <div className="h-9 rounded-md bg-input" />
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </section>
-          </main>
-        </div>
-      </div>
-    </div>
-=======
     <StaffShell current="Tạo lớp học">
       <section className="mx-auto w-full max-w-[820px]">
         <Card className="rounded-xl border-border shadow-none">
@@ -307,7 +250,6 @@ function CreateClassLoading() {
         </Card>
       </section>
     </StaffShell>
->>>>>>> origin/feature/staff-class-module
   )
 }
 

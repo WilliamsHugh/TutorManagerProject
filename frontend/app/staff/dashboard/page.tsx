@@ -2,7 +2,7 @@ import { BookOpen, FileText, GraduationCap, UsersRound } from "lucide-react"
 
 import { Card, CardContent } from "@/components/ui/card"
 
-import { StaffShell } from "../../hub/components/StaffShell"
+import { StaffShell } from "../_components/StaffShell"
 
 const stats = [
   { label: "Yêu cầu cần xử lý", value: "5", icon: FileText },

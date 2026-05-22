@@ -14,10 +14,10 @@ import {
   requestStatusValues,
 } from "@/types/staff"
 
-import { MatchTutorDialog } from "../../hub/components/MatchTutorDialog"
-import { RequestManagementPanel } from "../../hub/components/RequestManagementPanel"
-import { StaffShell } from "../../hub/components/StaffShell"
-import { requests as mockRequests, tutors as mockTutors } from "../../hub/components/data"
+import { MatchTutorDialog } from "../_components/MatchTutorDialog"
+import { RequestManagementPanel } from "../_components/RequestManagementPanel"
+import { StaffShell } from "../_components/StaffShell"
+import { requests as mockRequests, tutors as mockTutors } from "../_components/mock-data"
 
 export default function RequestManagementPage() {
   const [loading, setLoading] = useState(true)

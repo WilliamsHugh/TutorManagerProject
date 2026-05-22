@@ -10,8 +10,8 @@ import { getClasses } from "@/lib/staff-api"
 import type { StaffClassItem } from "@/types/staff"
 import { mapStaffClass } from "@/types/staff"
 
-import { StaffShell } from "../../hub/components/StaffShell"
-import { mockStaffClasses } from "../mock-classes"
+import { StaffShell } from "../_components/StaffShell"
+import { mockStaffClasses } from "../_components/mock-data"
 
 export default function StaffClassesPage() {
   const [classes, setClasses] = useState<StaffClassItem[]>([])

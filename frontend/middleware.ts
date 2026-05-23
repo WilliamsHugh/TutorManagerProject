@@ -2,7 +2,13 @@ import { NextResponse, NextRequest } from 'next/server';
 import { jwtVerify } from 'jose';
 
 // Phải trùng với JWT_SECRET trong backend
-const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-this';
+const JWT_SECRET = process.env.JWT_SECRET;
+
+if (!JWT_SECRET) {
+  throw new Error('JWT_SECRET environment variable is not defined');
+}
+
+const TEMP_DISABLE_STAFF_AUTH = true;
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -18,6 +24,11 @@ export async function middleware(request: NextRequest) {
   const isStaffRoute = pathname.startsWith('/staff') || pathname.startsWith('/dashboard/admin');
   
   const isClientAuthRoute = pathname === '/login' || pathname === '/register';
+
+  // Temporary frontend preview mode: allow Staff/Hub screens without login.
+  if (TEMP_DISABLE_STAFF_AUTH && (isHubRoute || isStaffRoute)) {
+    return NextResponse.next();
+  }
 
   // 3. Xử lý bảo vệ các route nội bộ của Hub (/hub/*)
   if (isHubRoute && !isHubLoginRoute) {
@@ -37,11 +48,40 @@ export async function middleware(request: NextRequest) {
 
       // Trang Admin Dashboard chỉ cho phép role admin
       if (pathname === '/hub/dashboard' && userRole !== 'admin') {
-        return NextResponse.redirect(new URL('/hub/request-management', request.url));
+        return NextResponse.redirect(new URL('/staff/request-management', request.url));
       }
     } catch (error) {
       console.error('Middleware Hub JWT Error:', error);
       const response = NextResponse.redirect(new URL('/hub/login', request.url));
+      response.cookies.delete('access_token');
+      return response;
+    }
+  }
+
+  if (isDashboardRoute) {
+    if (!token) {
+      return NextResponse.redirect(new URL('/login', request.url));
+    }
+
+    try {
+      const secret = new TextEncoder().encode(JWT_SECRET);
+      const { payload } = await jwtVerify(token, secret);
+      const userRole = (payload as any).role;
+
+      // ✅ Chặn admin/staff hoàn toàn khỏi mọi route /dashboard/*
+      if (userRole === 'admin' || userRole === 'staff') {
+        return NextResponse.redirect(new URL('/hub/dashboard', request.url));
+      }
+
+      if (pathname.startsWith('/dashboard/tutor') && userRole !== 'tutor') {
+        return NextResponse.redirect(new URL('/403', request.url));
+      }
+      if (pathname.startsWith('/dashboard/student') && userRole !== 'student') {
+        return NextResponse.redirect(new URL('/403', request.url));
+      }
+    } catch (error) {
+      console.error('Middleware Dashboard JWT Error:', error);
+      const response = NextResponse.redirect(new URL('/login', request.url));
       response.cookies.delete('access_token');
       return response;
     }
@@ -109,7 +149,7 @@ export async function middleware(request: NextRequest) {
       if (userRole === 'tutor') return NextResponse.redirect(new URL('/tutors/dashboard', request.url));
       if (userRole === 'student') return NextResponse.redirect(new URL('/dashboard/student', request.url));
       if (userRole === 'admin') return NextResponse.redirect(new URL('/hub/dashboard', request.url));
-      if (userRole === 'staff') return NextResponse.redirect(new URL('/hub/request-management', request.url));
+      if (userRole === 'staff') return NextResponse.redirect(new URL('/staff/request-management', request.url));
     } catch {
       // Token hỏng -> cho phép ở lại trang đăng nhập để đăng nhập lại
     }
@@ -123,7 +163,7 @@ export async function middleware(request: NextRequest) {
       const userRole = (payload as any).role;
       
       if (userRole === 'admin') return NextResponse.redirect(new URL('/hub/dashboard', request.url));
-      if (userRole === 'staff') return NextResponse.redirect(new URL('/hub/request-management', request.url));
+      if (userRole === 'staff') return NextResponse.redirect(new URL('/staff/request-management', request.url));
       if (userRole === 'tutor' || userRole === 'student') return NextResponse.redirect(new URL('/403', request.url));
     } catch {
       // Token hỏng -> cho phép đăng nhập lại

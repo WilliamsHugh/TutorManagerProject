@@ -74,8 +74,6 @@ export default function AboutPage() {
       className="min-h-screen"
       style={{ backgroundColor: "var(--background)", fontFamily: "var(--font-family-body)" }}
     >
-      {/* ── Header ── */}
-      <Header />
 
       {/* ── Hero ── */}
       <section className="py-24 text-center text-white px-6 relative overflow-hidden" style={{ backgroundColor: "var(--primary)" }}>
@@ -112,6 +110,7 @@ export default function AboutPage() {
             height={800}
             priority
             className="rounded-2xl shadow-xl object-cover w-full h-auto max-h-[400px]"
+            className="rounded-2xl shadow-xl object-cover w-full h-100"
           />
         </div>
       </section>

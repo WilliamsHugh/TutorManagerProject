@@ -13,9 +13,13 @@ async function bootstrap() {
   
   app.use(cookieParser());
 
-  // Enable CORS cho Next.js frontend
+  // Enable CORS - sử dụng environment variable
+  const allowedOrigins = process.env.ALLOWED_ORIGINS 
+    ? process.env.ALLOWED_ORIGINS.split(',')
+    : ['http://localhost:3000'];
+  
   app.enableCors({
-    origin: 'http://localhost:3000',
+    origin: allowedOrigins,
     credentials: true,
   });
 

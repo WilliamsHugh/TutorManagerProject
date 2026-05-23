@@ -1,8 +1,10 @@
 import type { RequestItem, TutorRecommendation } from "@/types/class_request"
+import type { StaffClassItem } from "@/types/staff"
 
 export const requests: RequestItem[] = [
   {
     id: "#RQ-10293",
+    rawId: "mock-rq-10293",
     createdAt: "12/10/2023",
     name: "Lê Trọng Tấn",
     role: "Phụ huynh",
@@ -16,6 +18,7 @@ export const requests: RequestItem[] = [
   },
   {
     id: "#RQ-10294",
+    rawId: "mock-rq-10294",
     createdAt: "13/10/2023",
     name: "Ngô Minh An",
     role: "Học viên",
@@ -29,6 +32,7 @@ export const requests: RequestItem[] = [
   },
   {
     id: "#RQ-10295",
+    rawId: "mock-rq-10295",
     createdAt: "13/10/2023",
     name: "Trần Mỹ Duyên",
     role: "Phụ huynh",
@@ -42,6 +46,7 @@ export const requests: RequestItem[] = [
   },
   {
     id: "#RQ-10296",
+    rawId: "mock-rq-10296",
     createdAt: "14/10/2023",
     name: "Phạm Hữu Đức",
     role: "Học viên",
@@ -55,6 +60,7 @@ export const requests: RequestItem[] = [
   },
   {
     id: "#RQ-10297",
+    rawId: "mock-rq-10297",
     createdAt: "15/10/2023",
     name: "Hoàng Gia Bảo",
     role: "Phụ huynh",
@@ -70,6 +76,8 @@ export const requests: RequestItem[] = [
 
 export const tutors: TutorRecommendation[] = [
   {
+    id: "mock-tutor-1",
+    rawTutorId: "mock-tutor-1",
     name: "Nguyễn Văn Bình",
     meta: "2 năm kinh nghiệm · Sinh viên ĐH Bách Khoa",
     match: "95% Match",
@@ -79,6 +87,8 @@ export const tutors: TutorRecommendation[] = [
     highlight: "bg-green-600",
   },
   {
+    id: "mock-tutor-2",
+    rawTutorId: "mock-tutor-2",
     name: "Trần Thị Cẩm",
     meta: "5 năm kinh nghiệm · Giáo viên THPT",
     match: "85% Match",
@@ -88,6 +98,8 @@ export const tutors: TutorRecommendation[] = [
     highlight: "bg-orange-500",
   },
   {
+    id: "mock-tutor-3",
+    rawTutorId: "mock-tutor-3",
     name: "Lê Minh Đạt",
     meta: "1.5 năm kinh nghiệm · ĐH Khoa Học Tự Nhiên",
     match: "92% Match",
@@ -97,6 +109,8 @@ export const tutors: TutorRecommendation[] = [
     highlight: "bg-green-600",
   },
   {
+    id: "mock-tutor-4",
+    rawTutorId: "mock-tutor-4",
     name: "Phan Ngọc Hà",
     meta: "3 năm kinh nghiệm · Cử nhân Sư phạm Toán",
     match: "90% Match",
@@ -104,5 +118,47 @@ export const tutors: TutorRecommendation[] = [
     tags: ["Toán", "Ôn thi", "Bình Thạnh", "Khớp 2/2 buổi"],
     status: "Có thể dạy thử",
     highlight: "bg-green-600",
+  },
+]
+
+export const mockStaffClasses: StaffClassItem[] = [
+  {
+    id: "mock-class-10293",
+    code: "CLASS-10293",
+    studentName: "Lê Trọng Tấn",
+    tutorName: "Nguyễn Văn Bình",
+    subject: "Toán học",
+    location: "Quận 1, TP.HCM",
+    feePerSession: "200.000",
+    totalSessions: "24 buổi",
+    status: "Đang học",
+    startDate: "15/11/2023",
+    endDate: "15/02/2024",
+  },
+  {
+    id: "mock-class-10295",
+    code: "CLASS-10295",
+    studentName: "Trần Mỹ Duyên",
+    tutorName: "Trần Thị Cẩm",
+    subject: "Vật lý",
+    location: "Quận 7, TP.HCM",
+    feePerSession: "250.000",
+    totalSessions: "20 buổi",
+    status: "Hoàn thành",
+    startDate: "01/10/2023",
+    endDate: "20/12/2023",
+  },
+  {
+    id: "mock-class-10297",
+    code: "CLASS-10297",
+    studentName: "Hoàng Gia Bảo",
+    tutorName: "Phan Ngọc Hà",
+    subject: "Hóa học",
+    location: "Phú Nhuận, TP.HCM",
+    feePerSession: "220.000",
+    totalSessions: "18 buổi",
+    status: "Tạm dừng",
+    startDate: "22/11/2023",
+    endDate: "22/01/2024",
   },
 ]

@@ -12,17 +12,18 @@ const TEMP_DISABLE_STAFF_AUTH = true;
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  
+
   // 1. Lấy token từ cookie
   const token = request.cookies.get('access_token')?.value;
 
   // 2. Định nghĩa các nhóm route
   const isHubRoute = pathname.startsWith('/hub');
   const isHubLoginRoute = pathname === '/hub/login';
-  
-  const isDashboardRoute = pathname.startsWith('/dashboard') || pathname.startsWith('/tutors') || pathname.startsWith('/student');
+
+  const isTutorDashboard = pathname.startsWith('/tutors/');
+  const isDashboardRoute = pathname.startsWith('/dashboard') || isTutorDashboard || pathname.startsWith('/student');
   const isStaffRoute = pathname.startsWith('/staff') || pathname.startsWith('/dashboard/admin');
-  
+
   const isClientAuthRoute = pathname === '/login' || pathname === '/register';
 
   // Temporary frontend preview mode: allow Staff/Hub screens without login.
@@ -79,13 +80,13 @@ export async function middleware(request: NextRequest) {
         }
         return NextResponse.redirect(new URL('/tutors/dashboard', request.url));
       }
-      
+
       // Cho phép học viên truy cập trang tìm kiếm gia sư (/tutors), 
       // nhưng bảo vệ các trang con của gia sư (như /tutors/dashboard)
-      if (pathname.startsWith('/tutors/') && userRole !== 'tutor') {
+      if (isTutorDashboard && userRole !== 'tutor') {
         return NextResponse.redirect(new URL('/403', request.url));
       }
-      
+
       if (pathname.startsWith('/student') && userRole !== 'student') {
         return NextResponse.redirect(new URL('/403', request.url));
       }
@@ -127,7 +128,7 @@ export async function middleware(request: NextRequest) {
       const secret = new TextEncoder().encode(JWT_SECRET);
       const { payload } = await jwtVerify(token, secret);
       const userRole = (payload as any).role;
-      
+
       if (userRole === 'tutor') return NextResponse.redirect(new URL('/tutors/dashboard', request.url));
       if (userRole === 'student') return NextResponse.redirect(new URL('/student', request.url));
       if (userRole === 'admin') return NextResponse.redirect(new URL('/hub/dashboard', request.url));
@@ -143,7 +144,7 @@ export async function middleware(request: NextRequest) {
       const secret = new TextEncoder().encode(JWT_SECRET);
       const { payload } = await jwtVerify(token, secret);
       const userRole = (payload as any).role;
-      
+
       if (userRole === 'admin') return NextResponse.redirect(new URL('/hub/dashboard', request.url));
       if (userRole === 'staff') return NextResponse.redirect(new URL('/staff/request-management', request.url));
       if (userRole === 'tutor' || userRole === 'student') return NextResponse.redirect(new URL('/403', request.url));
@@ -158,7 +159,7 @@ export async function middleware(request: NextRequest) {
 // Áp dụng middleware cho các route phù hợp
 export const config = {
   matcher: [
-    '/tutors/:path*',
+    '/tutors/:path+',
     '/student/:path*',
     '/dashboard/:path*',
     '/staff/:path*',

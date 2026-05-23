@@ -4,6 +4,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { ClassesModule } from './classes/classes.module';
+import { TutorsModule } from './tutors/tutors.module';
 
 // Entities
 import { Role } from './users/entities/role.entity';
@@ -31,9 +32,7 @@ import { Otp } from './auth/entities/otp.entity';
         
         return {
           type: 'postgres',
-          // Ưu tiên sử dụng DATABASE_URL nếu có (ví dụ từ Supabase)
           url: dbUrl,
-          // Nếu không có URL thì dùng các biến lẻ (localhost)
           host: !dbUrl ? config.get('DB_HOST') : undefined,
           port: !dbUrl ? config.get<number>('DB_PORT') : undefined,
           username: !dbUrl ? config.get('DB_USERNAME') : undefined,
@@ -47,14 +46,16 @@ import { Otp } from './auth/entities/otp.entity';
             LearningReport, Review, Notification,
             Otp
           ],
-          synchronize: true, // Chỉ dùng trong môi trường phát triển
+          synchronize: true,
           autoLoadEntities: true,
+          ssl: dbUrl ? { rejectUnauthorized: false } : false,
         };
       },
     }),
     AuthModule,
     UsersModule,
     ClassesModule,
+    TutorsModule,
   ],
 })
 export class AppModule { }

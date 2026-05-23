@@ -24,11 +24,14 @@ async function bootstrap() {
   });
 
   // Enable global validation
-  app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
+  app.useGlobalPipes(new ValidationPipe({ 
+    transform: true,
+    whitelist: true 
+  }));
 
   app.setGlobalPrefix('api');
 
-  await app.listen(process.env.PORT ?? 3001);
+  await app.listen(process.env.PORT ?? 3001, '0.0.0.0');
   console.log(`Backend running on http://localhost:3001`);
 }
 bootstrap();

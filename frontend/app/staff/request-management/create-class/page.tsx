@@ -12,6 +12,9 @@ import { createClass, getClassRequest } from "@/lib/staff-api"
 import type { RequestItem } from "@/types/class_request"
 import { mapClassRequest } from "@/types/staff"
 
+import { requests, tutors } from "@/app/hub/components/data"
+import { StaffHeader } from "@/app/hub/components/StaffHeader"
+import { StaffSidebar } from "@/app/hub/components/StaffSidebar"
 import { requests as mockRequests } from "../../_components/mock-data"
 import { StaffShell } from "../../_components/StaffShell"
 

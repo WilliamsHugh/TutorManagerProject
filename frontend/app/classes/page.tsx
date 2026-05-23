@@ -4,12 +4,14 @@ import { useState, useEffect } from "react";
 import ClassCard from "@/components/ClassCard";
 import ListingLayout from "@/components/ListingLayout";
 import { ClassListing } from "@/types/class";
-import { CLASSES, CLASS_FILTERS, CLASS_SORT_OPTIONS, TOTAL_CLASS_PAGES } from "@/lib/mock-data";
+import { getNewClasses } from "@/lib/api";
+import { CLASS_FILTERS, CLASS_SORT_OPTIONS, TOTAL_CLASS_PAGES } from "@/lib/mock-data";
 import { useDebounce } from "@/lib/hooks/useDebounce";
 
 export default function ClassesPage() {
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounce(search, 500);
+  const [profile, setProfile] = useState<any>(null);
 
   const [checked, setChecked] = useState<Record<string, boolean>>({
     "subject:Toán": true,
@@ -27,18 +29,22 @@ export default function ClassesPage() {
   const toggleFilter = (key: string) =>
     setChecked((prev) => ({ ...prev, [key]: !prev[key] }));
 
-  // Simulate API Call
+  // Fetch thực tế từ API (Đã loại bỏ mã mock và sửa lỗi unreachable code)
   useEffect(() => {
     setIsLoading(true);
     setError(null);
-    const timer = setTimeout(() => {
-      // Simulate filtering by debouncedSearch, checked, sort, currentPage
-      // For now, we just mock the return of all static items
-      setItems(CLASSES);
-      setIsLoading(false);
-    }, 800);
-
-    return () => clearTimeout(timer);
+    
+    getNewClasses()
+      .then((data) => {
+        setItems(data.classes || []);
+        setProfile(data.profile);
+      })
+      .catch((err) => {
+        setError(err.message || "Không thể tải danh sách lớp học");
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
   }, [debouncedSearch, checked, sort, currentPage]);
 
   return (

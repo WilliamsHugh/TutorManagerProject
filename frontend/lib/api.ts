@@ -1,4 +1,6 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+import { getToken } from './auth';
+
+const API_URL = '/api';
 
 export async function registerStudent(data: {
   fullName: string;
@@ -49,5 +51,184 @@ export async function login(data: { email: string; password: string }) {
     const err = await res.json();
     throw new Error(err.message || 'Đăng nhập thất bại');
   }
+  return res.json();
+}
+
+// Hàm lấy thông tin chung cho Dashboard
+export async function getTutorStats() {
+  const token = getToken();
+  const res = await fetch(`${API_URL}/tutor/dashboard`, {
+    headers: { 'Authorization': `Bearer ${token}` },
+  });
+  return res.json();
+}
+
+// Hàm lấy dữ liệu Dashboard Gia sư
+export async function getTutorDashboard(date?: string) {
+  const token = getToken();
+  const url = date ? `${API_URL}/tutor/dashboard?date=${date}` : `${API_URL}/tutor/dashboard`;
+  const res = await fetch(url, {
+    headers: { 'Authorization': `Bearer ${token}` },
+  });
+  if (!res.ok) throw new Error('Không thể tải dữ liệu Dashboard');
+  return res.json();
+}
+
+// Hàm lấy lịch dạy (Kết nối với màn hình Schedule.html)
+export async function getTutorSchedule(date?: string, view: string = 'week') {
+  const token = getToken();
+  const url = new URL(`${window.location.origin}${API_URL}/tutor/schedule`);
+  if (date) url.searchParams.append('date', date);
+  url.searchParams.append('view', view);
+
+  const res = await fetch(url.toString(), {
+    headers: { 'Authorization': `Bearer ${token}` },
+  });
+  if (!res.ok) throw new Error('Không thể tải lịch dạy');
+  return res.json();
+}
+
+// Hàm nộp báo cáo (Kết nối với màn hình Studentdetail.html)
+export async function submitLearningReport(data: any) {
+  // Chuẩn hóa dữ liệu: Đảm bảo classId là chuỗi sạch (không khoảng trắng)
+  const payload = {
+    ...data,
+    classId: typeof data.classId === 'string' ? data.classId.trim() : data.classId
+  };
+
+  const token = getToken();
+  const res = await fetch(`${API_URL}/tutor/report`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}` 
+    },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({ message: 'Lỗi không xác định từ server' }));
+    const message = Array.isArray(errorData.message) 
+      ? errorData.message.join(', ') 
+      : (errorData.message || 'Không thể nộp báo cáo');
+    
+    console.error("Chi tiết lỗi từ Backend:", errorData);
+    // Quăng lỗi với nội dung cụ thể (ví dụ: "classId must be a UUID")
+    throw new Error(message);
+  }
+  return res.json();
+}
+
+// Hàm lấy danh sách báo cáo của một lớp
+export async function getLearningReports(classId: string) {
+  const token = getToken();
+  const res = await fetch(`${API_URL}/tutor/classes/${classId}/reports`, {
+    headers: { 'Authorization': `Bearer ${token}` },
+  });
+  if (!res.ok) {
+    const errData = await res.json().catch(() => ({}));
+    console.error("Fetch Reports Error:", errData);
+    throw new Error(errData.message || 'Không thể tải danh sách báo cáo');
+  }
+  return res.json();
+}
+
+// Hàm cập nhật báo cáo
+export async function updateLearningReport(id: string, data: any) {
+  const token = getToken();
+  const res = await fetch(`${API_URL}/tutor/reports/${id}`, {
+    method: 'PATCH',
+    headers: { 
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}` 
+    },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error('Không thể cập nhật báo cáo');
+  return res.json();
+}
+
+// Hàm xóa báo cáo
+export async function deleteLearningReport(id: string) {
+  const token = getToken();
+  const res = await fetch(`${API_URL}/tutor/reports/${id}`, {
+    method: 'DELETE',
+    headers: { 'Authorization': `Bearer ${token}` },
+  });
+  if (!res.ok) throw new Error('Không thể xóa báo cáo');
+  return res.json();
+}
+
+// Hàm lấy danh sách lớp mới (Trả về { classes, profile })
+export async function getNewClasses() {
+  const token = getToken();
+  const res = await fetch(`${API_URL}/tutor/new-classes`, {
+    headers: { 'Authorization': `Bearer ${token}` },
+  });
+  if (!res.ok) throw new Error('Không thể tải danh sách lớp mới');
+  return res.json();
+}
+
+// Hàm lấy thông tin hồ sơ gia sư
+export async function getTutorProfile() {
+  const token = getToken();
+  const res = await fetch(`${API_URL}/tutor/dashboard`, {
+    headers: { 'Authorization': `Bearer ${token}` },
+  });
+  if (!res.ok) throw new Error('Không thể tải thông tin hồ sơ');
+  return res.json();
+}
+
+// Hàm cập nhật hồ sơ gia sư
+export async function updateTutorProfile(data: any) {
+  const token = getToken();
+  const res = await fetch(`${API_URL}/tutor/profile`, {
+    method: 'PATCH',
+    headers: { 
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}` 
+    },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error('Không thể cập nhật hồ sơ');
+  return res.json();
+}
+
+// Hàm lấy danh sách thông báo
+export async function getTutorNotifications() {
+  const token = getToken();
+  const res = await fetch(`${API_URL}/tutor/notifications`, {
+    headers: { 'Authorization': `Bearer ${token}` },
+  });
+  if (!res.ok) throw new Error('Không thể tải thông báo');
+  return res.json();
+}
+
+// Hàm lấy chi tiết yêu cầu lớp học
+export async function getClassRequestDetail(id: string) {
+  const token = getToken();
+  const res = await fetch(`${API_URL}/tutor/class-requests/${id}`, {
+    headers: { 'Authorization': `Bearer ${token}` },
+  });
+  if (!res.ok) throw new Error('Không thể tải chi tiết lớp học');
+  return res.json();
+}
+
+// Hàm lấy danh sách học viên của gia sư
+export async function getTutorStudents() {
+  const token = getToken();
+  const res = await fetch(`${API_URL}/tutor/students`, {
+    headers: { 'Authorization': `Bearer ${token}` },
+  });
+  if (!res.ok) throw new Error('Không thể tải danh sách học viên');
+  return res.json();
+}
+
+// Hàm gia sư nhận lớp
+export async function acceptClassRequest(id: string) {
+  const token = getToken();
+  const res = await fetch(`${API_URL}/tutor/class-requests/${id}/accept`, {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${token}` },
+  });
   return res.json();
 }

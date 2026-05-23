@@ -20,8 +20,8 @@ export async function middleware(request: NextRequest) {
   const isHubRoute = pathname.startsWith('/hub');
   const isHubLoginRoute = pathname === '/hub/login';
   
-  const isDashboardRoute = pathname.startsWith('/dashboard');
-  const isStaffRoute = pathname.startsWith('/staff');
+  const isDashboardRoute = pathname.startsWith('/dashboard') || pathname.startsWith('/tutors') || pathname.startsWith('/student');
+  const isStaffRoute = pathname.startsWith('/staff') || pathname.startsWith('/dashboard/admin');
   
   const isClientAuthRoute = pathname === '/login' || pathname === '/register';
 
@@ -120,14 +120,19 @@ export async function middleware(request: NextRequest) {
       const { payload } = await jwtVerify(token, secret);
       const userRole = (payload as any).role;
 
-      if (pathname.startsWith('/dashboard/tutor') && userRole !== 'tutor') {
+      if (pathname.startsWith('/dashboard/tutor')) {
+        if (userRole !== 'tutor') {
+          return NextResponse.redirect(new URL('/403', request.url));
+        }
+        return NextResponse.redirect(new URL('/tutors/dashboard', request.url));
+      }
+      if (pathname.startsWith('/tutors') && userRole !== 'tutor') {
         return NextResponse.redirect(new URL('/403', request.url));
       }
-      if (pathname.startsWith('/dashboard/student') && userRole !== 'student') {
+      if ((pathname.startsWith('/dashboard/student') || pathname.startsWith('/student')) && userRole !== 'student') {
         return NextResponse.redirect(new URL('/403', request.url));
       }
     } catch (error) {
-      console.error('Middleware Dashboard JWT Error:', error);
       const response = NextResponse.redirect(new URL('/login', request.url));
       response.cookies.delete('access_token');
       return response;
@@ -141,7 +146,7 @@ export async function middleware(request: NextRequest) {
       const { payload } = await jwtVerify(token, secret);
       const userRole = (payload as any).role;
       
-      if (userRole === 'tutor') return NextResponse.redirect(new URL('/dashboard/tutor', request.url));
+      if (userRole === 'tutor') return NextResponse.redirect(new URL('/tutors/dashboard', request.url));
       if (userRole === 'student') return NextResponse.redirect(new URL('/dashboard/student', request.url));
       if (userRole === 'admin') return NextResponse.redirect(new URL('/hub/dashboard', request.url));
       if (userRole === 'staff') return NextResponse.redirect(new URL('/staff/request-management', request.url));
@@ -171,10 +176,13 @@ export async function middleware(request: NextRequest) {
 // Áp dụng middleware cho các route phù hợp
 export const config = {
   matcher: [
+    '/tutors/:path*',
+    '/student/:path*',
     '/dashboard/:path*',
     '/staff/:path*',
     '/hub/:path*',
     '/login',
-    '/register'
+    '/register',
+    '/classes/:path*'
   ],
 };

@@ -28,7 +28,7 @@ function LevelBadge({ label }: { label: string }) {
   );
 }
 
-export default function ClassCard({ cls }: { cls: ClassListing }) {
+export default function ClassCard({ cls, priority }: { cls: ClassListing; priority?: boolean }) {
   return (
     <div className="bg-white rounded-xl border border-gray-100 p-6 flex flex-col gap-4 hover:shadow-lg hover:shadow-blue-900/5 hover:border-blue-100 transition-all duration-300">
       {/* Top */}

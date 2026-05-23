@@ -18,7 +18,7 @@ export class Notification {
   id!: string;
 
   @ManyToOne(() => User)
-  @JoinColumn({ name: 'user_id' })
+  @JoinColumn({ name: 'user_id' }) // Chỉ định rõ tên cột trong database là user_id
   user!: User;
 
   @Column({ type: 'varchar', length: 255 })
@@ -27,8 +27,8 @@ export class Notification {
   @Column({ type: 'text' })
   message!: string;
 
-  @Column({ type: 'varchar', length: 50 })
-  type!: NotificationType;
+  @Column({ type: 'varchar', length: 50, nullable: true })
+  type?: NotificationType;
 
   @Column({ name: 'is_read', type: 'boolean', default: false })
   isRead!: boolean;

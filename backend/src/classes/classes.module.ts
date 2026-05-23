@@ -1,10 +1,10 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { ClassRequest } from './class-request.entity';
-import { Class } from './class.entity';
-import { Schedule } from './schedule.entity';
-import { LearningReport } from './learning-report.entity';
-import { Review } from './review.entity';
+import { ClassRequest } from './entities/class-request.entity';
+import { Class } from './entities/class.entity';
+import { Schedule } from './entities/schedule.entity';
+import { LearningReport } from './entities/learning-report.entity';
+import { Review } from './entities/review.entity';
 import { Student } from '../users/entities/student.entity';
 import { Tutor } from '../users/entities/tutor.entity';
 import { Subject } from '../subjects/subject.entity';

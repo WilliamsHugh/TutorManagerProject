@@ -16,6 +16,20 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  async redirects() {
+    return [
+      {
+        source: '/dashboard/student',
+        destination: '/student',
+        permanent: true,
+      },
+      {
+        source: '/dashboard/student/:path*',
+        destination: '/student/:path*',
+        permanent: true,
+      },
+    ];
+  },
   async rewrites() {
     return [
       {

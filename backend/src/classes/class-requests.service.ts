@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { ClassRequest, RequestStatus } from './class-request.entity';
+import { ClassRequest, RequestStatus } from './entities/class-request.entity';
 import { Student } from '../users/entities/student.entity';
 import { Subject } from '../subjects/subject.entity';
 import { User } from '../users/entities/user.entity';

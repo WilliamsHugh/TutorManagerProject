@@ -2,7 +2,7 @@ import { Body, Controller, Get, Param, Patch, Post, Query, Request, UseGuards } 
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles, RoleType } from '../auth/decorators/roles.decorator';
-import { ClassStatus } from './class.entity';
+import { ClassStatus } from './entities/class.entity';
 import { ClassesService } from './classes.service';
 import { CreateClassDto } from './dto/create-class.dto';
 import { UpdateClassStatusDto } from './dto/update-class-status.dto';

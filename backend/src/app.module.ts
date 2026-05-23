@@ -5,6 +5,9 @@ import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { ClassesModule } from './classes/classes.module';
 import { TutorsModule } from './tutors/tutors.module';
+import { ReportsModule } from './reports/reports.module';
+import { SubjectsModule } from './subjects/subjects.module';
+import { NotificationsModule } from './notifications/notifications.module';
 
 // Entities
 import { Role } from './users/entities/role.entity';
@@ -13,11 +16,11 @@ import { Tutor } from './users/entities/tutor.entity';
 import { Student } from './users/entities/student.entity';
 import { Subject } from './subjects/subject.entity';
 import { TutorSubject } from './tutors/tutor-subject.entity';
-import { ClassRequest } from './classes/class-request.entity';
-import { Class } from './classes/class.entity';
-import { Schedule } from './classes/schedule.entity';
-import { LearningReport } from './classes/learning-report.entity';
-import { Review } from './classes/review.entity';
+import { ClassRequest } from './classes/entities/class-request.entity';
+import { Class } from './classes/entities/class.entity';
+import { Schedule } from './classes/entities/schedule.entity';
+import { LearningReport } from './classes/entities/learning-report.entity';
+import { Review } from './classes/entities/review.entity';
 import { Notification } from './notifications/notification.entity';
 import { Otp } from './auth/entities/otp.entity';
 
@@ -56,6 +59,9 @@ import { Otp } from './auth/entities/otp.entity';
     UsersModule,
     ClassesModule,
     TutorsModule,
+    ReportsModule,
+    SubjectsModule,
+    NotificationsModule,
   ],
 })
 export class AppModule { }

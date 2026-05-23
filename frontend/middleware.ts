@@ -86,7 +86,7 @@ export async function middleware(request: NextRequest) {
         return NextResponse.redirect(new URL('/403', request.url));
       }
       
-      if ((pathname.startsWith('/dashboard/student') || pathname.startsWith('/student')) && userRole !== 'student') {
+      if (pathname.startsWith('/student') && userRole !== 'student') {
         return NextResponse.redirect(new URL('/403', request.url));
       }
     } catch (error) {
@@ -129,7 +129,7 @@ export async function middleware(request: NextRequest) {
       const userRole = (payload as any).role;
       
       if (userRole === 'tutor') return NextResponse.redirect(new URL('/tutors/dashboard', request.url));
-      if (userRole === 'student') return NextResponse.redirect(new URL('/dashboard/student', request.url));
+      if (userRole === 'student') return NextResponse.redirect(new URL('/student', request.url));
       if (userRole === 'admin') return NextResponse.redirect(new URL('/hub/dashboard', request.url));
       if (userRole === 'staff') return NextResponse.redirect(new URL('/staff/request-management', request.url));
     } catch {

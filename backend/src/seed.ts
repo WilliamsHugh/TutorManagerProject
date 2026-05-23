@@ -10,11 +10,11 @@ import * as dotenv from 'dotenv';
 dotenv.config();
 
 import { TutorSubject } from './tutors/tutor-subject.entity';
-import { ClassRequest } from './classes/class-request.entity';
-import { Class } from './classes/class.entity';
-import { Schedule } from './classes/schedule.entity';
-import { LearningReport } from './classes/learning-report.entity';
-import { Review } from './classes/review.entity';
+import { ClassRequest } from './classes/entities/class-request.entity';
+import { Class } from './classes/entities/class.entity';
+import { Schedule } from './classes/entities/schedule.entity';
+import { LearningReport } from './classes/entities/learning-report.entity';
+import { Review } from './classes/entities/review.entity';
 import { Notification } from './notifications/notification.entity';
 
 const dataSource = new DataSource({

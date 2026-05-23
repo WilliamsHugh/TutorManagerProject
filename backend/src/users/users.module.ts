@@ -6,8 +6,8 @@ import { Student } from './entities/student.entity';
 import { Tutor } from './entities/tutor.entity';
 import { Subject } from '../subjects/subject.entity';
 import { TutorSubject } from '../tutors/tutor-subject.entity';
-import { Class } from '../classes/class.entity';
-import { ClassRequest } from '../classes/class-request.entity';
+import { Class } from '../classes/entities/class.entity';
+import { ClassRequest } from '../classes/entities/class-request.entity';
 import { UsersService } from './users.service';
 import { AdminController } from './admin.controller';
 

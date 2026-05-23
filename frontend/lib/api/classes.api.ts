@@ -1,0 +1,93 @@
+import { getToken } from '../auth';
+
+const API_URL = '/api';
+
+// Hàm lấy chi tiết yêu cầu lớp học
+export async function getClassRequestDetail(id: string) {
+  const token = getToken();
+  const res = await fetch(`${API_URL}/tutor/class-requests/${id}`, {
+    headers: { 'Authorization': `Bearer ${token}` },
+  });
+  if (!res.ok) throw new Error('Không thể tải chi tiết lớp học');
+  return res.json();
+}
+
+// Hàm gia sư nhận lớp
+export async function acceptClassRequest(id: string) {
+  const token = getToken();
+  const res = await fetch(`${API_URL}/tutor/class-requests/${id}/accept`, {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${token}` },
+  });
+  return res.json();
+}
+
+// Hàm lấy danh sách báo cáo của một lớp
+export async function getLearningReports(classId: string) {
+  const token = getToken();
+  const res = await fetch(`${API_URL}/tutor/classes/${classId}/reports`, {
+    headers: { 'Authorization': `Bearer ${token}` },
+  });
+  if (!res.ok) {
+    const errData = await res.json().catch(() => ({}));
+    console.error("Fetch Reports Error:", errData);
+    throw new Error(errData.message || 'Không thể tải danh sách báo cáo');
+  }
+  return res.json();
+}
+
+// Hàm nộp báo cáo (Kết nối với màn hình Studentdetail.html)
+export async function submitLearningReport(data: any) {
+  // Chuẩn hóa dữ liệu: Đảm bảo classId là chuỗi sạch (không khoảng trắng)
+  const payload = {
+    ...data,
+    classId: typeof data.classId === 'string' ? data.classId.trim() : data.classId
+  };
+
+  const token = getToken();
+  const res = await fetch(`${API_URL}/tutor/report`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}` 
+    },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({ message: 'Lỗi không xác định từ server' }));
+    const message = Array.isArray(errorData.message) 
+      ? errorData.message.join(', ') 
+      : (errorData.message || 'Không thể nộp báo cáo');
+    
+    console.error("Chi tiết lỗi từ Backend:", errorData);
+    // Quăng lỗi với nội dung cụ thể (ví dụ: "classId must be a UUID")
+    throw new Error(message);
+  }
+  return res.json();
+}
+
+// Hàm cập nhật báo cáo
+export async function updateLearningReport(id: string, data: any) {
+  const token = getToken();
+  const res = await fetch(`${API_URL}/tutor/reports/${id}`, {
+    method: 'PATCH',
+    headers: { 
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}` 
+    },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error('Không thể cập nhật báo cáo');
+  return res.json();
+}
+
+// Hàm xóa báo cáo
+export async function deleteLearningReport(id: string) {
+  const token = getToken();
+  const res = await fetch(`${API_URL}/tutor/reports/${id}`, {
+    method: 'DELETE',
+    headers: { 'Authorization': `Bearer ${token}` },
+  });
+  if (!res.ok) throw new Error('Không thể xóa báo cáo');
+  return res.json();
+}

@@ -73,10 +73,20 @@ export async function middleware(request: NextRequest) {
         return NextResponse.redirect(new URL('/hub/dashboard', request.url));
       }
 
-      if (pathname.startsWith('/dashboard/tutor') && userRole !== 'tutor') {
+      if (pathname.startsWith('/dashboard/tutor')) {
+        if (userRole !== 'tutor') {
+          return NextResponse.redirect(new URL('/403', request.url));
+        }
+        return NextResponse.redirect(new URL('/tutors/dashboard', request.url));
+      }
+      
+      // Cho phép học viên truy cập trang tìm kiếm gia sư (/tutors), 
+      // nhưng bảo vệ các trang con của gia sư (như /tutors/dashboard)
+      if (pathname.startsWith('/tutors/') && userRole !== 'tutor') {
         return NextResponse.redirect(new URL('/403', request.url));
       }
-      if (pathname.startsWith('/dashboard/student') && userRole !== 'student') {
+      
+      if ((pathname.startsWith('/dashboard/student') || pathname.startsWith('/student')) && userRole !== 'student') {
         return NextResponse.redirect(new URL('/403', request.url));
       }
     } catch (error) {
@@ -109,35 +119,7 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  // 5. Xử lý bảo vệ các route /dashboard/*
-  if (isDashboardRoute) {
-    if (!token) {
-      return NextResponse.redirect(new URL('/login', request.url));
-    }
 
-    try {
-      const secret = new TextEncoder().encode(JWT_SECRET);
-      const { payload } = await jwtVerify(token, secret);
-      const userRole = (payload as any).role;
-
-      if (pathname.startsWith('/dashboard/tutor')) {
-        if (userRole !== 'tutor') {
-          return NextResponse.redirect(new URL('/403', request.url));
-        }
-        return NextResponse.redirect(new URL('/tutors/dashboard', request.url));
-      }
-      if (pathname.startsWith('/tutors') && userRole !== 'tutor') {
-        return NextResponse.redirect(new URL('/403', request.url));
-      }
-      if ((pathname.startsWith('/dashboard/student') || pathname.startsWith('/student')) && userRole !== 'student') {
-        return NextResponse.redirect(new URL('/403', request.url));
-      }
-    } catch (error) {
-      const response = NextResponse.redirect(new URL('/login', request.url));
-      response.cookies.delete('access_token');
-      return response;
-    }
-  }
 
   // 6. Đã đăng nhập nhưng truy cập các trang đăng nhập công cộng (/login, /register)
   if (isClientAuthRoute && token) {

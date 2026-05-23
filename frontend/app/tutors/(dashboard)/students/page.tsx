@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import Header from '@/components/tutor/Header';
 import { Icon } from '@iconify/react';
 import { getTutorStudents } from '@/lib/api';
 import Link from 'next/link';
@@ -31,7 +30,7 @@ export default function MyStudentsPage() {
 
   return (
     <>
-      <Header title="Học viên của tôi" userProfile={profile} />
+
       
       <div className="content" style={{ padding: '32px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
         <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>

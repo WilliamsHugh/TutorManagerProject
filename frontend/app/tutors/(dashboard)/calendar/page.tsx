@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import Header from '@/components/tutor/Header';
 import { Icon } from '@iconify/react';
 import { getTutorSchedule } from '@/lib/api';
 
@@ -84,7 +83,7 @@ export default function CalendarPage() {
 
   return (
     <>
-      <Header title="Lịch dạy" userProfile={profile} />
+
       <div className="content" style={{ padding: '32px' }}>
         <div className="calendar-wrapper" style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden' }}>
           <div className="calendar-header" style={{ padding: '16px 24px', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#fff' }}>

@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import Header from '@/components/tutor/Header';
 import { Icon } from '@iconify/react';
 import Link from 'next/link';
 import {
@@ -55,7 +54,7 @@ export default function StudentDetailPage() {
   if (loading) {
     return (
       <>
-        <Header title="Chi tiết học viên" userProfile={profile} />
+
         <div className="content" style={{ padding: '32px', textAlign: 'center', color: '#64748b' }}>
           <Icon icon="lucide:loader-2" className="animate-spin" style={{ fontSize: '32px', margin: '0 auto', display: 'block' }} />
           <p style={{ marginTop: '12px' }}>Đang tải thông tin học viên...</p>
@@ -67,7 +66,7 @@ export default function StudentDetailPage() {
   if (!student) {
     return (
       <>
-        <Header title="Chi tiết học viên" userProfile={profile} />
+
         <div className="content" style={{ padding: '32px', textAlign: 'center', color: '#ef4444' }}>
           Không tìm thấy thông tin học viên.
         </div>
@@ -77,7 +76,7 @@ export default function StudentDetailPage() {
 
   return (
     <>
-      <Header title="Chi tiết học viên" userProfile={profile} />
+
       
       <div className="content" style={{ padding: '32px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
         {/* Breadcrumb */}

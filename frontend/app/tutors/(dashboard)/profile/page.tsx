@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import Header from '@/components/tutor/Header';
+
 import { Icon } from '@iconify/react';
 import { getTutorProfile, updateTutorProfile } from '@/lib/api';
 
@@ -18,8 +18,8 @@ export default function ProfessionalProfilePage() {
     const fetchProfile = async () => {
       try {
         const data = await getTutorProfile(); 
-        setProfile(data.profile);
-        setFormData(data.profile); // Khởi tạo dữ liệu form từ profile
+        setProfile(data.profile || {});
+        setFormData(data.profile || {}); // Khởi tạo dữ liệu form từ profile
       } catch (error) {
         console.error("Lỗi tải thông tin hồ sơ:", error);
       } finally {
@@ -73,8 +73,6 @@ export default function ProfessionalProfilePage() {
 
   return (
     <>
-      <Header title="Hồ sơ chuyên môn" userProfile={profile} />
-
       {loading ? (
         <div className="flex-1 flex justify-center items-center">
           <Icon icon="lucide:loader-2" className="animate-spin text-3xl text-blue-600" />

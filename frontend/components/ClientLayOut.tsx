@@ -13,6 +13,7 @@ export default function ClientLayout({
     pathname.startsWith("/dashboard/student") ||
     (!pathname.startsWith("/hub") &&
       !pathname.startsWith("/staff") &&
+      !pathname.startsWith("/tutors/") &&
       pathname !== "/login" &&
       pathname !== "/register");
 

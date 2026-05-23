@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import Header from '@/components/tutor/Header';
 import ClassCard from '@/components/ClassCard';
 import { Icon } from '@iconify/react';
 import { getNewClasses } from '@/lib/api';
@@ -68,7 +67,7 @@ export default function NewClassesPage() {
 
   return (
     <>
-      <Header title="Tìm lớp học mới" showSearch={false} userProfile={profile} />
+
       
       <main className="p-8 space-y-6">
         {/* Filter Section */}

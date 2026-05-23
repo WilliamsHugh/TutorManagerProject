@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import Header from '@/components/tutor/Header';
 import { Icon } from '@iconify/react';
 import { 
   getTutorDashboard, 
@@ -146,7 +145,7 @@ export default function TutorDashboard() {
 
   return (
     <>
-      <Header title="Dashboard Gia sư" showSearch={true} userProfile={profile} />
+
       
       <div className="content" style={{ padding: '32px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
         

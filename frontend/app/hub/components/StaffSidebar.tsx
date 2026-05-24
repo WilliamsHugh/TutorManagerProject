@@ -1,3 +1,5 @@
+"use client"
+
 import {
   BookOpen,
   Clock3,
@@ -8,49 +10,49 @@ import {
   UsersRound,
   type LucideIcon,
 } from "lucide-react"
+import Link from "next/link"
+import { usePathname } from "next/navigation"
 
 type NavItem = {
   label: string
+  href: string
   icon: LucideIcon
-  active?: boolean
 }
 
 const navItems: NavItem[] = [
-  { label: "Tổng quan", icon: LayoutDashboard },
-  { label: "Quản lý Yêu cầu", icon: FileText, active: true },
-  { label: "Quản lý Gia sư", icon: UsersRound },
-  { label: "Quản lý Học viên", icon: UserRound },
-  { label: "Quản lý Lớp học", icon: BookOpen },
-  { label: "Báo cáo thống kê", icon: Clock3 },
+  { label: "Tổng quan", href: "/hub/dashboard", icon: LayoutDashboard },
+  { label: "Quản lý Yêu cầu", href: "/hub/request-management", icon: FileText },
+  { label: "Quản lý Gia sư", href: "/hub/tutors", icon: UsersRound },
+  { label: "Quản lý Học viên", href: "/hub/students", icon: UserRound },
+  { label: "Quản lý Lớp học", href: "/hub/classes", icon: BookOpen },
+  { label: "Báo cáo thống kê", href: "/hub/reports", icon: Clock3 },
 ]
 
 export function StaffSidebar() {
+  const pathname = usePathname()
+
   return (
     <aside className="w-[200px] shrink-0 border-r border-border bg-white">
-      <div className="flex h-12 items-center gap-3 border-b border-border px-5">
-        <div className="flex size-6 items-center justify-center rounded bg-primary text-primary-foreground">
-          <GraduationCap size={14} />
-        </div>
-        <span className="text-base font-bold">TutorEdu</span>
-      </div>
-
       <nav className="space-y-1 px-3 py-5">
         {navItems.map((item) => {
           const Icon = item.icon
+          const active =
+            pathname === item.href ||
+            pathname.startsWith(item.href)
 
           return (
-            <button
+            <Link
               key={item.label}
               className={`flex h-9 w-full items-center gap-3 rounded px-3 text-left text-xs font-semibold transition-colors ${
-                item.active
+                active
                   ? "bg-primary text-primary-foreground"
                   : "text-foreground hover:bg-secondary"
               }`}
-              type="button"
+              href={item.href}
             >
               <Icon size={14} />
               {item.label}
-            </button>
+            </Link>
           )
         })}
       </nav>

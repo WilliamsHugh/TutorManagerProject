@@ -3,6 +3,7 @@ import type { RequestItem, TutorRecommendation } from "@/types/class_request"
 export const requests: RequestItem[] = [
   {
     id: "#RQ-10293",
+    rawId: "mock-rq-10293",
     createdAt: "12/10/2023",
     name: "Lê Trọng Tấn",
     role: "Phụ huynh",
@@ -16,6 +17,7 @@ export const requests: RequestItem[] = [
   },
   {
     id: "#RQ-10294",
+    rawId: "mock-rq-10294",
     createdAt: "13/10/2023",
     name: "Ngô Minh An",
     role: "Học viên",
@@ -29,6 +31,7 @@ export const requests: RequestItem[] = [
   },
   {
     id: "#RQ-10295",
+    rawId: "mock-rq-10295",
     createdAt: "13/10/2023",
     name: "Trần Mỹ Duyên",
     role: "Phụ huynh",
@@ -42,6 +45,7 @@ export const requests: RequestItem[] = [
   },
   {
     id: "#RQ-10296",
+    rawId: "mock-rq-10296",
     createdAt: "14/10/2023",
     name: "Phạm Hữu Đức",
     role: "Học viên",
@@ -55,6 +59,7 @@ export const requests: RequestItem[] = [
   },
   {
     id: "#RQ-10297",
+    rawId: "mock-rq-10297",
     createdAt: "15/10/2023",
     name: "Hoàng Gia Bảo",
     role: "Phụ huynh",
@@ -70,6 +75,8 @@ export const requests: RequestItem[] = [
 
 export const tutors: TutorRecommendation[] = [
   {
+    id: "mock-tutor-1",
+    rawTutorId: "mock-tutor-1",
     name: "Nguyễn Văn Bình",
     meta: "2 năm kinh nghiệm · Sinh viên ĐH Bách Khoa",
     match: "95% Match",
@@ -79,6 +86,8 @@ export const tutors: TutorRecommendation[] = [
     highlight: "bg-green-600",
   },
   {
+    id: "mock-tutor-2",
+    rawTutorId: "mock-tutor-2",
     name: "Trần Thị Cẩm",
     meta: "5 năm kinh nghiệm · Giáo viên THPT",
     match: "85% Match",
@@ -88,6 +97,8 @@ export const tutors: TutorRecommendation[] = [
     highlight: "bg-orange-500",
   },
   {
+    id: "mock-tutor-3",
+    rawTutorId: "mock-tutor-3",
     name: "Lê Minh Đạt",
     meta: "1.5 năm kinh nghiệm · ĐH Khoa Học Tự Nhiên",
     match: "92% Match",
@@ -97,6 +108,8 @@ export const tutors: TutorRecommendation[] = [
     highlight: "bg-green-600",
   },
   {
+    id: "mock-tutor-4",
+    rawTutorId: "mock-tutor-4",
     name: "Phan Ngọc Hà",
     meta: "3 năm kinh nghiệm · Cử nhân Sư phạm Toán",
     match: "90% Match",

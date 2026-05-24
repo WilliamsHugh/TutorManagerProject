@@ -56,7 +56,11 @@ export default function Header({
     clearAuth();
     setIsLoggedIn(false);
     setUser(null);
-    router.push("/login");
+    if (pathname.startsWith("/hub") || pathname.startsWith("/staff")) {
+      router.push("/hub/login");
+    } else {
+      router.push("/login");
+    }
   };
 
   return (

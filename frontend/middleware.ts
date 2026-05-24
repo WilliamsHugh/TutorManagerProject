@@ -120,8 +120,6 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-
-
   // 6. Đã đăng nhập nhưng truy cập các trang đăng nhập công cộng (/login, /register)
   if (isClientAuthRoute && token) {
     try {

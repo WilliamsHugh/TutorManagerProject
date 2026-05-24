@@ -1,0 +1,37 @@
+import { Module } from '@nestjs/common';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { ClassRequest } from './class-request.entity';
+import { Class } from './class.entity';
+import { Schedule } from './schedule.entity';
+import { LearningReport } from './learning-report.entity';
+import { Review } from './review.entity';
+import { Student } from '../users/entities/student.entity';
+import { Tutor } from '../users/entities/tutor.entity';
+import { Subject } from '../subjects/subject.entity';
+import { User } from '../users/entities/user.entity';
+import { TutorSubject } from '../tutors/tutor-subject.entity';
+import { ClassRequestsController } from './class-requests.controller';
+import { ClassRequestsService } from './class-requests.service';
+import { ClassesController } from './classes.controller';
+import { ClassesService } from './classes.service';
+
+@Module({
+  imports: [
+    TypeOrmModule.forFeature([
+      ClassRequest,
+      Class,
+      Schedule,
+      LearningReport,
+      Review,
+      Student,
+      Tutor,
+      Subject,
+      User,
+      TutorSubject,
+    ]),
+  ],
+  controllers: [ClassRequestsController, ClassesController],
+  providers: [ClassRequestsService, ClassesService],
+  exports: [ClassRequestsService, ClassesService],
+})
+export class ClassesModule {}

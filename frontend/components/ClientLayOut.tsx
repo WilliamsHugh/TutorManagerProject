@@ -10,9 +10,13 @@ export default function ClientLayout({
 }) {
   const pathname = usePathname();
 
+  const isHub = pathname.startsWith("/hub") && pathname !== "/hub/login";
+  const isStudent = pathname.includes("/student");
+
   return (
     <>
-      {pathname.includes("/student") && <Header />}
+      {isStudent && <Header />}
+      {isHub && <Header customLinks={[]} />}
       {children}
     </>
   );

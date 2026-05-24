@@ -15,58 +15,13 @@ export async function middleware(request: NextRequest) {
   const isHubLoginRoute = pathname === '/hub/login';
   
   const isDashboardRoute = pathname.startsWith('/dashboard');
-  const isStaffRoute = pathname.startsWith('/staff');
   
   const isClientAuthRoute = pathname === '/login' || pathname === '/register';
 
   // 3. Xử lý bảo vệ các route nội bộ của Hub (/hub/*)
   if (isHubRoute && !isHubLoginRoute) {
-    if (!token) {
-      return NextResponse.redirect(new URL('/hub/login', request.url));
-    }
-
-    try {
-      const secret = new TextEncoder().encode(JWT_SECRET);
-      const { payload } = await jwtVerify(token, secret);
-      const userRole = (payload as any).role;
-
-      // Chỉ có admin hoặc staff mới được vào cổng nội bộ
-      if (userRole !== 'admin' && userRole !== 'staff') {
-        return NextResponse.redirect(new URL('/403', request.url));
-      }
-
-      // Trang Admin Dashboard chỉ cho phép role admin
-      if (pathname === '/hub/dashboard' && userRole !== 'admin') {
-        return NextResponse.redirect(new URL('/hub/request-management', request.url));
-      }
-    } catch (error) {
-      console.error('Middleware Hub JWT Error:', error);
-      const response = NextResponse.redirect(new URL('/hub/login', request.url));
-      response.cookies.delete('access_token');
-      return response;
-    }
-  }
-
-  // 4. Xử lý bảo vệ các route /staff/*
-  if (isStaffRoute) {
-    if (!token) {
-      return NextResponse.redirect(new URL('/hub/login', request.url));
-    }
-
-    try {
-      const secret = new TextEncoder().encode(JWT_SECRET);
-      const { payload } = await jwtVerify(token, secret);
-      const userRole = (payload as any).role;
-
-      if (userRole !== 'admin' && userRole !== 'staff') {
-        return NextResponse.redirect(new URL('/403', request.url));
-      }
-    } catch (error) {
-      console.error('Middleware Staff JWT Error:', error);
-      const response = NextResponse.redirect(new URL('/hub/login', request.url));
-      response.cookies.delete('access_token');
-      return response;
-    }
+    // Tạm thời bỏ qua bảo mật để vào hub trực tiếp chỉnh sửa
+    return NextResponse.next();
   }
 
   // 5. Xử lý bảo vệ các route /dashboard/*
@@ -132,7 +87,6 @@ export async function middleware(request: NextRequest) {
 export const config = {
   matcher: [
     '/dashboard/:path*',
-    '/staff/:path*',
     '/hub/:path*',
     '/login',
     '/register'

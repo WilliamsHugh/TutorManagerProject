@@ -1,6 +1,10 @@
 import {
-  Entity, PrimaryGeneratedColumn, Column,
-  ManyToOne, JoinColumn, CreateDateColumn,
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  ManyToOne,
+  JoinColumn,
+  CreateDateColumn,
 } from 'typeorm';
 import { Class } from './class.entity';
 import { Tutor } from '../../users/entities/tutor.entity';
@@ -25,7 +29,11 @@ export class LearningReport {
   @JoinColumn({ name: 'tutor_id' })
   tutor!: Tutor;
 
-  @Column({ name: 'report_date', type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
+  @Column({
+    name: 'report_date',
+    type: 'timestamp',
+    default: () => 'CURRENT_TIMESTAMP',
+  })
   reportDate!: Date;
 
   @Column({ type: 'text', nullable: true })
@@ -40,6 +48,10 @@ export class LearningReport {
   @Column({ name: 'attendance_status', type: 'boolean', default: true })
   attendanceStatus!: boolean;
 
-  @CreateDateColumn({ name: 'created_at', type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
+  @CreateDateColumn({
+    name: 'created_at',
+    type: 'timestamp',
+    default: () => 'CURRENT_TIMESTAMP',
+  })
   createdAt!: Date;
 }

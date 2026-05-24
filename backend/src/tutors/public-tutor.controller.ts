@@ -16,6 +16,11 @@ export class PublicTutorController {
     @Query('page') page = '1',
     @Query('limit') limit = '12',
   ) {
-    return this.tutorsService.getPublicTutors({ search, subject, page: +page, limit: +limit });
+    return this.tutorsService.getPublicTutors({
+      search,
+      subject,
+      page: +page,
+      limit: +limit,
+    });
   }
 }

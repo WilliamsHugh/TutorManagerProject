@@ -1,5 +1,9 @@
 import {
-  Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn,
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  ManyToOne,
+  JoinColumn,
 } from 'typeorm';
 import { Class } from './class.entity';
 
@@ -31,7 +35,12 @@ export class Schedule {
   @Column({ name: 'session_date', type: 'date', nullable: true })
   sessionDate!: Date;
 
-  @Column({ name: 'session_status', type: 'varchar', length: 20, default: SessionStatus.SCHEDULED })
+  @Column({
+    name: 'session_status',
+    type: 'varchar',
+    length: 20,
+    default: SessionStatus.SCHEDULED,
+  })
   sessionStatus!: SessionStatus;
 
   @Column({ type: 'text', nullable: true })

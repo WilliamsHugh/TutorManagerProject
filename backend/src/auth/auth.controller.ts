@@ -1,4 +1,13 @@
-import { Controller, Post, Body, Get, UseGuards, Request, Res, Patch } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  Get,
+  UseGuards,
+  Request,
+  Res,
+  Patch,
+} from '@nestjs/common';
 import type { Response } from 'express';
 import { AuthService } from './auth.service';
 import { UsersService } from '../users/users.service';
@@ -32,9 +41,12 @@ export class AuthController {
   }
 
   @Post('login')
-  async login(@Body() dto: LoginDto, @Res({ passthrough: true }) response: Response) {
+  async login(
+    @Body() dto: LoginDto,
+    @Res({ passthrough: true }) response: Response,
+  ) {
     const result = await this.authService.login(dto);
-    
+
     // Set cookie httpOnly cho bảo mật cao
     response.cookie('access_token', result.access_token, {
       httpOnly: true,

@@ -26,8 +26,18 @@ const dataSource = new DataSource({
   password: !process.env.DATABASE_URL ? process.env.DB_PASSWORD : undefined,
   database: !process.env.DATABASE_URL ? process.env.DB_NAME : undefined,
   entities: [
-    Role, User, Tutor, Student, Subject, TutorSubject, 
-    ClassRequest, Class, Schedule, LearningReport, Review, Notification
+    Role,
+    User,
+    Tutor,
+    Student,
+    Subject,
+    TutorSubject,
+    ClassRequest,
+    Class,
+    Schedule,
+    LearningReport,
+    Review,
+    Notification,
   ],
   ssl: { rejectUnauthorized: false },
 });
@@ -45,7 +55,9 @@ async function seed() {
   for (const rName of roles) {
     const existing = await roleRepo.findOneBy({ name: rName });
     if (!existing) {
-      await roleRepo.save(roleRepo.create({ name: rName, description: `Vai trò ${rName}` }));
+      await roleRepo.save(
+        roleRepo.create({ name: rName, description: `Vai trò ${rName}` }),
+      );
       console.log(`Created role: ${rName}`);
     }
   }
@@ -58,13 +70,15 @@ async function seed() {
   const existingAdmin = await userRepo.findOneBy({ email: adminEmail });
   if (!existingAdmin) {
     const hashedPassword = await bcrypt.hash('Admin123@', 10);
-    await userRepo.save(userRepo.create({
-      email: adminEmail,
-      passwordHash: hashedPassword,
-      fullName: 'Hệ thống Admin',
-      role: adminRole!,
-      isActive: true,
-    }));
+    await userRepo.save(
+      userRepo.create({
+        email: adminEmail,
+        passwordHash: hashedPassword,
+        fullName: 'Hệ thống Admin',
+        role: adminRole!,
+        isActive: true,
+      }),
+    );
     console.log('Created Admin user: admin@tutoredu.com / Admin123@');
   }
 
@@ -73,22 +87,33 @@ async function seed() {
   const existingStaff = await userRepo.findOneBy({ email: staffEmail });
   if (!existingStaff) {
     const hashedPassword = await bcrypt.hash('Staff123@', 10);
-    await userRepo.save(userRepo.create({
-      email: staffEmail,
-      passwordHash: hashedPassword,
-      fullName: 'Nhân viên quản lý',
-      role: staffRole!,
-      isActive: true,
-    }));
+    await userRepo.save(
+      userRepo.create({
+        email: staffEmail,
+        passwordHash: hashedPassword,
+        fullName: 'Nhân viên quản lý',
+        role: staffRole!,
+        isActive: true,
+      }),
+    );
     console.log('Created Staff user: staff@tutoredu.com / Staff123@');
   }
 
   // 4. Seed Subjects
-  const defaultSubjects = ['Toán', 'Lý', 'Hóa', 'Tiếng Anh', 'Ngữ văn', 'Tin học'];
+  const defaultSubjects = [
+    'Toán',
+    'Lý',
+    'Hóa',
+    'Tiếng Anh',
+    'Ngữ văn',
+    'Tin học',
+  ];
   for (const sName of defaultSubjects) {
     const existing = await subjectRepo.findOneBy({ name: sName });
     if (!existing) {
-      await subjectRepo.save(subjectRepo.create({ name: sName, isActive: true }));
+      await subjectRepo.save(
+        subjectRepo.create({ name: sName, isActive: true }),
+      );
       console.log(`Created subject: ${sName}`);
     }
   }
@@ -114,9 +139,9 @@ async function seed() {
         experience: '2 năm kinh nghiệm dạy kèm môn Toán, Lý cấp 3',
         idCardNumber: '079123456789',
         availableAreas: 'Quận 1, Quận 5',
-        approvalStatus: ApprovalStatus.APPROVED
+        approvalStatus: ApprovalStatus.APPROVED,
       },
-      subjects: ['Toán', 'Lý']
+      subjects: ['Toán', 'Lý'],
     },
     {
       email: 'tran_thi_cam@tutoredu.com',
@@ -129,9 +154,9 @@ async function seed() {
         experience: '5 năm kinh nghiệm giảng dạy môn Toán và Hóa học',
         idCardNumber: '079123456788',
         availableAreas: 'Quận 1, Quận 4, Quận 7',
-        approvalStatus: ApprovalStatus.APPROVED
+        approvalStatus: ApprovalStatus.APPROVED,
       },
-      subjects: ['Toán', 'Hóa']
+      subjects: ['Toán', 'Hóa'],
     },
     {
       email: 'le_minh_dat@tutoredu.com',
@@ -144,9 +169,9 @@ async function seed() {
         experience: '1.5 năm kinh nghiệm, rành kèm học sinh trung học',
         idCardNumber: '079123456787',
         availableAreas: 'Quận 3, Quận 10',
-        approvalStatus: ApprovalStatus.PENDING
+        approvalStatus: ApprovalStatus.PENDING,
       },
-      subjects: ['Toán', 'Tin học']
+      subjects: ['Toán', 'Tin học'],
     },
     {
       email: 'phan_ngoc_ha@tutoredu.com',
@@ -159,40 +184,46 @@ async function seed() {
         experience: '3 năm kinh nghiệm dạy ôn thi',
         idCardNumber: '079123456786',
         availableAreas: 'Bình Thạnh',
-        approvalStatus: ApprovalStatus.APPROVED
+        approvalStatus: ApprovalStatus.APPROVED,
       },
-      subjects: ['Toán']
-    }
+      subjects: ['Toán'],
+    },
   ];
 
   for (const item of mockTutorsData) {
     const existing = await userRepo.findOneBy({ email: item.email });
     if (!existing) {
       const hashedPassword = await bcrypt.hash('Tutor123@', 10);
-      const user = await userRepo.save(userRepo.create({
-        email: item.email,
-        passwordHash: hashedPassword,
-        fullName: item.fullName,
-        phone: item.phone,
-        address: item.address,
-        role: tutorRole!,
-        isActive: true
-      }));
+      const user = await userRepo.save(
+        userRepo.create({
+          email: item.email,
+          passwordHash: hashedPassword,
+          fullName: item.fullName,
+          phone: item.phone,
+          address: item.address,
+          role: tutorRole!,
+          isActive: true,
+        }),
+      );
 
-      const tutor = await tutorRepo.save(tutorRepo.create({
-        ...item.tutor,
-        user
-      }));
+      const tutor = await tutorRepo.save(
+        tutorRepo.create({
+          ...item.tutor,
+          user,
+        }),
+      );
 
       for (const subName of item.subjects) {
         const subject = await subjectRepo.findOneBy({ name: subName });
         if (subject) {
-          await tutorSubjectRepo.save(tutorSubjectRepo.create({
-            tutor,
-            subject,
-            proficiencyLevel: 'Co ban',
-            yearsExperience: 2
-          }));
+          await tutorSubjectRepo.save(
+            tutorSubjectRepo.create({
+              tutor,
+              subject,
+              proficiencyLevel: 'Co ban',
+              yearsExperience: 2,
+            }),
+          );
         }
       }
       console.log(`Seeded tutor: ${item.fullName}`);
@@ -235,7 +266,7 @@ async function seed() {
       phone: '0907225114',
       gradeLevel: 'Lớp 12',
       parentName: 'Hoàng Gia Bảo',
-    }
+    },
   ];
 
   const seededStudentsMap = new Map<string, Student>();
@@ -244,24 +275,30 @@ async function seed() {
     let student: Student;
     if (!existingUser) {
       const hashedPassword = await bcrypt.hash('Student123@', 10);
-      const user = await userRepo.save(userRepo.create({
-        email: item.email,
-        passwordHash: hashedPassword,
-        fullName: item.fullName,
-        phone: item.phone,
-        role: studentRole!,
-        isActive: true
-      }));
+      const user = await userRepo.save(
+        userRepo.create({
+          email: item.email,
+          passwordHash: hashedPassword,
+          fullName: item.fullName,
+          phone: item.phone,
+          role: studentRole!,
+          isActive: true,
+        }),
+      );
 
-      student = await studentRepo.save(studentRepo.create({
-        user,
-        gradeLevel: item.gradeLevel,
-        parentName: item.parentName,
-        parentPhone: item.phone
-      }));
+      student = await studentRepo.save(
+        studentRepo.create({
+          user,
+          gradeLevel: item.gradeLevel,
+          parentName: item.parentName,
+          parentPhone: item.phone,
+        }),
+      );
       console.log(`Seeded student: ${item.fullName}`);
     } else {
-      student = (await studentRepo.findOne({ where: { user: { id: existingUser.id } } }))!;
+      student = (await studentRepo.findOne({
+        where: { user: { id: existingUser.id } },
+      }))!;
     }
     seededStudentsMap.set(item.email, student);
   }
@@ -277,25 +314,28 @@ async function seed() {
       subject: mathSubject!,
       preferredArea: 'Quận 1, TP.HCM',
       preferredSchedule: 'Tối Thứ 2, Thứ 4 · 19:00 - 21:00',
-      requirements: 'Ưu tiên gia sư ĐH Bách Khoa hoặc KHTN, có kinh nghiệm dạy kèm cấp 3.',
-      status: 'pending'
+      requirements:
+        'Ưu tiên gia sư ĐH Bách Khoa hoặc KHTN, có kinh nghiệm dạy kèm cấp 3.',
+      status: 'pending',
     },
     {
       studentEmail: 'ngo_minh_an@tutoredu.com',
       subject: engSubject!,
       preferredArea: 'Thủ Đức, TP.HCM',
       preferredSchedule: 'Sáng Thứ 7, Chủ nhật · 08:00 - 10:00',
-      requirements: 'Cần gia sư thiện về phát âm, giao tiếp, có giáo trình nền tảng phù hợp cho học viên mới.',
-      status: 'processing'
+      requirements:
+        'Cần gia sư thiện về phát âm, giao tiếp, có giáo trình nền tảng phù hợp cho học viên mới.',
+      status: 'processing',
     },
     {
       studentEmail: 'tran_my_duyen@tutoredu.com',
       subject: chemSubject!,
       preferredArea: 'Quận 7, TP.HCM',
       preferredSchedule: 'Chiều Thứ 3, Thứ 5 · 17:30 - 19:30',
-      requirements: 'Ưu tiên gia sư có kinh nghiệm dạy kèm cấp 3, bổ trợ nâng cao.',
-      status: 'matched'
-    }
+      requirements:
+        'Ưu tiên gia sư có kinh nghiệm dạy kèm cấp 3, bổ trợ nâng cao.',
+      status: 'matched',
+    },
   ];
 
   for (const item of mockRequestsData) {
@@ -303,44 +343,54 @@ async function seed() {
     if (student) {
       const existingReq = await requestRepo.findOneBy({
         student: { id: student.id },
-        subject: { id: item.subject.id }
+        subject: { id: item.subject.id },
       });
       if (!existingReq) {
-        await requestRepo.save(requestRepo.create({
-          student,
-          subject: item.subject,
-          preferredArea: item.preferredArea,
-          preferredSchedule: item.preferredSchedule,
-          requirements: item.requirements,
-          status: item.status as any
-        }));
-        console.log(`Seeded class request for student of email: ${item.studentEmail}`);
+        await requestRepo.save(
+          requestRepo.create({
+            student,
+            subject: item.subject,
+            preferredArea: item.preferredArea,
+            preferredSchedule: item.preferredSchedule,
+            requirements: item.requirements,
+            status: item.status as any,
+          }),
+        );
+        console.log(
+          `Seeded class request for student of email: ${item.studentEmail}`,
+        );
       }
     }
   }
 
   // 8. Seed Mock Classes (for dashboard stats)
-  const activeTutorCam = await tutorRepo.findOne({ where: { user: { email: 'tran_thi_cam@tutoredu.com' } } });
-  const activeTutorBinh = await tutorRepo.findOne({ where: { user: { email: 'nguyen_van_binh@tutoredu.com' } } });
+  const activeTutorCam = await tutorRepo.findOne({
+    where: { user: { email: 'tran_thi_cam@tutoredu.com' } },
+  });
+  const activeTutorBinh = await tutorRepo.findOne({
+    where: { user: { email: 'nguyen_van_binh@tutoredu.com' } },
+  });
   const studentDuyen = seededStudentsMap.get('tran_my_duyen@tutoredu.com');
   const studentTan = seededStudentsMap.get('le_trong_tan@tutoredu.com');
 
   if (activeTutorCam && studentDuyen) {
     const existingClass = await classRepo.findOneBy({
       tutor: { id: activeTutorCam.id },
-      student: { id: studentDuyen.id }
+      student: { id: studentDuyen.id },
     });
     if (!existingClass) {
-      await classRepo.save(classRepo.create({
-        tutor: activeTutorCam,
-        student: studentDuyen,
-        subject: chemSubject!,
-        feePerSession: 300000,
-        totalSessions: 20,
-        status: 'active' as any,
-        startDate: new Date('2026-05-01'),
-        location: 'Quận 7, TP.HCM'
-      }));
+      await classRepo.save(
+        classRepo.create({
+          tutor: activeTutorCam,
+          student: studentDuyen,
+          subject: chemSubject!,
+          feePerSession: 300000,
+          totalSessions: 20,
+          status: 'active' as any,
+          startDate: new Date('2026-05-01'),
+          location: 'Quận 7, TP.HCM',
+        }),
+      );
       console.log('Seeded active class: Student Duyen & Tutor Cam');
     }
   }
@@ -348,20 +398,22 @@ async function seed() {
   if (activeTutorBinh && studentTan) {
     const existingClass = await classRepo.findOneBy({
       tutor: { id: activeTutorBinh.id },
-      student: { id: studentTan.id }
+      student: { id: studentTan.id },
     });
     if (!existingClass) {
-      await classRepo.save(classRepo.create({
-        tutor: activeTutorBinh,
-        student: studentTan,
-        subject: mathSubject!,
-        feePerSession: 250000,
-        totalSessions: 10,
-        status: 'completed' as any,
-        startDate: new Date('2026-04-01'),
-        endDate: new Date('2026-05-01'),
-        location: 'Quận 1, TP.HCM'
-      }));
+      await classRepo.save(
+        classRepo.create({
+          tutor: activeTutorBinh,
+          student: studentTan,
+          subject: mathSubject!,
+          feePerSession: 250000,
+          totalSessions: 10,
+          status: 'completed' as any,
+          startDate: new Date('2026-04-01'),
+          endDate: new Date('2026-05-01'),
+          location: 'Quận 1, TP.HCM',
+        }),
+      );
       console.log('Seeded completed class: Student Tan & Tutor Binh');
     }
   }

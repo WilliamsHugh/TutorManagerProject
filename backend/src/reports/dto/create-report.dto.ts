@@ -1,4 +1,10 @@
-import { IsString, IsNotEmpty, IsOptional, IsEnum, IsBoolean } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  IsOptional,
+  IsEnum,
+  IsBoolean,
+} from 'class-validator';
 import { ProgressRating } from '../../classes/entities/learning-report.entity';
 
 export class CreateLearningReportDto {

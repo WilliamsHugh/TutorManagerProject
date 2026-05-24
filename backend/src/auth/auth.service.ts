@@ -1,4 +1,10 @@
-import { Injectable, UnauthorizedException, ConflictException, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  UnauthorizedException,
+  ConflictException,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -51,7 +57,7 @@ export class AuthService {
         educationLevel: dto.education,
         experience: dto.experience,
       },
-      dto.subjects || []
+      dto.subjects || [],
     );
 
     const { passwordHash: _, ...result } = user;
@@ -69,7 +75,9 @@ export class AuthService {
     }
 
     // Kiểm tra bằng Bcrypt, nếu thất bại thì thử so sánh chuỗi thuần (để hỗ trợ dữ liệu SQL mẫu)
-    let isPasswordValid = await bcrypt.compare(dto.password, user.passwordHash).catch(() => false);
+    let isPasswordValid = await bcrypt
+      .compare(dto.password, user.passwordHash)
+      .catch(() => false);
     if (!isPasswordValid) {
       isPasswordValid = dto.password === user.passwordHash;
     }
@@ -83,12 +91,16 @@ export class AuthService {
     // Phân luồng đăng nhập dựa theo Portal
     if (dto.portal === 'hub') {
       if (roleName !== 'admin' && roleName !== 'staff') {
-        throw new UnauthorizedException('Tài khoản này không có quyền truy cập cổng quản trị nội bộ.');
+        throw new UnauthorizedException(
+          'Tài khoản này không có quyền truy cập cổng quản trị nội bộ.',
+        );
       }
     } else {
       // Đăng nhập từ cổng công cộng (hoặc không truyền portal)
       if (roleName === 'admin' || roleName === 'staff') {
-        throw new UnauthorizedException('Tài khoản quản trị. Vui lòng đăng nhập tại cổng nội bộ: /hub/login');
+        throw new UnauthorizedException(
+          'Tài khoản quản trị. Vui lòng đăng nhập tại cổng nội bộ: /hub/login',
+        );
       }
     }
 
@@ -128,7 +140,7 @@ export class AuthService {
 
     // Mock Email sending
     console.log(`[MAILER] Gửi OTP reset password tới ${email}: ${code}`);
-    
+
     return { message: 'Mã OTP đã được gửi tới email của bạn' };
   }
 

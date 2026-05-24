@@ -14,8 +14,15 @@ import { AdminController } from './admin.controller';
 @Module({
   imports: [
     TypeOrmModule.forFeature([
-      User, Role, Student, Tutor, Subject, TutorSubject, Class, ClassRequest
-    ])
+      User,
+      Role,
+      Student,
+      Tutor,
+      Subject,
+      TutorSubject,
+      Class,
+      ClassRequest,
+    ]),
   ],
   controllers: [AdminController],
   providers: [UsersService],

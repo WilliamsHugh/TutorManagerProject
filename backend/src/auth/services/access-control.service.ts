@@ -14,7 +14,7 @@ export class AccessControlService {
   ensureResourceOwnership(userId: string, targetUserId: string): void {
     if (userId !== targetUserId) {
       throw new ForbiddenException(
-        'Bạn không có quyền truy cập tài nguyên của người dùng khác'
+        'Bạn không có quyền truy cập tài nguyên của người dùng khác',
       );
     }
   }
@@ -25,7 +25,9 @@ export class AccessControlService {
    */
   hasRole(user: User, requiredRole: string | string[]): boolean {
     const userRole = typeof user.role === 'object' ? user.role.name : user.role;
-    const requiredRoles = Array.isArray(requiredRole) ? requiredRole : [requiredRole];
+    const requiredRoles = Array.isArray(requiredRole)
+      ? requiredRole
+      : [requiredRole];
     return requiredRoles.includes(userRole);
   }
 

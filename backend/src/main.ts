@@ -7,27 +7,29 @@ import helmet from 'helmet';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  
+
   // Security headers
   app.use(helmet());
-  
+
   app.use(cookieParser());
 
   // Enable CORS - sử dụng environment variable
-  const allowedOrigins = process.env.ALLOWED_ORIGINS 
+  const allowedOrigins = process.env.ALLOWED_ORIGINS
     ? process.env.ALLOWED_ORIGINS.split(',')
     : ['http://localhost:3000'];
-  
+
   app.enableCors({
     origin: allowedOrigins,
     credentials: true,
   });
 
   // Enable global validation
-  app.useGlobalPipes(new ValidationPipe({ 
-    transform: true,
-    whitelist: true 
-  }));
+  app.useGlobalPipes(
+    new ValidationPipe({
+      transform: true,
+      whitelist: true,
+    }),
+  );
 
   app.setGlobalPrefix('api');
 

@@ -1,6 +1,11 @@
 import {
-  Entity, PrimaryGeneratedColumn, Column,
-  ManyToOne, JoinColumn, CreateDateColumn, UpdateDateColumn,
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  ManyToOne,
+  JoinColumn,
+  CreateDateColumn,
+  UpdateDateColumn,
 } from 'typeorm';
 import { Student } from '../../users/entities/student.entity';
 import { Subject } from '../../subjects/subject.entity';
@@ -30,10 +35,20 @@ export class ClassRequest {
   @JoinColumn({ name: 'handled_by' })
   handledBy!: User;
 
-  @Column({ name: 'preferred_area', type: 'varchar', length: 255, nullable: true })
+  @Column({
+    name: 'preferred_area',
+    type: 'varchar',
+    length: 255,
+    nullable: true,
+  })
   preferredArea!: string;
 
-  @Column({ name: 'preferred_schedule', type: 'varchar', length: 255, nullable: true })
+  @Column({
+    name: 'preferred_schedule',
+    type: 'varchar',
+    length: 255,
+    nullable: true,
+  })
   preferredSchedule!: string;
 
   @Column({ type: 'text', nullable: true })

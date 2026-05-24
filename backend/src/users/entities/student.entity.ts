@@ -1,6 +1,9 @@
 import {
-  Entity, PrimaryGeneratedColumn, Column,
-  OneToOne, JoinColumn,
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  OneToOne,
+  JoinColumn,
 } from 'typeorm';
 import { User } from './user.entity';
 
@@ -25,6 +28,11 @@ export class Student {
   @Column({ name: 'parent_phone', type: 'varchar', length: 20, nullable: true })
   parentPhone!: string;
 
-  @Column({ name: 'parent_email', type: 'varchar', length: 255, nullable: true })
+  @Column({
+    name: 'parent_email',
+    type: 'varchar',
+    length: 255,
+    nullable: true,
+  })
   parentEmail!: string;
 }

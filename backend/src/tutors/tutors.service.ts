@@ -22,42 +22,44 @@ export class TutorsService {
       classes: [
         {
           id: 1,
-          code: "#LH1023",
-          title: "Tìm gia sư Tiếng Anh giao tiếp",
-          mode: "Online",
-          levelTag: "Người đi làm",
-          salary: "300,000đ - 350,000đ",
-          location: "Hà Nội",
-          studentInfo: "Sinh viên ngôn ngữ Anh hoặc có kinh nghiệm sư phạm, IELTS 7.0+",
-          postedAt: "Đăng 2 giờ trước",
+          code: '#LH1023',
+          title: 'Tìm gia sư Tiếng Anh giao tiếp',
+          mode: 'Online',
+          levelTag: 'Người đi làm',
+          salary: '300,000đ - 350,000đ',
+          location: 'Hà Nội',
+          studentInfo:
+            'Sinh viên ngôn ngữ Anh hoặc có kinh nghiệm sư phạm, IELTS 7.0+',
+          postedAt: 'Đăng 2 giờ trước',
         },
         {
           id: 2,
-          code: "#LH1024",
-          title: "Toán lớp 12 - Luyện thi Đại học",
-          mode: "Offline",
-          levelTag: "Lớp 12",
-          salary: "250,000đ",
-          location: "Quận Cầu Giấy, Hà Nội",
-          studentInfo: "3 buổi/tuần (Thứ 2, 4, 6)",
-          postedAt: "Đăng 5 giờ trước",
+          code: '#LH1024',
+          title: 'Toán lớp 12 - Luyện thi Đại học',
+          mode: 'Offline',
+          levelTag: 'Lớp 12',
+          salary: '250,000đ',
+          location: 'Quận Cầu Giấy, Hà Nội',
+          studentInfo: '3 buổi/tuần (Thứ 2, 4, 6)',
+          postedAt: 'Đăng 5 giờ trước',
         },
         {
           id: 3,
-          code: "#LH1025",
-          title: "Rèn chữ đẹp cho bé chuẩn bị vào lớp 1",
-          mode: "Offline",
-          levelTag: "Mầm non",
-          salary: "150,000đ",
-          location: "Quận Đống Đa, Hà Nội",
-          studentInfo: "Gia sư nữ, nhẹ nhàng, kiên nhẫn với trẻ em.",
-          postedAt: "Đăng hôm qua",
+          code: '#LH1025',
+          title: 'Rèn chữ đẹp cho bé chuẩn bị vào lớp 1',
+          mode: 'Offline',
+          levelTag: 'Mầm non',
+          salary: '150,000đ',
+          location: 'Quận Đống Đa, Hà Nội',
+          studentInfo: 'Gia sư nữ, nhẹ nhàng, kiên nhẫn với trẻ em.',
+          postedAt: 'Đăng hôm qua',
         },
       ],
       profile: {
-        name: "Mock Tutor",
-        avatar: "https://storage.googleapis.com/banani-avatars/avatar%2Fmale%2F25-35%2FSoutheast%20Asian%2F2",
-      }
+        name: 'Mock Tutor',
+        avatar:
+          'https://storage.googleapis.com/banani-avatars/avatar%2Fmale%2F25-35%2FSoutheast%20Asian%2F2',
+      },
     };
   }
 
@@ -85,7 +87,11 @@ export class TutorsService {
     return {};
   }
 
-  async updateReport(id: string, tutorId: string, dto: Partial<CreateLearningReportDto>) {
+  async updateReport(
+    id: string,
+    tutorId: string,
+    dto: Partial<CreateLearningReportDto>,
+  ) {
     return {};
   }
 

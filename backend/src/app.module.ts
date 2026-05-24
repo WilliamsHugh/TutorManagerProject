@@ -32,7 +32,7 @@ import { Otp } from './auth/entities/otp.entity';
       inject: [ConfigService],
       useFactory: (config: ConfigService) => {
         const dbUrl = config.get('DATABASE_URL');
-        
+
         return {
           type: 'postgres',
           url: dbUrl,
@@ -41,13 +41,21 @@ import { Otp } from './auth/entities/otp.entity';
           username: !dbUrl ? config.get('DB_USERNAME') : undefined,
           password: !dbUrl ? config.get('DB_PASSWORD') : undefined,
           database: !dbUrl ? config.get('DB_NAME') : undefined,
-          
+
           entities: [
-            Role, User, Tutor, Student,
-            Subject, TutorSubject,
-            ClassRequest, Class, Schedule,
-            LearningReport, Review, Notification,
-            Otp
+            Role,
+            User,
+            Tutor,
+            Student,
+            Subject,
+            TutorSubject,
+            ClassRequest,
+            Class,
+            Schedule,
+            LearningReport,
+            Review,
+            Notification,
+            Otp,
           ],
           synchronize: true,
           autoLoadEntities: true,
@@ -64,4 +72,4 @@ import { Otp } from './auth/entities/otp.entity';
     NotificationsModule,
   ],
 })
-export class AppModule { }
+export class AppModule {}

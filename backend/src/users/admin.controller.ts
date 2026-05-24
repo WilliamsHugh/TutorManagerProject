@@ -38,8 +38,10 @@ export class AdminController {
     @InjectRepository(Student) private studentsRepo: Repository<Student>,
     @InjectRepository(Subject) private subjectsRepo: Repository<Subject>,
     @InjectRepository(Class) private classesRepo: Repository<Class>,
-    @InjectRepository(ClassRequest) private requestsRepo: Repository<ClassRequest>,
-    @InjectRepository(TutorSubject) private tutorSubjectsRepo: Repository<TutorSubject>,
+    @InjectRepository(ClassRequest)
+    private requestsRepo: Repository<ClassRequest>,
+    @InjectRepository(TutorSubject)
+    private tutorSubjectsRepo: Repository<TutorSubject>,
   ) {}
 
   // ----------------------------------------------------
@@ -269,8 +271,8 @@ export class AdminController {
     @Query('fromDate') fromDate?: string,
     @Query('toDate') toDate?: string,
   ) {
-    let classWhere: any = {};
-    let requestWhere: any = {};
+    const classWhere: any = {};
+    const requestWhere: any = {};
 
     if (fromDate && toDate) {
       const start = new Date(fromDate);

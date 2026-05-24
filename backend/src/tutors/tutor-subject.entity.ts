@@ -1,6 +1,10 @@
 import {
-  Entity, PrimaryGeneratedColumn, Column,
-  ManyToOne, JoinColumn, Unique,
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  ManyToOne,
+  JoinColumn,
+  Unique,
 } from 'typeorm';
 import { Tutor } from '../users/entities/tutor.entity';
 import { Subject } from '../subjects/subject.entity';
@@ -19,7 +23,12 @@ export class TutorSubject {
   @JoinColumn({ name: 'subject_id' })
   subject!: Subject;
 
-  @Column({ name: 'proficiency_level', type: 'varchar', length: 50, nullable: true })
+  @Column({
+    name: 'proficiency_level',
+    type: 'varchar',
+    length: 50,
+    nullable: true,
+  })
   proficiencyLevel!: string; // 'Co ban' | 'Nang cao' | 'Chuyen sau'
 
   @Column({ name: 'years_experience', type: 'int', nullable: true })

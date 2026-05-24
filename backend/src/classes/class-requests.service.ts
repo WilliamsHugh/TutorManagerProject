@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ClassRequest, RequestStatus } from './entities/class-request.entity';
@@ -36,7 +40,9 @@ export class ClassRequestsService {
     });
     if (!student) throw new NotFoundException('Không tìm thấy học viên');
 
-    const subject = await this.subjectsRepository.findOneBy({ id: dto.subjectId });
+    const subject = await this.subjectsRepository.findOneBy({
+      id: dto.subjectId,
+    });
     if (!subject) throw new NotFoundException('Không tìm thấy môn học');
 
     const request = this.classRequestsRepository.create({
@@ -84,7 +90,8 @@ export class ClassRequestsService {
         handledBy: true,
       },
     });
-    if (!request) throw new NotFoundException('Không tìm thấy yêu cầu tìm gia sư');
+    if (!request)
+      throw new NotFoundException('Không tìm thấy yêu cầu tìm gia sư');
     return request;
   }
 
@@ -117,7 +124,8 @@ export class ClassRequestsService {
     return tutorSubjects.map((item) => {
       const availableAreas = item.tutor.availableAreas?.toLowerCase() ?? '';
       const areaMatched = Boolean(area && availableAreas.includes(area));
-      const score = 70 + (areaMatched ? 20 : 0) + Math.min(item.yearsExperience ?? 0, 10);
+      const score =
+        70 + (areaMatched ? 20 : 0) + Math.min(item.yearsExperience ?? 0, 10);
 
       return {
         tutor: item.tutor,

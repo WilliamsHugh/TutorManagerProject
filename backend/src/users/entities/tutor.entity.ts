@@ -1,6 +1,11 @@
 import {
-  Entity, PrimaryGeneratedColumn, Column,
-  OneToOne, JoinColumn, ManyToOne, OneToMany,
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  OneToOne,
+  JoinColumn,
+  ManyToOne,
+  OneToMany,
 } from 'typeorm';
 import { User } from './user.entity';
 
@@ -22,10 +27,20 @@ export class Tutor {
   @Column({ name: 'date_of_birth', type: 'date', nullable: true })
   dateOfBirth!: Date;
 
-  @Column({ name: 'id_card_number', type: 'varchar', length: 20, nullable: true })
+  @Column({
+    name: 'id_card_number',
+    type: 'varchar',
+    length: 20,
+    nullable: true,
+  })
   idCardNumber!: string;
 
-  @Column({ name: 'education_level', type: 'varchar', length: 100, nullable: true })
+  @Column({
+    name: 'education_level',
+    type: 'varchar',
+    length: 100,
+    nullable: true,
+  })
   educationLevel!: string;
 
   @Column({ type: 'varchar', length: 255, nullable: true })

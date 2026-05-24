@@ -1,4 +1,8 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Class, ClassStatus } from './entities/class.entity';
@@ -30,7 +34,8 @@ export class ClassesService {
         subject: true,
       },
     });
-    if (!request) throw new NotFoundException('Không tìm thấy yêu cầu tìm gia sư');
+    if (!request)
+      throw new NotFoundException('Không tìm thấy yêu cầu tìm gia sư');
 
     const existingClass = await this.classesRepository.findOne({
       where: { request: { id: dto.requestId } },

@@ -1,6 +1,10 @@
 import {
-  Entity, PrimaryGeneratedColumn, Column,
-  ManyToOne, OneToOne, JoinColumn,
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  ManyToOne,
+  OneToOne,
+  JoinColumn,
 } from 'typeorm';
 import { Tutor } from '../../users/entities/tutor.entity';
 import { Student } from '../../users/entities/student.entity';
@@ -43,7 +47,13 @@ export class Class {
   @Column({ type: 'varchar', length: 255, nullable: true })
   location!: string;
 
-  @Column({ name: 'fee_per_session', type: 'decimal', precision: 10, scale: 2, nullable: true })
+  @Column({
+    name: 'fee_per_session',
+    type: 'decimal',
+    precision: 10,
+    scale: 2,
+    nullable: true,
+  })
   feePerSession!: number;
 
   @Column({ name: 'total_sessions', type: 'int', nullable: true })

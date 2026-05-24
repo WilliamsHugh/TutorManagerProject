@@ -1,5 +1,16 @@
 // backend/src/tutors/tutor.controller.ts
-import { Controller, Get, Post, Patch, Delete, Body, UseGuards, Request, Query, Param } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Delete,
+  Body,
+  UseGuards,
+  Request,
+  Query,
+  Param,
+} from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard'; // Bảo mật bằng JWT
 import { TutorsService } from './tutors.service';
 import { CreateLearningReportDto } from '../reports/dto/create-report.dto';
@@ -14,13 +25,18 @@ export class TutorController {
   async getDashboard(@Request() req, @Query('date') date?: string) {
     // Đảm bảo lấy đúng ID từ payload JWT (trường sub hoặc id)
     const tutorId = req.user.id || req.user.sub;
-    if (!tutorId) console.error('Dashboard Error: User ID not found in request');
+    if (!tutorId)
+      console.error('Dashboard Error: User ID not found in request');
     return this.tutorsService.getTutorDashboard(tutorId, date);
   }
 
   // Lấy lịch dạy cá nhân (TUTOR_QĐ2)
   @Get('schedule')
-  async getMySchedule(@Request() req, @Query('date') date?: string, @Query('view') view?: string) {
+  async getMySchedule(
+    @Request() req,
+    @Query('date') date?: string,
+    @Query('view') view?: string,
+  ) {
     const tutorId = req.user.id || req.user.sub;
     return this.tutorsService.findScheduleByTutor(tutorId, date, view);
   }
@@ -80,7 +96,11 @@ export class TutorController {
   }
 
   @Patch('reports/:id')
-  async updateReport(@Param('id') id: string, @Request() req, @Body() dto: Partial<CreateLearningReportDto>) {
+  async updateReport(
+    @Param('id') id: string,
+    @Request() req,
+    @Body() dto: Partial<CreateLearningReportDto>,
+  ) {
     const tutorId = req.user?.sub || req.user?.id;
     return this.tutorsService.updateReport(id, tutorId, dto);
   }

@@ -16,7 +16,8 @@ export class UsersService {
     @InjectRepository(Student) private studentsRepository: Repository<Student>,
     @InjectRepository(Tutor) private tutorsRepository: Repository<Tutor>,
     @InjectRepository(Subject) private subjectsRepository: Repository<Subject>,
-    @InjectRepository(TutorSubject) private tutorSubjectsRepository: Repository<TutorSubject>,
+    @InjectRepository(TutorSubject)
+    private tutorSubjectsRepository: Repository<TutorSubject>,
   ) {}
 
   async findByEmail(email: string): Promise<User | null> {
@@ -32,16 +33,25 @@ export class UsersService {
   }
 
   private async getOrCreateRole(roleName: string): Promise<Role> {
-    let role = await this.rolesRepository.findOne({ where: { name: roleName } });
+    let role = await this.rolesRepository.findOne({
+      where: { name: roleName },
+    });
     if (!role) {
-      role = this.rolesRepository.create({ name: roleName, description: `System generated ${roleName} role` });
+      role = this.rolesRepository.create({
+        name: roleName,
+        description: `System generated ${roleName} role`,
+      });
       await this.rolesRepository.save(role);
     }
     return role;
   }
 
-  async createStudent(userData: Partial<User>, studentData: Partial<Student> = {}): Promise<User> {
-    if (!userData.email) throw new ConflictException('Email không được để trống');
+  async createStudent(
+    userData: Partial<User>,
+    studentData: Partial<Student> = {},
+  ): Promise<User> {
+    if (!userData.email)
+      throw new ConflictException('Email không được để trống');
     const existing = await this.findByEmail(userData.email);
     if (existing) throw new ConflictException('Email đã được sử dụng');
 
@@ -58,8 +68,13 @@ export class UsersService {
     return savedUser;
   }
 
-  async createTutor(userData: Partial<User>, tutorData: Partial<Tutor>, subjectNames: string[] = []): Promise<User> {
-    if (!userData.email) throw new ConflictException('Email không được để trống');
+  async createTutor(
+    userData: Partial<User>,
+    tutorData: Partial<Tutor>,
+    subjectNames: string[] = [],
+  ): Promise<User> {
+    if (!userData.email)
+      throw new ConflictException('Email không được để trống');
     const existing = await this.findByEmail(userData.email);
     if (existing) throw new ConflictException('Email đã được sử dụng');
 
@@ -70,7 +85,11 @@ export class UsersService {
     const savedUser = await this.usersRepository.save(user);
 
     const tutor = this.tutorsRepository.create();
-    Object.assign(tutor, { ...tutorData, user: savedUser, approvalStatus: ApprovalStatus.PENDING });
+    Object.assign(tutor, {
+      ...tutorData,
+      user: savedUser,
+      approvalStatus: ApprovalStatus.PENDING,
+    });
     const savedTutor = await this.tutorsRepository.save(tutor);
 
     // Map subjects
@@ -81,7 +100,7 @@ export class UsersService {
         Object.assign(subject, { name, isActive: true });
         await this.subjectsRepository.save(subject);
       }
-      
+
       const tutorSubject = this.tutorSubjectsRepository.create();
       Object.assign(tutorSubject, { tutor: savedTutor, subject });
       await this.tutorSubjectsRepository.save(tutorSubject);
@@ -94,7 +113,10 @@ export class UsersService {
     await this.usersRepository.update(userId, { passwordHash });
   }
 
-  async updateProfile(userId: string, data: { fullName?: string, phone?: string }): Promise<User> {
+  async updateProfile(
+    userId: string,
+    data: { fullName?: string; phone?: string },
+  ): Promise<User> {
     const user = await this.findById(userId);
     if (!user) throw new Error('Không tìm thấy người dùng');
 

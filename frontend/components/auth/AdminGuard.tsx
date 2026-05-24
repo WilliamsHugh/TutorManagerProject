@@ -3,7 +3,7 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { getUserRole } from "@/lib/auth"
 
-export default function AdminGuard({ children }: { children: React.ReactNode }) {
+export default function AdminGuard({ children }: { children?: React.ReactNode }) {
   const router = useRouter()
   const [mounted, setMounted] = useState(false)
 

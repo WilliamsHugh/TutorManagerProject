@@ -6,7 +6,6 @@ import { ClassRequest, RequestStatus } from './entities/class-request.entity';
 import { Tutor } from '../users/entities/tutor.entity';
 import { User } from '../users/entities/user.entity';
 import { CreateClassDto } from './dto/create-class.dto';
-import { CreateLearningReportDto } from '../reports/dto/create-report.dto';
 
 type ClassesQuery = {
   status?: ClassStatus;
@@ -108,5 +107,4 @@ export class ClassesService {
     classEntity.status = status;
     return this.classesRepository.save(classEntity);
   }
-
 }

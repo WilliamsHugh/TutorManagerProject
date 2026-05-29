@@ -51,13 +51,13 @@ export class AuthController {
     // Cấp refresh token
     const refreshTokenStr = await this.authService.generateRefreshToken(result.user);
 
-    // Set cookie httpOnly cho access_token (15 phút)
+    // Set cookie httpOnly cho access_token (30 phút)
     response.cookie('access_token', result.access_token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       path: '/',
-      maxAge: 15 * 60 * 1000, // 15 phút
+      maxAge: 30 * 60 * 1000, // 30 phút
     });
 
     // Set cookie httpOnly cho refresh_token (7 ngày)
@@ -86,13 +86,13 @@ export class AuthController {
 
     const tokens = await this.authService.refresh(refreshTokenStr);
 
-    // Set access_token mới (15 phút)
+    // Set access_token mới (30 phút)
     response.cookie('access_token', tokens.access_token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       path: '/',
-      maxAge: 15 * 60 * 1000,
+      maxAge: 30 * 60 * 1000,
     });
 
     // Set refresh_token mới với rotation (7 ngày)

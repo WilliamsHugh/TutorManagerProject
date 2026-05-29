@@ -21,7 +21,7 @@ import { AccessControlService } from './services/access-control.service';
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
         secret: config.get<string>('JWT_SECRET'),
-        signOptions: { expiresIn: config.get('JWT_EXPIRES_IN') || '15m' },
+        signOptions: { expiresIn: config.get('JWT_EXPIRES_IN') || '30m' },
       }),
     }),
   ],

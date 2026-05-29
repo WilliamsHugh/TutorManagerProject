@@ -3,7 +3,6 @@
 import { Eye, EyeOff, ArrowRight, Loader2, ShieldAlert } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { saveAuth } from "@/lib/auth";
 
 const BACKEND_URL =
@@ -12,7 +11,6 @@ const BACKEND_URL =
     "http://localhost:3001/api";
 
 export default function HubLoginForm() {
-    const router = useRouter();
     const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -57,9 +55,11 @@ export default function HubLoginForm() {
             // Phân luồng theo role
             const role: string = data.user?.role?.name ?? "";
             if (role === "admin") {
-                router.push("/hub/dashboard");
+                // Dùng window.location.href thay vì router.push để đảm bảo middleware
+                // đọc được httpOnly cookie (access_token) do backend set, tránh bypass bảo mật
+                window.location.href = "/hub/dashboard";
             } else if (role === "staff") {
-                router.push("/staff/request-management");
+                window.location.href = "/staff/request-management";
             } else {
                 // Tài khoản không phải nội bộ
                 setErrorMsg("Tài khoản này không có quyền truy cập cổng quản trị nội bộ.");

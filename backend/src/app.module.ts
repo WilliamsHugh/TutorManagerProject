@@ -23,6 +23,7 @@ import { LearningReport } from './classes/entities/learning-report.entity';
 import { Review } from './classes/entities/review.entity';
 import { Notification } from './notifications/notification.entity';
 import { Otp } from './auth/entities/otp.entity';
+import { RefreshToken } from './auth/entities/refresh-token.entity';
 
 @Module({
   imports: [
@@ -56,6 +57,7 @@ import { Otp } from './auth/entities/otp.entity';
             Review,
             Notification,
             Otp,
+            RefreshToken,
           ],
           synchronize: true,
           autoLoadEntities: true,

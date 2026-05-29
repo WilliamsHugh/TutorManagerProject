@@ -14,6 +14,7 @@ import { ClassRequestsController } from './class-requests.controller';
 import { ClassRequestsService } from './class-requests.service';
 import { ClassesController } from './classes.controller';
 import { ClassesService } from './classes.service';
+import { ReviewsController } from './reviews.controller';
 
 @Module({
   imports: [
@@ -30,7 +31,7 @@ import { ClassesService } from './classes.service';
       TutorSubject,
     ]),
   ],
-  controllers: [ClassRequestsController, ClassesController],
+  controllers: [ClassRequestsController, ClassesController, ReviewsController],
   providers: [ClassRequestsService, ClassesService],
   exports: [ClassRequestsService, ClassesService],
 })

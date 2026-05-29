@@ -8,8 +8,11 @@ import { Repository } from 'typeorm';
 import { Class, ClassStatus } from './entities/class.entity';
 import { ClassRequest, RequestStatus } from './entities/class-request.entity';
 import { Tutor } from '../users/entities/tutor.entity';
+import { Student } from '../users/entities/student.entity';
+import { Review } from './entities/review.entity';
 import { User } from '../users/entities/user.entity';
 import { CreateClassDto } from './dto/create-class.dto';
+import { CreateReviewDto } from './dto/create-review.dto';
 
 type ClassesQuery = {
   status?: ClassStatus;
@@ -24,6 +27,10 @@ export class ClassesService {
     private readonly classRequestsRepository: Repository<ClassRequest>,
     @InjectRepository(Tutor)
     private readonly tutorsRepository: Repository<Tutor>,
+    @InjectRepository(Student)
+    private readonly studentsRepository: Repository<Student>,
+    @InjectRepository(Review)
+    private readonly reviewsRepository: Repository<Review>,
   ) {}
 
   async create(dto: CreateClassDto, createdBy?: User) {
@@ -111,5 +118,111 @@ export class ClassesService {
     const classEntity = await this.findOne(id);
     classEntity.status = status;
     return this.classesRepository.save(classEntity);
+  }
+
+  async findStudentClasses(userId: string) {
+    const student = await this.studentsRepository.findOne({
+      where: { user: { id: userId } },
+    });
+    if (!student) {
+      throw new NotFoundException('Không tìm thấy học viên tương ứng với tài khoản này');
+    }
+
+    return this.classesRepository.find({
+      where: { student: { id: student.id } },
+      relations: {
+        tutor: { user: true },
+        subject: true,
+      },
+      order: {
+        startDate: 'DESC',
+      },
+    });
+  }
+
+  async createReview(userId: string, dto: CreateReviewDto) {
+    const student = await this.studentsRepository.findOne({
+      where: { user: { id: userId } },
+    });
+    if (!student) {
+      throw new NotFoundException('Không tìm thấy học viên tương ứng với tài khoản này');
+    }
+
+    const classEntity = await this.classesRepository.findOne({
+      where: { id: dto.classId },
+      relations: {
+        student: true,
+        tutor: true,
+      },
+    });
+    if (!classEntity) {
+      throw new NotFoundException('Không tìm thấy lớp học');
+    }
+
+    if (classEntity.student.id !== student.id) {
+      throw new ConflictException('Bạn không thuộc lớp học này để thực hiện đánh giá');
+    }
+
+    const existingReview = await this.reviewsRepository.findOne({
+      where: {
+        class: { id: dto.classId },
+        student: { id: student.id },
+      },
+    });
+    if (existingReview) {
+      throw new ConflictException('Bạn đã thực hiện đánh giá lớp học này rồi');
+    }
+
+    const review = this.reviewsRepository.create({
+      class: classEntity,
+      student,
+      tutor: classEntity.tutor,
+      rating: dto.rating,
+      comment: dto.comment,
+    });
+
+    return this.reviewsRepository.save(review);
+  }
+
+  async getReviewsByTutor(tutorId: string) {
+    return this.reviewsRepository.find({
+      where: { tutor: { id: tutorId } },
+      relations: {
+        student: { user: true },
+        class: { subject: true },
+      },
+      order: {
+        createdAt: 'DESC',
+      },
+    });
+  }
+
+  async getClassReview(classId: string) {
+    return this.reviewsRepository.findOne({
+      where: { class: { id: classId } },
+      relations: {
+        student: { user: true },
+      },
+    });
+  }
+
+  async getReviewsByStudent(userId: string) {
+    const student = await this.studentsRepository.findOne({
+      where: { user: { id: userId } },
+    });
+    if (!student) {
+      throw new NotFoundException('Không tìm thấy học viên');
+    }
+
+    return this.reviewsRepository.find({
+      where: { student: { id: student.id } },
+      relations: {
+        tutor: { user: true },
+        class: { subject: true },
+      },
+      order: {
+        createdAt: 'DESC',
+      },
+    });
   }
 }

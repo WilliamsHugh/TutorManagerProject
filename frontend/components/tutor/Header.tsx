@@ -28,22 +28,33 @@ export default function Header({ title, showSearch = false, userProfile }: Heade
     const userData = getAuthUser();
     setUser(userData);
 
-    // Lấy thông báo từ database khi load component
-    getTutorNotifications()
-      .then(data => {
-        // Kiểm tra chắc chắn dữ liệu là mảng trước khi set
-        if (Array.isArray(data)) {
-          setNotifications(data);
-        }
-      })
-      .catch(err => console.error("Lỗi tải thông báo:", err));
+    // Chỉ lấy thông báo từ database nếu đang có token đăng nhập
+    const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
+    if (token) {
+      getTutorNotifications()
+        .then(data => {
+          if (Array.isArray(data)) {
+            setNotifications(data);
+          }
+        })
+        .catch(err => console.error("Lỗi tải thông báo:", err));
+    }
   }, []);
 
   const unreadCount = Array.isArray(notifications) ? notifications.filter(n => !n.isRead).length : 0;
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      // Gọi API Logout ở Backend để xóa Cookie HttpOnly bảo mật
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+        credentials: 'include',
+      });
+    } catch (error) {
+      console.error("Lỗi đăng xuất ở backend:", error);
+    }
     clearAuth(); // Xóa localStorage
-    // Xóa cookie để middleware nhận diện đã đăng xuất
+    // Xóa cookie ở Client-side phòng hờ
     document.cookie = "access_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
     router.push('/login');
   };

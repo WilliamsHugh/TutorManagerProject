@@ -39,7 +39,7 @@ const dataSource = new DataSource({
     Review,
     Notification,
   ],
-  ssl: { rejectUnauthorized: false },
+  ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false,
 });
 
 async function seed() {
@@ -101,9 +101,9 @@ async function seed() {
 
   // 4. Seed Subjects
   const defaultSubjects = [
-    'Toán',
-    'Lý',
-    'Hóa',
+    'Toán học',
+    'Vật lí',
+    'Hóa học',
     'Tiếng Anh',
     'Ngữ văn',
     'Tin học',
@@ -141,7 +141,7 @@ async function seed() {
         availableAreas: 'Quận 1, Quận 5',
         approvalStatus: ApprovalStatus.APPROVED,
       },
-      subjects: ['Toán', 'Lý'],
+      subjects: ['Toán học', 'Vật lí'],
     },
     {
       email: 'tran_thi_cam@tutoredu.com',
@@ -156,7 +156,7 @@ async function seed() {
         availableAreas: 'Quận 1, Quận 4, Quận 7',
         approvalStatus: ApprovalStatus.APPROVED,
       },
-      subjects: ['Toán', 'Hóa'],
+      subjects: ['Toán học', 'Hóa học'],
     },
     {
       email: 'le_minh_dat@tutoredu.com',
@@ -171,7 +171,7 @@ async function seed() {
         availableAreas: 'Quận 3, Quận 10',
         approvalStatus: ApprovalStatus.PENDING,
       },
-      subjects: ['Toán', 'Tin học'],
+      subjects: ['Toán học', 'Tin học'],
     },
     {
       email: 'phan_ngoc_ha@tutoredu.com',
@@ -186,7 +186,7 @@ async function seed() {
         availableAreas: 'Bình Thạnh',
         approvalStatus: ApprovalStatus.APPROVED,
       },
-      subjects: ['Toán'],
+      subjects: ['Toán học'],
     },
   ];
 

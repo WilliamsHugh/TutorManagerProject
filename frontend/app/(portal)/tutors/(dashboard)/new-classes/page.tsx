@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import ClassCard from '@/components/common/ClassCard';
 import { Icon } from '@iconify/react';
 import { getNewClasses } from '@/lib/api';
+import Header from '@/components/tutor/Header';
 
 export default function NewClassesPage() {
   const [classes, setClasses] = useState<any[]>([]);
@@ -67,7 +68,7 @@ export default function NewClassesPage() {
 
   return (
     <>
-
+      <Header title="Lớp học mới gợi ý" userProfile={profile} />
       
       <main className="p-8 space-y-6">
         {/* Filter Section */}
@@ -95,7 +96,7 @@ export default function NewClassesPage() {
               </div>
               {activeDropdown === 'subject' && (
                 <div className="absolute z-50 w-full mt-2 bg-white border border-slate-200 rounded-lg shadow-xl py-1">
-                  {['Tất cả môn học', 'Toán học', 'Tiếng Anh', 'Vật Lý', 'Hóa học'].map(opt => (
+                  {['Tất cả môn học', 'Toán học', 'Tiếng Anh', 'Vật lí', 'Hóa học'].map(opt => (
                     <div key={opt} onClick={() => { setSelectedSubject(opt); setActiveDropdown(null); }} className="px-4 py-2 text-sm hover:bg-blue-50 cursor-pointer">{opt}</div>
                   ))}
                 </div>

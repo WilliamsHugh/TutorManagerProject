@@ -3,30 +3,36 @@
 import React, { useState, useEffect, useRef } from 'react';
 
 import { Icon } from '@iconify/react';
-import { getTutorProfile, updateTutorProfile } from '@/lib/api';
+import { getTutorProfile, updateTutorProfile, getAllSubjects } from '@/lib/api';
+import Header from '@/components/tutor/Header';
 
 export default function ProfessionalProfilePage() {
   const [profile, setProfile] = useState<any>(null);
   const [formData, setFormData] = useState<any>({});
   const [loading, setLoading] = useState(true);
   const [isSaving, setIsUpdating] = useState(false);
+  const [allSubjects, setAllSubjects] = useState<any[]>([]);
+  const [showSubjectDropdown, setShowSubjectDropdown] = useState(false);
 
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const certInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    const fetchProfile = async () => {
+    const fetchProfileAndSubjects = async () => {
       try {
         const data = await getTutorProfile(); 
         setProfile(data.profile || {});
         setFormData(data.profile || {}); // Khởi tạo dữ liệu form từ profile
+
+        const subjectsData = await getAllSubjects();
+        setAllSubjects(subjectsData || []);
       } catch (error) {
-        console.error("Lỗi tải thông tin hồ sơ:", error);
+        console.error("Lỗi tải thông tin hồ sơ hoặc môn học:", error);
       } finally {
         setLoading(false);
       }
     };
-    fetchProfile();
+    fetchProfileAndSubjects();
   }, []);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -73,6 +79,7 @@ export default function ProfessionalProfilePage() {
 
   return (
     <>
+      <Header title="Cập nhật hồ sơ" userProfile={profile} />
       {loading ? (
         <div className="flex-1 flex justify-center items-center">
           <Icon icon="lucide:loader-2" className="animate-spin text-3xl text-blue-600" />
@@ -180,14 +187,61 @@ export default function ProfessionalProfilePage() {
             <SectionCard 
               icon="lucide:book-open" 
               title="Môn dạy & Năng lực" 
-              action={<button className="text-blue-600 text-sm font-medium flex items-center gap-1"><Icon icon="lucide:plus" /> Thêm</button>}
+              action={
+                <div className="relative">
+                  <button 
+                    onClick={() => setShowSubjectDropdown(!showSubjectDropdown)}
+                    className="text-blue-600 text-sm font-medium flex items-center gap-1 hover:text-blue-800 transition-colors"
+                  >
+                    <Icon icon="lucide:plus" /> Thêm
+                  </button>
+                  {showSubjectDropdown && (
+                    <div className="absolute right-0 mt-2 z-50 w-48 bg-white border border-slate-200 rounded-lg shadow-xl py-1 max-h-48 overflow-y-auto">
+                      {Array.from(new Set(allSubjects.map(sub => sub.name)))
+                        .filter(name => !(formData.subjects || []).includes(name))
+                        .map((name, index) => (
+                          <div 
+                            key={index} 
+                            onClick={() => {
+                              setFormData((prev: any) => ({
+                                ...prev,
+                                subjects: [...(prev.subjects || []), name]
+                              }));
+                              setShowSubjectDropdown(false);
+                            }} 
+                            className="px-4 py-2 text-sm hover:bg-blue-50 cursor-pointer text-slate-700 hover:text-blue-700 font-medium transition-colors text-left"
+                          >
+                            {name}
+                          </div>
+                        ))
+                      }
+                      {Array.from(new Set(allSubjects.map(sub => sub.name))).filter(name => !(formData.subjects || []).includes(name)).length === 0 && (
+                        <div className="px-4 py-2 text-xs text-slate-400 text-center">Đã thêm tất cả môn học</div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              }
             >
               <div className="space-y-4">
                 <div>
                   <label className="text-xs text-slate-400 uppercase tracking-wider mb-2 block">Môn học giảng dạy</label>
                   <div className="flex flex-wrap gap-2">
                     {formData.subjects?.length > 0 
-                      ? formData.subjects.map((sub: any, i: number) => <Tag key={i} label={sub} primary />)
+                      ? formData.subjects.map((sub: any, i: number) => (
+                          <Tag 
+                            key={i} 
+                            label={sub} 
+                            primary 
+                            removable 
+                            onRemove={() => {
+                              setFormData((prev: any) => ({
+                                ...prev,
+                                subjects: (prev.subjects || []).filter((s: string) => s !== sub)
+                              }));
+                            }}
+                          />
+                        ))
                       : <span className="text-sm text-slate-500">Chưa cập nhật</span>}
                   </div>
                 </div>
@@ -268,11 +322,11 @@ function InputField({ label, value, name, onChange, className = "", type = "text
   );
 }
 
-function Tag({ label, primary = false, removable = false }: { label: string; primary?: boolean; removable?: boolean }) {
+function Tag({ label, primary = false, removable = false, onRemove }: { label: string; primary?: boolean; removable?: boolean; onRemove?: () => void }) {
   return (
     <span className={`px-3 py-1 rounded-full text-sm font-medium flex items-center gap-2 ${primary ? 'bg-blue-100 text-blue-700 border border-blue-200' : 'bg-slate-100 text-slate-700'}`}>
       {label}
-      {removable && <Icon icon="lucide:x" className="cursor-pointer text-slate-400 hover:text-slate-600" />}
+      {removable && <Icon icon="lucide:x" className="cursor-pointer text-slate-400 hover:text-red-500 transition-colors" onClick={onRemove} />}
     </span>
   );
 }

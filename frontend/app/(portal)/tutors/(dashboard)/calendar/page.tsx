@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { Icon } from '@iconify/react';
 import { getTutorSchedule } from '@/lib/api';
+import Header from '@/components/tutor/Header';
 
 export default function CalendarPage() {
   const [calendarData, setCalendarData] = useState<any>(null);
@@ -83,6 +84,7 @@ export default function CalendarPage() {
 
   return (
     <>
+      <Header title="Lịch giảng dạy" userProfile={profile} />
 
       <div className="content" style={{ padding: '32px' }}>
         <div className="calendar-wrapper" style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden' }}>

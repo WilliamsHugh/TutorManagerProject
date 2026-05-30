@@ -52,6 +52,15 @@ export class Tutor {
   @Column({ name: 'available_areas', type: 'text', nullable: true })
   availableAreas!: string;
 
+  @Column({ type: 'text', nullable: true })
+  bio!: string;
+
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  university!: string;
+
+  @Column({ name: 'graduation_year', type: 'varchar', length: 50, nullable: true })
+  graduationYear!: string;
+
   @Column({
     name: 'approval_status',
     type: 'varchar',

@@ -49,8 +49,9 @@ export async function getNewClasses() {
 // Hàm lấy thông tin hồ sơ gia sư
 export async function getTutorProfile() {
   const token = getToken();
-  const res = await fetch(`${API_URL}/tutor/dashboard`, {
+  const res = await fetch(`${API_URL}/tutor/profile`, {
     headers: { 'Authorization': `Bearer ${token}` },
+    cache: 'no-store'
   });
   if (!res.ok) throw new Error('Không thể tải thông tin hồ sơ');
   return res.json();
@@ -68,6 +69,43 @@ export async function updateTutorProfile(data: any) {
     body: JSON.stringify(data),
   });
   if (!res.ok) throw new Error('Không thể cập nhật hồ sơ');
+  return res.json();
+}
+
+// Hàm lấy danh sách môn học của gia sư
+export async function getTutorSubjects() {
+  const token = getToken();
+  const res = await fetch(`${API_URL}/tutor/subjects`, {
+    headers: { 'Authorization': `Bearer ${token}` },
+    cache: 'no-store'
+  });
+  if (!res.ok) throw new Error('Không thể tải danh sách môn học của gia sư');
+  return res.json();
+}
+
+// Hàm cập nhật danh sách môn học của gia sư
+export async function updateTutorSubjects(subjects: string[]) {
+  const token = getToken();
+  const res = await fetch(`${API_URL}/tutor/subjects`, {
+    method: 'PUT',
+    headers: { 
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}` 
+    },
+    body: JSON.stringify({ subjects }),
+  });
+  if (!res.ok) throw new Error('Không thể cập nhật danh sách môn học');
+  return res.json();
+}
+
+// Hàm lấy tất cả môn học trong hệ thống
+export async function getAllSubjects() {
+  const token = getToken();
+  const res = await fetch(`${API_URL}/subjects`, {
+    headers: { 'Authorization': `Bearer ${token}` },
+    cache: 'no-store'
+  });
+  if (!res.ok) throw new Error('Không thể tải danh sách môn học hệ thống');
   return res.json();
 }
 

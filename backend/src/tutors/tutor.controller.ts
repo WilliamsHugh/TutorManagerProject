@@ -1,8 +1,8 @@
-// backend/src/tutors/tutor.controller.ts
 import {
   Controller,
   Get,
   Post,
+  Put,
   Patch,
   Delete,
   Body,
@@ -19,6 +19,27 @@ import { CreateLearningReportDto } from '../reports/dto/create-report.dto';
 @UseGuards(JwtAuthGuard) // Kích hoạt lại bảo mật JWT
 export class TutorController {
   constructor(private readonly tutorsService: TutorsService) {}
+
+  // Lấy hồ sơ chi tiết của gia sư
+  @Get('profile')
+  async getProfile(@Request() req) {
+    const tutorId = req.user.id || req.user.sub;
+    return { profile: await this.tutorsService.getTutorProfileData(tutorId) };
+  }
+
+  // Lấy danh sách môn học của gia sư
+  @Get('subjects')
+  async getSubjects(@Request() req) {
+    const tutorId = req.user.id || req.user.sub;
+    return this.tutorsService.getTutorSubjects(tutorId);
+  }
+
+  // Cập nhật danh sách môn học của gia sư
+  @Put('subjects')
+  async updateSubjects(@Request() req, @Body('subjects') subjects: string[]) {
+    const tutorId = req.user.id || req.user.sub;
+    return this.tutorsService.updateTutorSubjects(tutorId, subjects);
+  }
 
   // Lấy dữ liệu tổng quan cho Dashboard từ Database
   @Get('dashboard')

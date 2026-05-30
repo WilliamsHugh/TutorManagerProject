@@ -12,6 +12,7 @@ import {
 } from '@/lib/api'; 
 import { getAuthUser } from '@/lib/auth';
 import Link from 'next/link';
+import Header from '@/components/tutor/Header';
 
 export default function TutorDashboard() {
   // 1. Khởi tạo State rỗng để đợi dữ liệu từ backend
@@ -145,7 +146,7 @@ export default function TutorDashboard() {
 
   return (
     <>
-
+      <Header title="Dashboard" userProfile={profile} />
       
       <div className="content" style={{ padding: '32px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
         
@@ -311,7 +312,7 @@ export default function TutorDashboard() {
                       </td>
                       <td style={{ padding: '16px 24px' }}>
                         <button 
-                          onClick={() => setReportingClass({ id: cls.id, classId: cls.rawId, name: cls.subject })}
+                          onClick={() => setReportingClass({ id: cls.id, classId: cls.rawId, name: cls.subject, student: cls.student })}
                           style={{ background: 'none', border: 'none', cursor: 'pointer', marginRight: '8px' }} 
                           title="Báo cáo"
                         ><Icon icon="lucide:file-text" fontSize={18} /></button>
@@ -340,7 +341,7 @@ export default function TutorDashboard() {
               <div className="p-6 border-b flex justify-between items-center bg-slate-50">
                 <div>
                   <h3 className="text-xl font-bold text-slate-900">Quản lý báo cáo: {reportingClass.name}</h3>
-                  <p className="text-xs text-slate-500 mt-1">Mã lớp: {reportingClass.id} (UUID: {reportingClass.classId})</p>
+                  <p className="text-xs text-blue-800 mt-1 font-semibold">Học viên: {reportingClass.student}</p>
                 </div>
                 <button onClick={() => { setReportingClass(null); setIsEditingReport(null); }} className="text-slate-400 hover:text-slate-600">
                   <Icon icon="lucide:x" fontSize={24} />

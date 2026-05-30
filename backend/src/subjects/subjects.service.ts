@@ -9,4 +9,11 @@ export class SubjectsService {
     @InjectRepository(Subject)
     private readonly subjectsRepository: Repository<Subject>,
   ) {}
+
+  async findAll() {
+    return this.subjectsRepository.find({
+      where: { isActive: true },
+      order: { name: 'ASC' }
+    });
+  }
 }

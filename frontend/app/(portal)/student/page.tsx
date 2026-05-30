@@ -78,8 +78,6 @@ export default function StudentDashboardPage() {
     setSubmitted(true);
   };
 
-  if (!isLoggedIn()) return null;
-
   return (
     <div
       className="min-h-screen bg-[#f8fafc] text-[#0f172a]"

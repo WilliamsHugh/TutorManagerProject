@@ -4,11 +4,12 @@ import { useMemo, useState, useEffect } from "react";
 import type { FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { isLoggedIn, getUserRole } from "@/lib/auth";
+import { getStudentTutors } from "@/lib/api";
 
+import type { TutorSuggestion } from "./types";
 import { TutorRequestForm } from "./_components/TutorRequestForm";
 import { TutorRequestPageHeader } from "./_components/TutorRequestPageHeader";
 import { TutorSuggestionsPanel } from "./_components/TutorSuggestionsPanel";
-import { tutors } from "./data";
 
 export default function StudentDashboardPage() {
   const router = useRouter();
@@ -20,6 +21,8 @@ export default function StudentDashboardPage() {
   const [note, setNote] = useState("");
   const [search, setSearch] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [tutors, setTutors] = useState<TutorSuggestion[]>([]);
+  const [loading, setLoading] = useState(true);
 
   // Auth protection
   useEffect(() => {
@@ -27,6 +30,22 @@ export default function StudentDashboardPage() {
       router.replace("/login");
     }
   }, [router]);
+
+  // Fetch tutors from API
+  useEffect(() => {
+    async function fetchTutors() {
+      try {
+        setLoading(true);
+        const result = await getStudentTutors({ limit: 20 });
+        setTutors(result.data);
+      } catch (err) {
+        console.error("Failed to fetch tutors:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchTutors();
+  }, []);
 
   const filteredTutors = useMemo(() => {
     const keyword = search.trim().toLowerCase();
@@ -45,7 +64,7 @@ export default function StudentDashboardPage() {
 
       return searchable.includes(keyword);
     });
-  }, [search]);
+  }, [search, tutors]);
 
   const selectedTags = [
     subject || "Toán học",
@@ -93,6 +112,7 @@ export default function StudentDashboardPage() {
             selectedTags={selectedTags}
             tutors={filteredTutors}
             onSearchChange={setSearch}
+            loading={loading}
           />
         </div>
       </main>

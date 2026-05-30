@@ -12,6 +12,7 @@ type TutorSuggestionsPanelProps = {
   selectedTags: string[];
   tutors: TutorSuggestion[];
   onSearchChange: (value: string) => void;
+  loading?: boolean;
 };
 
 export function TutorSuggestionsPanel({
@@ -19,6 +20,7 @@ export function TutorSuggestionsPanel({
   selectedTags,
   tutors,
   onSearchChange,
+  loading = false,
 }: TutorSuggestionsPanelProps) {
   const [selectedTutor, setSelectedTutor] = useState<TutorSuggestion | null>(
     null
@@ -70,15 +72,22 @@ export function TutorSuggestionsPanel({
       </div>
 
       <div className="flex flex-col gap-4">
-        {tutors.map((tutor) => (
-          <TutorSuggestionCard
-            key={tutor.id}
-            tutor={tutor}
-            onViewDetails={setSelectedTutor}
-          />
-        ))}
+        {loading ? (
+          <div className="flex items-center justify-center p-8">
+            <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#e2e8f0] border-t-[#0b5fff]" />
+            <span className="ml-3 text-sm text-[#64748b]">Đang tải danh sách gia sư...</span>
+          </div>
+        ) : (
+          tutors.map((tutor) => (
+            <TutorSuggestionCard
+              key={tutor.id}
+              tutor={tutor}
+              onViewDetails={setSelectedTutor}
+            />
+          ))
+        )}
 
-        {tutors.length === 0 && (
+        {!loading && tutors.length === 0 && (
           <div className="rounded-lg border border-dashed border-[#e2e8f0] p-8 text-center text-sm text-[#64748b]">
             Chưa tìm thấy gia sư phù hợp với từ khóa này.
           </div>

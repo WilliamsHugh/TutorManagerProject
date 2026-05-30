@@ -57,6 +57,58 @@ function mapTutorData(raw: any) {
   };
 }
 
+/**
+ * Map dữ liệu từ backend API sang kiểu TutorSuggestion mà trang student yêu cầu.
+ */
+function mapTutorSuggestionData(raw: any) {
+  const subjects = raw.subjects || [];
+
+  // Tính match score dựa trên số môn học (tạm thời)
+  const match = Math.min(85 + subjects.length * 5, 99);
+
+  return {
+    id: raw.id,
+    name: raw.fullName || 'Chưa có tên',
+    avatar:
+      raw.avatarUrl ||
+      'https://storage.googleapis.com/banani-avatars/avatar%2Ffemale%2F25-35%2FSoutheast%20Asian%2F1',
+    match,
+    experience: raw.experience || 'Chưa cập nhật',
+    education: [raw.educationLevel, raw.major].filter(Boolean).join(' · ') || 'Chưa cập nhật',
+    location: raw.availableAreas || 'Toàn quốc',
+    price: 'Thỏa thuận',
+    rating: 4.5,
+    reviews: 0,
+    teachingMode: 'Linh hoạt',
+    availableTime: 'Linh hoạt',
+    phone: raw.phone || '',
+    email: raw.email || '',
+    bio: raw.bio || '',
+    tags: subjects,
+  };
+}
+
+export async function getStudentTutors(params?: {
+  search?: string;
+  subject?: string;
+  page?: number;
+  limit?: number;
+}) {
+  const searchParams = new URLSearchParams();
+  if (params?.search) searchParams.set('search', params.search);
+  if (params?.subject) searchParams.set('subject', params.subject);
+  if (params?.page) searchParams.set('page', String(params.page));
+  if (params?.limit) searchParams.set('limit', String(params.limit));
+  const query = searchParams.toString();
+  const res = await fetch(`${API_URL}/tutors${query ? `?${query}` : ''}`);
+  if (!res.ok) throw new Error('Không thể tải danh sách gia sư');
+  const json = await res.json();
+  return {
+    data: (json.data || []).map(mapTutorSuggestionData),
+    meta: json.meta || { total: 0, page: 1, limit: 12 },
+  };
+}
+
 export async function getPublicTutors(params?: {
   search?: string;
   subject?: string;

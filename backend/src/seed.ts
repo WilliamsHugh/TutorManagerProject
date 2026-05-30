@@ -133,6 +133,8 @@ async function seed() {
       fullName: 'Nguyễn Văn Bình',
       phone: '0901222333',
       address: 'Quận 1, TP.HCM',
+      avatarUrl:
+        'https://storage.googleapis.com/banani-avatars/avatar%2Fmale%2F25-35%2FSoutheast%20Asian%2F1',
       tutor: {
         educationLevel: 'Sinh viên',
         major: 'ĐH Bách Khoa',
@@ -148,6 +150,8 @@ async function seed() {
       fullName: 'Trần Thị Cẩm',
       phone: '0902222333',
       address: 'Quận 7, TP.HCM',
+      avatarUrl:
+        'https://storage.googleapis.com/banani-avatars/avatar%2Ffemale%2F25-35%2FSoutheast%20Asian%2F2',
       tutor: {
         educationLevel: 'Giáo viên',
         major: 'THPT',
@@ -163,6 +167,8 @@ async function seed() {
       fullName: 'Lê Minh Đạt',
       phone: '0903222333',
       address: 'Quận 10, TP.HCM',
+      avatarUrl:
+        'https://storage.googleapis.com/banani-avatars/avatar%2Fmale%2F18-25%2FSoutheast%20Asian%2F2',
       tutor: {
         educationLevel: 'Sinh viên',
         major: 'ĐH Khoa Học Tự Nhiên',
@@ -178,6 +184,8 @@ async function seed() {
       fullName: 'Phan Ngọc Hà',
       phone: '0904222333',
       address: 'Bình Thạnh, TP.HCM',
+      avatarUrl:
+        'https://storage.googleapis.com/banani-avatars/avatar%2Ffemale%2F25-35%2FSoutheast%20Asian%2F1',
       tutor: {
         educationLevel: 'Cử nhân',
         major: 'Sư phạm Toán',
@@ -187,6 +195,130 @@ async function seed() {
         approvalStatus: ApprovalStatus.APPROVED,
       },
       subjects: ['Toán học'],
+    },
+    // ========== Gia sư gợi ý (từ student dashboard) ==========
+    {
+      email: 'nguyen_minh_anh@tutoredu.com',
+      fullName: 'Nguyễn Minh Anh',
+      phone: '0901234567',
+      address: 'Quận 1, TP.HCM',
+      avatarUrl:
+        'https://storage.googleapis.com/banani-avatars/avatar%2Ffemale%2F25-35%2FSoutheast%20Asian%2F4',
+      tutor: {
+        educationLevel: 'Tốt nghiệp',
+        major: 'ĐH Bách Khoa TP.HCM',
+        experience: '5 năm kinh nghiệm dạy kèm Toán THPT, luyện thi Đại học',
+        idCardNumber: '079123456782',
+        availableAreas: 'Quận 1, TP.HCM',
+        approvalStatus: ApprovalStatus.APPROVED,
+      },
+      subjects: ['Toán học'],
+    },
+    {
+      email: 'tran_hoang_phuc@tutoredu.com',
+      fullName: 'Trần Hoàng Phúc',
+      phone: '0912345678',
+      address: 'Quận 3, TP.HCM',
+      avatarUrl:
+        'https://storage.googleapis.com/banani-avatars/avatar%2Fmale%2F25-35%2FSoutheast%20Asian%2F3',
+      tutor: {
+        educationLevel: 'Thạc sĩ',
+        major: 'Toán ứng dụng',
+        experience: '4 năm kinh nghiệm dạy kèm Toán lớp 10-12, luyện thi',
+        idCardNumber: '079123456781',
+        availableAreas: 'Quận 3, TP.HCM',
+        approvalStatus: ApprovalStatus.APPROVED,
+      },
+      subjects: ['Toán học'],
+    },
+    {
+      email: 'le_khanh_vy@tutoredu.com',
+      fullName: 'Lê Khánh Vy',
+      phone: '0923456789',
+      address: 'Bình Thạnh, TP.HCM',
+      avatarUrl:
+        'https://storage.googleapis.com/banani-avatars/avatar%2Ffemale%2F18-25%2FSoutheast%20Asian%2F5',
+      tutor: {
+        educationLevel: 'Sinh viên',
+        major: 'Sư phạm Toán',
+        experience: '3 năm kinh nghiệm dạy kèm Toán cơ bản và Toán cấp 2',
+        idCardNumber: '079123456780',
+        availableAreas: 'Bình Thạnh',
+        approvalStatus: ApprovalStatus.APPROVED,
+      },
+      subjects: ['Toán học'],
+    },
+    {
+      email: 'pham_quoc_huy@tutoredu.com',
+      fullName: 'Phạm Quốc Huy',
+      phone: '0934567890',
+      address: 'Thủ Đức, TP.HCM',
+      avatarUrl:
+        'https://storage.googleapis.com/banani-avatars/avatar%2Fmale%2F18-25%2FSoutheast%20Asian%2F1',
+      tutor: {
+        educationLevel: 'Sinh viên',
+        major: 'ĐH Khoa Học Tự Nhiên',
+        experience: '2 năm kinh nghiệm dạy kèm 1-1 Toán THPT',
+        idCardNumber: '079123456779',
+        availableAreas: 'Thủ Đức',
+        approvalStatus: ApprovalStatus.APPROVED,
+      },
+      subjects: ['Toán học'],
+    },
+    // ========== Gia sư tiêu biểu (từ trang chủ) ==========
+    {
+      email: 'nguyen_tran_bao_ngoc@tutoredu.com',
+      fullName: 'Nguyễn Trần Bảo Ngọc',
+      phone: '0905222333',
+      address: 'Cầu Giấy, Hà Nội',
+      avatarUrl:
+        'https://storage.googleapis.com/banani-avatars/avatar%2Ffemale%2F18-25%2FSoutheast%20Asian%2F1',
+      tutor: {
+        educationLevel: 'Sinh viên',
+        major: 'Sư Phạm Toán',
+        experience:
+          '2 năm kinh nghiệm dạy kèm Toán cấp 3, luyện thi Đại học. Chuyên ôn thi cho học sinh lớp 12.',
+        idCardNumber: '079123456785',
+        availableAreas: 'Cầu Giấy, Đống Đa, Ba Đình',
+        approvalStatus: ApprovalStatus.APPROVED,
+      },
+      subjects: ['Toán học'],
+    },
+    {
+      email: 'le_hoang_nam@tutoredu.com',
+      fullName: 'Lê Hoàng Nam',
+      phone: '0906222333',
+      address: 'Quận 1, TP.HCM',
+      avatarUrl:
+        'https://storage.googleapis.com/banani-avatars/avatar%2Fmale%2F25-35%2FSoutheast%20Asian%2F2',
+      tutor: {
+        educationLevel: 'Cử nhân',
+        major: 'Ngôn Ngữ Anh',
+        experience:
+          'Cử nhân Ngôn Ngữ Anh, 4 năm kinh nghiệm giảng dạy tiếng Anh giao tiếp và luyện thi IELTS 7.5+.',
+        idCardNumber: '079123456784',
+        availableAreas: 'Quận 1, Quận 3, Quận 7',
+        approvalStatus: ApprovalStatus.APPROVED,
+      },
+      subjects: ['Tiếng Anh'],
+    },
+    {
+      email: 'tran_thi_mai@tutoredu.com',
+      fullName: 'Trần Thị Mai',
+      phone: '0907222333',
+      address: 'Hải Châu, Đà Nẵng',
+      avatarUrl:
+        'https://storage.googleapis.com/banani-avatars/avatar%2Ffemale%2F25-35%2FSoutheast%20Asian%2F3',
+      tutor: {
+        educationLevel: 'Giáo viên',
+        major: 'Tiểu học',
+        experience:
+          '7 năm kinh nghiệm giảng dạy tiểu học. Chuyên rèn chữ đẹp và toán tiểu học cho các em nhỏ.',
+        idCardNumber: '079123456783',
+        availableAreas: 'Hải Châu, Thanh Khê, Sơn Trà',
+        approvalStatus: ApprovalStatus.APPROVED,
+      },
+      subjects: ['Toán học', 'Ngữ văn'],
     },
   ];
 
@@ -201,6 +333,7 @@ async function seed() {
           fullName: item.fullName,
           phone: item.phone,
           address: item.address,
+          avatarUrl: item.avatarUrl,
           role: tutorRole!,
           isActive: true,
         }),

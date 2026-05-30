@@ -1,6 +1,6 @@
 import type { Dispatch, FormEvent, SetStateAction } from "react";
 
-import { subjects } from "../data";
+import { subjects } from "../_config/constants";
 import { RequestField } from "./RequestField";
 
 type TutorRequestFormProps = {

@@ -1,5 +1,5 @@
 export type TutorSuggestion = {
-  id: number;
+  id: string | number;
   name: string;
   avatar: string;
   match: number;

@@ -11,6 +11,7 @@ import { Subject } from '../subjects/subject.entity';
 import { User } from '../users/entities/user.entity';
 import { TutorSubject } from '../tutors/tutor-subject.entity';
 import { ClassRequestsController } from './class-requests.controller';
+import { PublicClassRequestsController } from './public-class-requests.controller';
 import { ClassRequestsService } from './class-requests.service';
 import { ClassesController } from './classes.controller';
 import { ClassesService } from './classes.service';
@@ -31,7 +32,7 @@ import { ReviewsController } from './reviews.controller';
       TutorSubject,
     ]),
   ],
-  controllers: [ClassRequestsController, ClassesController, ReviewsController],
+  controllers: [ClassRequestsController, PublicClassRequestsController, ClassesController, ReviewsController],
   providers: [ClassRequestsService, ClassesService],
   exports: [ClassRequestsService, ClassesService],
 })

@@ -102,6 +102,68 @@ export class ClassRequestsService {
     return this.classRequestsRepository.save(request);
   }
 
+  async getPublicClassRequests(params: {
+    search?: string;
+    subject?: string;
+    mode?: string;
+    page?: number;
+    limit?: number;
+  }) {
+    const { search = '', subject = '', mode = '', page = 1, limit = 12 } = params;
+
+    const qb = this.classRequestsRepository
+      .createQueryBuilder('request')
+      .leftJoinAndSelect('request.student', 'student')
+      .leftJoinAndSelect('student.user', 'studentUser')
+      .leftJoinAndSelect('request.subject', 'subject')
+      .where('request.status = :status', { status: RequestStatus.PENDING });
+
+    const searchTrimmed = search.trim();
+    if (searchTrimmed) {
+      qb.andWhere(
+        '(studentUser.fullName ILIKE :search OR subject.name ILIKE :search OR request.preferredArea ILIKE :search)',
+        { search: `%${searchTrimmed}%` },
+      );
+    }
+
+    if (subject) {
+      const subjectNames = subject.split(',');
+      qb.andWhere('subject.name IN (:...subjectNames)', { subjectNames });
+    }
+
+    if (mode) {
+      if (mode.toLowerCase().includes('online')) {
+        qb.andWhere('request.preferredArea ILIKE :mode', { mode: '%online%' });
+      } else if (mode.toLowerCase().includes('offline')) {
+        qb.andWhere('request.preferredArea NOT ILIKE :mode', { mode: '%online%' });
+      }
+    }
+
+    qb.orderBy('request.createdAt', 'DESC');
+
+    const [requests, total] = await qb
+      .skip((page - 1) * limit)
+      .take(limit)
+      .getManyAndCount();
+
+    const data = requests.map((req) => ({
+      id: req.id,
+      subject: req.subject?.name || 'Môn học mới',
+      location: req.preferredArea || 'Toàn quốc',
+      schedule: req.preferredSchedule || 'Linh hoạt',
+      requirements: req.requirements || '',
+      studentName: req.student?.user?.fullName || 'Ẩn danh',
+      gradeLevel: req.student?.gradeLevel || 'Mọi cấp độ',
+      status: req.status,
+      createdAt: req.createdAt,
+    }));
+
+    return {
+      data,
+      meta: { total, page, limit },
+    };
+  }
+
   async recommendTutors(id: string) {
     const request = await this.findOne(id);
     if (!request.subject?.id) {

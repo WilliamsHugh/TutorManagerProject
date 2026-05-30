@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, ForbiddenException, OnModuleInit } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Between } from 'typeorm';
+import { Repository, Between, In } from 'typeorm';
 
 // Entities
 import { Class, ClassStatus } from '../classes/entities/class.entity';
@@ -716,9 +716,71 @@ export class TutorsService implements OnModuleInit {
     limit?: number;
   }) {
     const { search = '', subject = '', page = 1, limit = 12 } = params;
+
+    const qb = this.tutorRepository
+      .createQueryBuilder('tutor')
+      .leftJoinAndSelect('tutor.user', 'user')
+      .where('tutor.approvalStatus = :status', { status: ApprovalStatus.APPROVED });
+
+    if (search) {
+      qb.andWhere(
+        '(user.fullName ILIKE :search OR user.email ILIKE :search)',
+        { search: `%${search}%` },
+      );
+    }
+
+    if (subject) {
+      const subjectNames = subject.split(',');
+      const subQuery = this.tutorSubjectRepository
+        .createQueryBuilder('ts')
+        .select('ts.tutor_id')
+        .innerJoin('ts.subject', 's')
+        .where('s.name IN (:...subjectNames)', { subjectNames })
+        .getQuery();
+      qb.andWhere(`tutor.id IN (${subQuery})`, { subjectNames });
+    }
+
+    qb.orderBy('user.fullName', 'ASC');
+
+    const [tutors, total] = await qb
+      .skip((page - 1) * limit)
+      .take(limit)
+      .getManyAndCount();
+
+    // Lấy danh sách môn học cho tất cả gia sư trong 1 query (tránh N+1)
+    const tutorIds = tutors.map((t) => t.id);
+    const allTutorSubjects =
+      tutorIds.length > 0
+        ? await this.tutorSubjectRepository.find({
+            where: { tutor: { id: In(tutorIds) } },
+            relations: ['subject'],
+          })
+        : [];
+    const subjectMap = new Map<string, string[]>();
+    for (const ts of allTutorSubjects) {
+      const list = subjectMap.get(ts.tutor.id) || [];
+      if (ts.subject?.name) list.push(ts.subject.name);
+      subjectMap.set(ts.tutor.id, list);
+    }
+
+    const data = tutors.map((tutor) => ({
+      id: tutor.id,
+      fullName: tutor.user?.fullName || '',
+      email: tutor.user?.email || '',
+      phone: tutor.user?.phone || '',
+      address: tutor.user?.address || '',
+      avatarUrl: tutor.user?.avatarUrl || '',
+      bio: tutor.bio || '',
+      educationLevel: tutor.educationLevel || '',
+      major: tutor.major || '',
+      experience: tutor.experience || '',
+      availableAreas: tutor.availableAreas || '',
+      subjects: subjectMap.get(tutor.id) || [],
+    }));
+
     return {
-      data: [],
-      meta: { total: 0, page, limit },
+      data,
+      meta: { total, page, limit },
     };
   }
 }

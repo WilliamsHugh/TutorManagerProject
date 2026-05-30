@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Icon } from '@iconify/react';
 import { 
   getTutorDashboard, 
+  getNewClasses,
   getClassRequestDetail, 
   getLearningReports, 
   submitLearningReport, 
@@ -56,9 +57,10 @@ export default function TutorDashboard() {
         
         setStats(data.stats || []);
         setCalendar(data.calendar || []);
-        setSuggestedClasses(data.suggestedClasses || []);
         setCurrentClasses(data.currentClasses || []);
         setProfile(data.profile);
+
+        // Suggested classes được fetch riêng ở useEffect dưới — không ghi đè ở đây
       } catch (error) {
         console.error("Lỗi tải dữ liệu dashboard:", error);
       } finally {
@@ -69,6 +71,28 @@ export default function TutorDashboard() {
 
     fetchDashboardData();
   }, [currentDate]);
+
+  // Fetch suggested classes từ cùng API với trang /tutors/new-classes
+  useEffect(() => {
+    const fetchSuggestedClasses = async () => {
+      try {
+        const newClassesData = await getNewClasses();
+        const mapped = (newClassesData.classes || []).map((cls: any) => ({
+          id: cls.id,
+          subject: cls.title?.replace('Tìm gia sư ', '') || 'Môn học mới',
+          location: cls.location || 'Toàn quốc',
+          schedule: cls.schedule || 'Linh hoạt',
+          price: cls.salary || 'Thỏa thuận',
+          isNew: true
+        }));
+        setSuggestedClasses(mapped);
+      } catch (error) {
+        console.error("Lỗi tải lớp học mới gợi ý:", error);
+        // Giữ nguyên dữ liệu fallback từ dashboard nếu fetch thất bại
+      }
+    };
+    fetchSuggestedClasses();
+  }, []);
 
   // Tải danh sách báo cáo khi chọn lớp
   useEffect(() => {
@@ -254,7 +278,7 @@ export default function TutorDashboard() {
               <div className="card" style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px' }}>
                 <div className="card-header" style={{ padding: '20px 24px', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between' }}>
                   <h2 className="card-title" style={{ fontSize: '16px', fontWeight: 600 }}>Lớp học mới gợi ý</h2>
-                  <Link href="/classes" style={{ fontSize: '13px', color: '#2563eb', textDecoration: 'none' }}>Xem tất cả</Link>
+                  <Link href="/tutors/new-classes" style={{ fontSize: '13px', color: '#2563eb', textDecoration: 'none' }}>Xem tất cả</Link>
                 </div>
                 <div className="suggested-list" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
                   {suggestedClasses.length > 0 ? suggestedClasses.map((cls, i) => (

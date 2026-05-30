@@ -89,8 +89,6 @@ export const tutors: TutorSuggestion[] = [
 ];
 
 export const navItems: NavItem[] = [
-  { label: "Trang chủ", href: "/student" },
-  { label: "Tìm gia sư", href: "/student/tutorrequest" },
-  { label: "Lớp học của tôi", href: "/classes" },
-  { label: "Đánh giá", href: "/tutors" },
+  { label: "Đăng ký tìm gia sư", href: "/student" },
+  { label: "Lớp học của tôi", href: "/student/classes" },
 ];

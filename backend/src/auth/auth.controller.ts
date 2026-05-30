@@ -7,6 +7,7 @@ import {
   Request,
   Res,
   Patch,
+  UnauthorizedException,
 } from '@nestjs/common';
 import type { Response } from 'express';
 import { AuthService } from './auth.service';
@@ -47,25 +48,92 @@ export class AuthController {
   ) {
     const result = await this.authService.login(dto);
 
-    // Set cookie httpOnly cho bảo mật cao
+    // Cấp refresh token
+    const refreshTokenStr = await this.authService.generateRefreshToken(result.user);
+
+    // Set cookie httpOnly cho access_token (30 phút)
     response.cookie('access_token', result.access_token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production', // Chỉ HTTPS trong production
-      sameSite: 'lax', // 'lax' cho phép cross-port trong development
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
       path: '/',
+      maxAge: 30 * 60 * 1000, // 30 phút
+    });
+
+    // Set cookie httpOnly cho refresh_token (7 ngày)
+    response.cookie('refresh_token', refreshTokenStr, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/api/auth/refresh', // Chỉ gửi kèm request đến /auth/refresh
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 ngày
     });
 
     return result;
   }
 
+  @Post('refresh')
+  async refresh(
+    @Request() req: any,
+    @Res({ passthrough: true }) response: Response,
+  ) {
+    // Lấy refresh token từ cookie
+    const refreshTokenStr = req.cookies?.refresh_token;
+
+    if (!refreshTokenStr) {
+      throw new UnauthorizedException('Refresh token không tồn tại');
+    }
+
+    const tokens = await this.authService.refresh(refreshTokenStr);
+
+    // Set access_token mới (30 phút)
+    response.cookie('access_token', tokens.access_token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 30 * 60 * 1000,
+    });
+
+    // Set refresh_token mới với rotation (7 ngày)
+    response.cookie('refresh_token', tokens.refresh_token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/api/auth/refresh',
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
+
+    return { message: 'Token đã được làm mới' };
+  }
+
   @Post('logout')
-  async logout(@Res({ passthrough: true }) response: Response) {
+  async logout(
+    @Request() req: any,
+    @Res({ passthrough: true }) response: Response,
+  ) {
+    // Thu hồi refresh token nếu có
+    const refreshTokenStr = req.cookies?.refresh_token;
+    if (refreshTokenStr) {
+      try {
+        await this.authService.revokeRefreshToken(refreshTokenStr);
+      } catch {
+        // Bỏ qua lỗi khi thu hồi
+      }
+    }
+
     response.clearCookie('access_token', {
       path: '/',
       httpOnly: true,
       sameSite: 'lax',
     });
+
+    response.clearCookie('refresh_token', {
+      path: '/api/auth/refresh',
+      httpOnly: true,
+      sameSite: 'lax',
+    });
+
     return { message: 'Đăng xuất thành công' };
   }
 

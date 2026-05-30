@@ -159,7 +159,17 @@ export default function Header({
                         <p className="text-xs truncate opacity-60" style={{ color: "var(--muted-foreground)" }}>{user.email}</p>
                       </div>
 
-                      <Link href={`/dashboard/${user.role?.name || 'student'}`} 
+                      <Link href={
+                        user.role?.name === 'student' 
+                          ? '/student' 
+                          : user.role?.name === 'tutor' 
+                            ? '/tutors/dashboard' 
+                            : user.role?.name === 'admin' 
+                              ? '/hub/dashboard' 
+                              : user.role?.name === 'staff' 
+                                ? '/staff/request-management' 
+                                : '/'
+                      } 
                         onClick={() => setShowUserMenu(false)}
                         className="flex items-center gap-3 px-4 py-2.5 text-sm no-underline hover:bg-indigo-50 hover:text-indigo-600 transition-colors"
                         style={{ color: "var(--foreground)" }}>

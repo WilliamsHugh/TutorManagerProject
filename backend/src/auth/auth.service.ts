@@ -9,12 +9,14 @@ import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcryptjs';
+import { v4 as uuidv4 } from 'uuid';
 import { UsersService } from '../users/users.service';
 import { RegisterStudentDto } from './dto/register-student.dto';
 import { RegisterTutorDto } from './dto/register-tutor.dto';
 import { LoginDto } from './dto/login.dto';
 import { ApprovalStatus } from '../users/entities/tutor.entity';
 import { Otp } from './entities/otp.entity';
+import { RefreshToken } from './entities/refresh-token.entity';
 
 @Injectable()
 export class AuthService {
@@ -23,6 +25,8 @@ export class AuthService {
     private jwtService: JwtService,
     @InjectRepository(Otp)
     private otpRepository: Repository<Otp>,
+    @InjectRepository(RefreshToken)
+    private refreshTokenRepository: Repository<RefreshToken>,
   ) {}
 
   async registerStudent(dto: RegisterStudentDto) {
@@ -180,5 +184,78 @@ export class AuthService {
       email: user.email,
       role: user.role?.name,
     });
+  }
+
+  async generateRefreshToken(user: any): Promise<string> {
+    const token = uuidv4();
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 7); // 7 ngày
+
+    const refreshToken = this.refreshTokenRepository.create({
+      user,
+      token,
+      expiresAt,
+    });
+    await this.refreshTokenRepository.save(refreshToken);
+
+    return token;
+  }
+
+  async refresh(refreshTokenStr: string) {
+    if (!refreshTokenStr) {
+      throw new UnauthorizedException('Refresh token không hợp lệ');
+    }
+
+    // Tìm refresh token trong DB
+    const refreshToken = await this.refreshTokenRepository.findOne({
+      where: { token: refreshTokenStr, isRevoked: false },
+      relations: ['user'],
+    });
+
+    if (!refreshToken) {
+      throw new UnauthorizedException('Refresh token không hợp lệ hoặc đã bị thu hồi');
+    }
+
+    if (new Date() > refreshToken.expiresAt) {
+      throw new UnauthorizedException('Refresh token đã hết hạn');
+    }
+
+    // Kiểm tra user còn hoạt động
+    const user = refreshToken.user;
+    if (!user.isActive) {
+      throw new UnauthorizedException('Tài khoản của bạn đã bị vô hiệu hóa');
+    }
+
+    // Thu hồi refresh token cũ (rotation)
+    refreshToken.isRevoked = true;
+    await this.refreshTokenRepository.save(refreshToken);
+
+    // Cấp access token mới
+    const accessToken = this.generateToken(user);
+
+    // Cấp refresh token mới
+    const newRefreshToken = await this.generateRefreshToken(user);
+
+    return {
+      access_token: accessToken,
+      refresh_token: newRefreshToken,
+    };
+  }
+
+  async revokeRefreshTokens(userId: string) {
+    await this.refreshTokenRepository.update(
+      { user: { id: userId }, isRevoked: false },
+      { isRevoked: true },
+    );
+  }
+
+  async revokeRefreshToken(token: string) {
+    const refreshToken = await this.refreshTokenRepository.findOne({
+      where: { token, isRevoked: false },
+    });
+    if (refreshToken) {
+      refreshToken.isRevoked = true;
+      await this.refreshTokenRepository.save(refreshToken);
+    }
   }
 }

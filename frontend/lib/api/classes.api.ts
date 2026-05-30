@@ -91,3 +91,41 @@ export async function deleteLearningReport(id: string) {
   if (!res.ok) throw new Error('Không thể xóa báo cáo');
   return res.json();
 }
+
+// Lấy danh sách lớp học của Học viên
+export async function getStudentClasses() {
+  const token = getToken();
+  const res = await fetch(`${API_URL}/classes/student/my-classes`, {
+    headers: { 'Authorization': `Bearer ${token}` },
+  });
+  if (!res.ok) throw new Error('Không thể tải danh sách lớp học của bạn');
+  return res.json();
+}
+
+// Học viên nộp đánh giá gia sư
+export async function submitReview(data: { classId: string; rating: number; comment?: string }) {
+  const token = getToken();
+  const res = await fetch(`${API_URL}/reviews`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || 'Không thể gửi đánh giá');
+  }
+  return res.json();
+}
+
+// Lấy đánh giá của một lớp học
+export async function getClassReview(classId: string) {
+  const token = getToken();
+  const res = await fetch(`${API_URL}/reviews/class/${classId}`, {
+    headers: { 'Authorization': `Bearer ${token}` },
+  });
+  if (!res.ok) throw new Error('Không thể tải đánh giá lớp học');
+  return res.json();
+}

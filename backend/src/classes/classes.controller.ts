@@ -34,6 +34,13 @@ export class ClassesController {
     return this.classesService.findAll({ status });
   }
 
+  @Get('student/my-classes')
+  @Roles(RoleType.STUDENT)
+  findMyClasses(@Request() req) {
+    const userId = req.user.id || req.user.sub;
+    return this.classesService.findStudentClasses(userId);
+  }
+
   @Get(':id')
   @Roles(RoleType.STAFF, RoleType.ADMIN)
   findOne(@Param('id') id: string) {

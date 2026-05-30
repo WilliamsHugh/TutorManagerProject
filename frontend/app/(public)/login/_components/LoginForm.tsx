@@ -61,7 +61,7 @@ export default function LoginForm() {
             if (role === "tutor") {
                 router.push("/tutors/dashboard"); // Rút gọn đường dẫn
             } else if (role === "student") {
-                router.push("/dashboard/student"); 
+                router.push("/student"); 
             } else {
                 // Fallback nếu role không xác định
                 router.push("/");

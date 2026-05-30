@@ -32,6 +32,10 @@ export class UsersService {
     return this.tutorsRepository.findOne({ where: { user: { id: userId } } });
   }
 
+  async findStudentByUserId(userId: string): Promise<Student | null> {
+    return this.studentsRepository.findOne({ where: { user: { id: userId } }, relations: { user: true } });
+  }
+
   private async getOrCreateRole(roleName: string): Promise<Role> {
     let role = await this.rolesRepository.findOne({
       where: { name: roleName },

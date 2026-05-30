@@ -120,6 +120,36 @@ export async function submitReview(data: { classId: string; rating: number; comm
   return res.json();
 }
 
+// Lấy thông tin hồ sơ học viên đang đăng nhập
+export async function getStudentProfile() {
+  const res = await fetch(`${API_URL}/auth/student-profile`, {
+    credentials: 'include',
+  });
+  if (!res.ok) throw new Error('Không thể tải thông tin học viên');
+  return res.json();
+}
+
+// Gửi yêu cầu tìm gia sư từ học viên
+export async function createClassRequest(data: {
+  studentId: string;
+  subjectId: string;
+  preferredArea?: string;
+  preferredSchedule?: string;
+  requirements?: string;
+}) {
+  const res = await fetch(`${API_URL}/class-requests`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || 'Không thể gửi yêu cầu tìm gia sư');
+  }
+  return res.json();
+}
+
 // Lấy đánh giá của một lớp học
 export async function getClassReview(classId: string) {
   const token = getToken();

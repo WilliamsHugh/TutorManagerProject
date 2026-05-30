@@ -1,10 +1,10 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useCallback } from "react";
 import type { FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { isLoggedIn, getUserRole } from "@/lib/auth";
-import { getStudentTutors } from "@/lib/api";
+import { getStudentTutors, getAllSubjects, createClassRequest, getStudentProfile } from "@/lib/api";
 
 import type { TutorSuggestion } from "./types";
 import { TutorRequestForm } from "./_components/TutorRequestForm";
@@ -24,12 +24,46 @@ export default function StudentDashboardPage() {
   const [tutors, setTutors] = useState<TutorSuggestion[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Student info for API calls
+  const [studentId, setStudentId] = useState<string | null>(null);
+  const [subjectMap, setSubjectMap] = useState<Record<string, string>>({});
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [submitSuccess, setSubmitSuccess] = useState(false);
+
   // Auth protection
   useEffect(() => {
     if (!isLoggedIn() || getUserRole() !== "student") {
       router.replace("/login");
     }
   }, [router]);
+
+  // Fetch student profile (for studentId) and subjects (for name→id mapping)
+  useEffect(() => {
+    async function init() {
+      try {
+        // Fetch subjects to build name→id map
+        const subjects = await getAllSubjects();
+        const map: Record<string, string> = {};
+        for (const s of subjects) {
+          map[s.name] = s.id;
+        }
+        setSubjectMap(map);
+      } catch (err) {
+        console.error("Failed to load subjects:", err);
+      }
+
+      try {
+        const profile = await getStudentProfile();
+        if (profile?.id) {
+          setStudentId(profile.id);
+        }
+      } catch (err) {
+        console.error("Failed to load student profile:", err);
+      }
+    }
+    init();
+  }, []);
 
   // Fetch tutors from API
   useEffect(() => {
@@ -73,10 +107,54 @@ export default function StudentDashboardPage() {
     schedule || "Học tối",
   ];
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = useCallback(async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    setSubmitError(null);
+    setSubmitSuccess(false);
+
+    if (!subject) {
+      setSubmitted(true);
+      return;
+    }
+
+    const subjectId = subjectMap[subject];
+    if (!subjectId) {
+      setSubmitError("Môn học không hợp lệ. Vui lòng chọn lại.");
+      return;
+    }
+
+    if (!studentId) {
+      setSubmitError("Không tìm thấy thông tin học viên. Vui lòng đăng nhập lại.");
+      return;
+    }
+
+    setSubmitting(true);
     setSubmitted(true);
-  };
+
+    try {
+      const payload = {
+        studentId,
+        subjectId,
+        preferredArea: area || undefined,
+        preferredSchedule: schedule || undefined,
+        requirements: [
+          level ? `Cấp học: ${level}` : "",
+          school ? `Trường: ${school}` : "",
+          note ? `Yêu cầu: ${note}` : "",
+        ]
+          .filter(Boolean)
+          .join("\n") || undefined,
+      };
+
+      await createClassRequest(payload);
+      setSubmitSuccess(true);
+    } catch (err: any) {
+      setSubmitError(err?.message || "Có lỗi xảy ra khi gửi yêu cầu. Vui lòng thử lại.");
+      console.error("Submit request error:", err);
+    } finally {
+      setSubmitting(false);
+    }
+  }, [subject, subjectMap, studentId, area, schedule, level, school, note]);
 
   return (
     <div
@@ -86,6 +164,20 @@ export default function StudentDashboardPage() {
 
       <main className="mx-auto w-full max-w-332 px-4 py-6 sm:px-6 lg:px-8">
         <TutorRequestPageHeader />
+
+        {/* Success banner */}
+        {submitSuccess && (
+          <div className="mb-6 rounded-lg border border-[#bbf7d0] bg-[#dcfce7] px-4 py-3 text-sm font-medium text-[#166534]">
+            ✅ Yêu cầu tìm gia sư đã được gửi thành công! Nhân viên trung tâm sẽ liên hệ với bạn sớm nhất.
+          </div>
+        )}
+
+        {/* Error banner */}
+        {submitError && (
+          <div className="mb-6 rounded-lg border border-[#fecaca] bg-[#fef2f2] px-4 py-3 text-sm font-medium text-[#991b1b]">
+            ❌ {submitError}
+          </div>
+        )}
 
         <div className="grid grid-cols-1 items-start gap-6 xl:grid-cols-12">
           <TutorRequestForm
@@ -113,6 +205,18 @@ export default function StudentDashboardPage() {
             loading={loading}
           />
         </div>
+
+        {/* Submitting overlay */}
+        {submitting && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#0f172a]/50">
+            <div className="rounded-lg bg-white px-8 py-6 text-center shadow-xl">
+              <div className="mx-auto mb-3 h-8 w-8 animate-spin rounded-full border-4 border-[#e2e8f0] border-t-[#0b5fff]" />
+              <p className="text-sm font-medium text-[#0f172a]">
+                Đang gửi yêu cầu tìm gia sư...
+              </p>
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );

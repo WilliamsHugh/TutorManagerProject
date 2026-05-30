@@ -155,6 +155,15 @@ export class AuthController {
     return user;
   }
 
+  // Lấy thông tin hồ sơ học viên của người đang đăng nhập
+  @Get('student-profile')
+  @UseGuards(JwtAuthGuard)
+  async getStudentProfile(@Request() req) {
+    const userId = req.user.id || req.user.sub;
+    const student = await this.usersService.findStudentByUserId(userId);
+    return student;
+  }
+
   @Patch('profile')
   @UseGuards(JwtAuthGuard)
   updateProfile(@Request() req, @Body() dto: UpdateProfileDto) {

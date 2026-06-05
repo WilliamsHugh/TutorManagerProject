@@ -360,6 +360,16 @@ async function seed() {
         }
       }
       console.log(`Seeded tutor: ${item.fullName}`);
+    } else {
+      // Cập nhật avatar và các thông tin khác cho tutor đã tồn tại
+      if (existing.avatarUrl !== item.avatarUrl) {
+        existing.avatarUrl = item.avatarUrl;
+        existing.fullName = item.fullName;
+        existing.phone = item.phone;
+        existing.address = item.address;
+        await userRepo.save(existing);
+        console.log(`Updated avatar & info for existing tutor: ${item.fullName}`);
+      }
     }
   }
 
@@ -437,8 +447,8 @@ async function seed() {
   }
 
   // 7. Seed Class Requests
-  const mathSubject = await subjectRepo.findOneBy({ name: 'Toán' });
-  const chemSubject = await subjectRepo.findOneBy({ name: 'Hóa' });
+  const mathSubject = await subjectRepo.findOneBy({ name: 'Toán học' });
+  const chemSubject = await subjectRepo.findOneBy({ name: 'Hóa học' });
   const engSubject = await subjectRepo.findOneBy({ name: 'Tiếng Anh' });
 
   const mockRequestsData = [

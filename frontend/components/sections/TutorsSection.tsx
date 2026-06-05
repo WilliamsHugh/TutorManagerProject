@@ -1,8 +1,13 @@
+"use client";
+
 import { Star, MapPin } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { useEffect, useState } from "react";
+import { getPublicTutors } from "@/lib/api/public.api";
+import type { Tutor as ApiTutor } from "@/types/tutor";
 
-interface Tutor {
+interface TutorDisplay {
   name: string;
   title: string;
   avatar: string;
@@ -13,43 +18,32 @@ interface Tutor {
   price: string;
 }
 
-const tutors: Tutor[] = [
-  {
-    name: "Nguyễn Trần Bảo Ngọc",
-    title: "Sinh viên Sư Phạm Toán",
-    avatar:
-      "https://storage.googleapis.com/banani-avatars/avatar%2Ffemale%2F18-25%2FSoutheast%20Asian%2F1",
-    rating: "4.9",
-    reviews: "120 đánh giá",
-    location: "Cầu Giấy, Hà Nội",
-    tags: ["Toán Cấp 3", "Luyện thi Đại học"],
-    price: "200,000đ",
-  },
-  {
-    name: "Lê Hoàng Nam",
-    title: "Cử nhân Ngôn Ngữ Anh",
-    avatar:
-      "https://storage.googleapis.com/banani-avatars/avatar%2Fmale%2F25-35%2FSoutheast%20Asian%2F2",
-    rating: "5.0",
-    reviews: "85 đánh giá",
-    location: "Quận 1, TP.HCM",
-    tags: ["Tiếng Anh Giao Tiếp", "IELTS 7.5+"],
-    price: "250,000đ",
-  },
-  {
-    name: "Trần Thị Mai",
-    title: "Giáo viên Tiểu học",
-    avatar:
-      "https://storage.googleapis.com/banani-avatars/avatar%2Ffemale%2F25-35%2FSoutheast%20Asian%2F3",
-    rating: "4.8",
-    reviews: "210 đánh giá",
-    location: "Hải Châu, Đà Nẵng",
-    tags: ["Rèn chữ đẹp", "Toán Tiểu học"],
-    price: "150,000đ",
-  },
-];
-
 export default function TutorsSection() {
+  const [tutors, setTutors] = useState<TutorDisplay[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    setIsLoading(true);
+    getPublicTutors({ limit: 3 })
+      .then((res) => {
+        const mapped: TutorDisplay[] = (res.data ?? []).slice(0, 3).map((item: ApiTutor) => ({
+          name: item.name || "",
+          title: item.title || "",
+          avatar:
+            item.avatar ||
+            "https://storage.googleapis.com/banani-avatars/avatar%2Ffemale%2F25-35%2FSoutheast%20Asian%2F1",
+          rating: String(item.rating ?? "5.0"),
+          reviews: `${item.reviews ?? 0} đánh giá`,
+          location: item.location || "",
+          tags: item.tags || [],
+          price: (item.price ?? 200000).toLocaleString("vi-VN") + "đ",
+        }));
+        setTutors(mapped);
+      })
+      .catch(() => setTutors([]))
+      .finally(() => setIsLoading(false));
+  }, []);
+
   return (
     <section className="py-12 sm:py-16 lg:py-20" style={{ backgroundColor: "var(--secondary)" }}>
       <div className="w-full max-w-[1200px] mx-auto px-4 sm:px-6">
@@ -72,7 +66,34 @@ export default function TutorsSection() {
 
         {/* Tutors Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-          {tutors.map((tutor) => (
+          {isLoading
+            ? Array.from({ length: 3 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="flex flex-col gap-4 sm:gap-5 p-4 sm:p-6 rounded-lg border animate-pulse"
+                  style={{
+                    backgroundColor: "var(--card)",
+                    borderColor: "var(--border)",
+                  }}
+                >
+                  <div className="flex items-center gap-3 sm:gap-4">
+                    <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-gray-200" />
+                    <div className="flex-1">
+                      <div className="h-4 bg-gray-200 rounded w-3/4 mb-2" />
+                      <div className="h-3 bg-gray-200 rounded w-1/2" />
+                    </div>
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <div className="h-3 bg-gray-200 rounded w-1/2" />
+                    <div className="h-3 bg-gray-200 rounded w-2/3" />
+                  </div>
+                  <div className="flex gap-2">
+                    <div className="h-6 bg-gray-200 rounded-sm w-20" />
+                    <div className="h-6 bg-gray-200 rounded-sm w-24" />
+                  </div>
+                </div>
+              ))
+            : tutors.map((tutor) => (
             <div
               key={tutor.name}
               className="flex flex-col gap-4 sm:gap-5 p-4 sm:p-6 rounded-lg border"

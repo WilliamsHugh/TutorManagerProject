@@ -48,7 +48,7 @@ function mapTutorData(raw: any) {
       [raw.educationLevel, raw.major].filter(Boolean).join(' · ') || 'Gia sư',
     avatar:
       raw.avatarUrl ||
-      'https://storage.googleapis.com/banani-avatars/avatar%2Ffemale%2F25-35%2FSoutheast%20Asian%2F1',
+      'https://randomuser.me/api/portraits/women/1.jpg',
     rating: 5.0,
     reviews: 0,
     location: raw.availableAreas || 'Toàn quốc',
@@ -71,7 +71,7 @@ function mapTutorSuggestionData(raw: any) {
     name: raw.fullName || 'Chưa có tên',
     avatar:
       raw.avatarUrl ||
-      'https://storage.googleapis.com/banani-avatars/avatar%2Ffemale%2F25-35%2FSoutheast%20Asian%2F1',
+      'https://randomuser.me/api/portraits/women/1.jpg',
     match,
     experience: raw.experience || 'Chưa cập nhật',
     education: [raw.educationLevel, raw.major].filter(Boolean).join(' · ') || 'Chưa cập nhật',

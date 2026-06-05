@@ -8,6 +8,7 @@ import { TutorsModule } from './tutors/tutors.module';
 import { ReportsModule } from './reports/reports.module';
 import { SubjectsModule } from './subjects/subjects.module';
 import { NotificationsModule } from './notifications/notifications.module';
+import { UploadModule } from './upload/upload.module';
 
 // Entities
 import { Role } from './users/entities/role.entity';
@@ -72,6 +73,7 @@ import { RefreshToken } from './auth/entities/refresh-token.entity';
     ReportsModule,
     SubjectsModule,
     NotificationsModule,
+    UploadModule,
   ],
 })
 export class AppModule {}

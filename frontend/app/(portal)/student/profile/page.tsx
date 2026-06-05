@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { isLoggedIn, getUserRole } from "@/lib/auth";
 import { getStudentProfile } from "@/lib/api/classes.api";
@@ -13,9 +13,9 @@ import {
   Save,
   Loader2,
   ArrowLeft,
-  Camera,
   CheckCircle2,
   AlertCircle,
+  Upload,
 } from "lucide-react";
 
 interface StudentData {
@@ -37,12 +37,16 @@ interface StudentData {
 
 export default function StudentProfilePage() {
   const router = useRouter();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [student, setStudent] = useState<StudentData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+
+  // Avatar upload state
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
   // Form fields
   const [fullName, setFullName] = useState("");
@@ -67,11 +71,74 @@ export default function StudentProfilePage() {
       setFullName(data.user?.fullName || "");
       setPhone(data.user?.phone || "");
       setAddress(data.user?.address || "");
-
     } catch (err: any) {
       setError(err.message || "Không thể tải thông tin hồ sơ");
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleAvatarClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file size (5MB max)
+    if (file.size > 5 * 1024 * 1024) {
+      setSaveError("File ảnh phải nhỏ hơn 5MB");
+      return;
+    }
+
+    // Validate file type
+    const allowed = ["image/jpeg", "image/png", "image/gif", "image/webp"];
+    if (!allowed.includes(file.type)) {
+      setSaveError("Chỉ chấp nhận file ảnh (JPEG, PNG, GIF, WebP)");
+      return;
+    }
+
+    setUploadingAvatar(true);
+    setSaveError(null);
+
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const uploadRes = await fetch("/api/upload/avatar", {
+        method: "POST",
+        credentials: "include",
+        body: formData,
+      });
+
+      if (!uploadRes.ok) {
+        const err = await uploadRes.json().catch(() => ({}));
+        throw new Error(err.message || "Tải ảnh lên thất bại");
+      }
+
+      const { url } = await uploadRes.json();
+
+      // Update avatar URL via profile endpoint
+      const profileRes = await fetch("/api/auth/profile", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ avatarUrl: url }),
+      });
+
+      if (!profileRes.ok) {
+        throw new Error("Không thể cập nhật ảnh đại diện");
+      }
+
+      // Refresh profile to show new avatar
+      await loadProfile();
+    } catch (err: any) {
+      setSaveError(err.message || "Có lỗi xảy ra khi tải ảnh lên");
+    } finally {
+      setUploadingAvatar(false);
+      // Reset file input so re-selecting the same file works
+      if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
 
@@ -98,7 +165,6 @@ export default function StudentProfilePage() {
       }
 
       setSaveSuccess(true);
-      // Refresh profile data to update sidebar
       loadProfile();
       setTimeout(() => setSaveSuccess(false), 3000);
     } catch (err: any) {
@@ -108,39 +174,39 @@ export default function StudentProfilePage() {
     }
   };
 
-  if (!isLoggedIn()) return null;
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-[#f8fafc] flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 size={40} className="text-[#0b5fff] animate-spin mx-auto mb-4" />
-          <p className="text-sm font-medium text-[#64748b]">Đang tải thông tin hồ sơ...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen bg-[#f8fafc] flex items-center justify-center">
-        <div className="text-center max-w-sm">
-          <AlertCircle size={40} className="text-rose-500 mx-auto mb-4" />
-          <h3 className="text-lg font-bold text-[#0f172a] mb-2">Đã xảy ra lỗi</h3>
-          <p className="text-sm text-[#64748b] mb-4">{error}</p>
-          <button
-            onClick={loadProfile}
-            className="inline-flex items-center gap-2 rounded-xl bg-[#0b5fff] px-5 py-2.5 text-sm font-semibold text-white hover:opacity-90 transition-all"
-          >
-            Thử lại
-          </button>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-[#f8fafc] text-[#0f172a]">
+      {isLoading ? (
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="text-center">
+            <Loader2 size={40} className="text-[#0b5fff] animate-spin mx-auto mb-4" />
+            <p className="text-sm font-medium text-[#64748b]">Đang tải thông tin hồ sơ...</p>
+          </div>
+        </div>
+      ) : error ? (
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="text-center max-w-sm">
+            <AlertCircle size={40} className="text-rose-500 mx-auto mb-4" />
+            <h3 className="text-lg font-bold text-[#0f172a] mb-2">Đã xảy ra lỗi</h3>
+            <p className="text-sm text-[#64748b] mb-4">{error}</p>
+            <button
+              onClick={loadProfile}
+              className="inline-flex items-center gap-2 rounded-xl bg-[#0b5fff] px-5 py-2.5 text-sm font-semibold text-white hover:opacity-90 transition-all"
+            >
+              Thử lại
+            </button>
+          </div>
+        </div>
+      ) : (<>
+      {/* Hidden file input */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/gif,image/webp"
+        className="hidden"
+        onChange={handleFileSelect}
+      />
+
       {/* Top Bar */}
       <div className="border-b border-[#e2e8f0] bg-white">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
@@ -161,18 +227,29 @@ export default function StudentProfilePage() {
           {/* Avatar Section */}
           <div className="lg:col-span-1">
             <div className="bg-white rounded-2xl border border-[#e2e8f0] p-6 text-center shadow-sm sticky top-24">
-              <div className="relative mx-auto w-28 h-28 rounded-full overflow-hidden bg-gradient-to-br from-[#0b5fff] to-[#6366f1] flex items-center justify-center mb-4">
-                {student?.user?.avatarUrl ? (
-                  <img
-                    src={student.user.avatarUrl}
-                    alt={student.user.fullName}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <User size={48} className="text-white/80" />
-                )}
-                <button className="absolute bottom-0 right-0 w-9 h-9 rounded-full bg-white border-2 border-[#e2e8f0] flex items-center justify-center text-[#64748b] hover:text-[#0b5fff] hover:border-[#0b5fff] transition-all shadow-md cursor-pointer">
-                  <Camera size={16} />
+              <div className="relative mx-auto w-28 h-28 mb-4">
+                <div className="w-full h-full rounded-full overflow-hidden bg-gradient-to-br from-[#0b5fff] to-[#6366f1] flex items-center justify-center">
+                  {student?.user?.avatarUrl ? (
+                    <img
+                      src={student.user.avatarUrl}
+                      alt={student.user.fullName}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <User size={48} className="text-white/80" />
+                  )}
+                  {uploadingAvatar && (
+                    <div className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center">
+                      <Loader2 size={24} className="text-white animate-spin" />
+                    </div>
+                  )}
+                </div>
+                <button
+                  onClick={handleAvatarClick}
+                  disabled={uploadingAvatar}
+                  className="absolute -bottom-1 -right-1 w-9 h-9 rounded-full bg-white border-2 border-[#e2e8f0] flex items-center justify-center text-[#64748b] hover:text-[#0b5fff] hover:border-[#0b5fff] transition-all shadow-md cursor-pointer disabled:opacity-50"
+                >
+                  <Upload size={16} />
                 </button>
               </div>
               <h2 className="text-lg font-bold text-[#0f172a]">{student?.user?.fullName}</h2>
@@ -181,6 +258,7 @@ export default function StudentProfilePage() {
                 <GraduationCap size={14} />
                 Học viên
               </div>
+              <p className="text-[11px] text-[#94a3b8] mt-3">Nhấn vào icon upload để thay đổi ảnh đại diện</p>
             </div>
           </div>
 
@@ -273,8 +351,6 @@ export default function StudentProfilePage() {
               </div>
             </div>
 
-
-
             {/* Save Button */}
             <div className="flex justify-end gap-3">
               <button
@@ -304,6 +380,8 @@ export default function StudentProfilePage() {
           </div>
         </div>
       </div>
+      </>
+    )}
     </div>
   );
 }

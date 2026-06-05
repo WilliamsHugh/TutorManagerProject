@@ -1,5 +1,6 @@
 "use client";
-import { Search, X } from "lucide-react";
+import { Search, X, SendHorizonal } from "lucide-react";
+import Link from "next/link";
 import FilterWidget from "../common/FilterWidget";
 
 interface FilterOption {
@@ -44,6 +45,22 @@ export default function Sidebar({ filters, checked, toggle, search, onSearchChan
       {filters.map((section) => (
         <FilterWidget key={section.id} section={section} checked={checked} onToggle={toggle} />
       ))}
+
+      {/* Divider */}
+      <div className="border-t border-gray-100 my-2" />
+
+      {/* Send request button */}
+      <Link
+        href="/student"
+        className="flex items-center justify-center gap-2.5 w-full h-12 rounded-2xl text-sm font-bold text-white transition-all duration-200 hover:opacity-90 active:scale-[0.98] shadow-lg no-underline"
+        style={{
+          backgroundColor: "var(--primary)",
+          boxShadow: "0 4px 14px rgba(11, 99, 214, 0.25)",
+        }}
+      >
+        <SendHorizonal size={18} />
+        Gửi yêu cầu
+      </Link>
     </aside>
   );
 }

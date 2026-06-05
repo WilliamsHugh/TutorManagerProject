@@ -119,13 +119,15 @@ export class UsersService {
 
   async updateProfile(
     userId: string,
-    data: { fullName?: string; phone?: string },
+    data: { fullName?: string; phone?: string; address?: string; avatarUrl?: string },
   ): Promise<User> {
     const user = await this.findById(userId);
     if (!user) throw new Error('Không tìm thấy người dùng');
 
     if (data.fullName) user.fullName = data.fullName;
     if (data.phone) user.phone = data.phone;
+    if (data.address !== undefined) user.address = data.address;
+    if (data.avatarUrl !== undefined) user.avatarUrl = data.avatarUrl;
 
     return this.usersRepository.save(user);
   }

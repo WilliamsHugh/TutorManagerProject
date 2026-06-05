@@ -176,7 +176,11 @@ export default function Header({
                         <LayoutDashboard size={18} className="opacity-70" />
                         Trang Dashboard
                       </Link>
-                      <Link href="/tutors/profile" 
+                      <Link href={
+                        user.role?.name === 'student' 
+                          ? '/student/profile' 
+                          : '/tutors/profile'
+                      } 
                         onClick={() => setShowUserMenu(false)}
                         className="flex items-center gap-3 px-4 py-2.5 text-sm no-underline hover:bg-indigo-50 hover:text-indigo-600 transition-colors"
                         style={{ color: "var(--foreground)" }}>

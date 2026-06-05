@@ -46,9 +46,9 @@ export default function TutorsSection() {
 
   return (
     <section className="py-12 sm:py-16 lg:py-20" style={{ backgroundColor: "var(--secondary)" }}>
-      <div className="w-full max-w-[1200px] mx-auto px-4 sm:px-6">
+      <div className="w-full max-w-300 mx-auto px-4 sm:px-6">
         {/* Section Header */}
-        <div className="text-center mb-8 sm:mb-12 max-w-[600px] mx-auto">
+        <div className="text-center mb-8 sm:mb-12 max-w-150 mx-auto">
           <h2
             className="text-2xl sm:text-[28px] lg:text-[32px] font-bold mb-3 sm:mb-4"
             style={{ color: "var(--foreground)" }}

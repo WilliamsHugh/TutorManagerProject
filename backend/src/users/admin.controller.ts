@@ -29,7 +29,7 @@ import * as bcrypt from 'bcryptjs';
 
 @Controller('admin')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(RoleType.ADMIN)
+@Roles(RoleType.ADMIN, RoleType.STAFF)
 export class AdminController {
   constructor(
     @InjectRepository(User) private usersRepo: Repository<User>,
@@ -156,6 +156,37 @@ export class AdminController {
     const saved = await this.usersRepo.save(user);
     const { passwordHash, ...result } = saved;
     return result;
+  }
+
+  // ----------------------------------------------------
+  // QUẢN LÝ HỌC VIÊN (STUDENTS)
+  // ----------------------------------------------------
+
+  @Get('students')
+  async getAllStudents() {
+    const students = await this.studentsRepo.find({
+      relations: ['user'],
+      order: { user: { createdAt: 'DESC' } },
+    });
+
+    return students.map((student) => ({
+      id: student.id,
+      gradeLevel: student.gradeLevel,
+      schoolName: student.schoolName,
+      parentName: student.parentName,
+      parentPhone: student.parentPhone,
+      parentEmail: student.parentEmail,
+      user: {
+        id: student.user.id,
+        fullName: student.user.fullName,
+        email: student.user.email,
+        phone: student.user.phone,
+        address: student.user.address,
+        avatarUrl: student.user.avatarUrl,
+        isActive: student.user.isActive,
+        createdAt: student.user.createdAt,
+      },
+    }));
   }
 
   // ----------------------------------------------------

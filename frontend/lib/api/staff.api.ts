@@ -78,3 +78,22 @@ export function getClasses(params: { status?: ApiClassStatus } = {}) {
   const query = searchParams.toString();
   return request<ApiClass[]>(`/classes${query ? `?${query}` : ''}`);
 }
+
+// Staff data endpoints — kết nối với AdminController (cho phép cả STAFF role)
+export function getStaffStats() {
+  return request<{
+    activeClasses: number;
+    completedClasses: number;
+    newRequests: number;
+    activeTutors: number;
+    learningStudents: number;
+  }>('/admin/stats');
+}
+
+export function getStaffTutors() {
+  return request<any[]>('/admin/tutors');
+}
+
+export function getStaffStudents() {
+  return request<any[]>('/admin/students');
+}

@@ -13,6 +13,7 @@ export default function ProfessionalProfilePage() {
   const [isSaving, setIsUpdating] = useState(false);
   const [allSubjects, setAllSubjects] = useState<any[]>([]);
   const [showSubjectDropdown, setShowSubjectDropdown] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const certInputRef = useRef<HTMLInputElement>(null);
@@ -54,12 +55,48 @@ export default function ProfessionalProfilePage() {
     }
   };
 
-  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      // Logic giả lập: Tạo URL xem trước. Thực tế bạn sẽ upload file lên Cloud/Server.
-      const previewUrl = URL.createObjectURL(file);
-      setFormData((prev: any) => ({ ...prev, avatarUrl: previewUrl }));
+    if (!file) return;
+
+    // Validate file size (5MB max)
+    if (file.size > 5 * 1024 * 1024) {
+      alert('File ảnh phải nhỏ hơn 5MB');
+      return;
+    }
+
+    // Validate file type
+    const allowed = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    if (!allowed.includes(file.type)) {
+      alert('Chỉ chấp nhận file ảnh (JPEG, PNG, GIF, WebP)');
+      return;
+    }
+
+    setUploadingAvatar(true);
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const uploadRes = await fetch('/api/upload/avatar', {
+        method: 'POST',
+        credentials: 'include',
+        body: formData,
+      });
+
+      if (!uploadRes.ok) {
+        const err = await uploadRes.json().catch(() => ({}));
+        throw new Error(err.message || 'Tải ảnh lên thất bại');
+      }
+
+      const { url } = await uploadRes.json();
+      setFormData((prev: any) => ({ ...prev, avatarUrl: url }));
+    } catch (error: any) {
+      console.error('Avatar upload error:', error);
+      alert(error.message || 'Có lỗi xảy ra khi tải ảnh lên');
+    } finally {
+      setUploadingAvatar(false);
+      if (avatarInputRef.current) avatarInputRef.current.value = '';
     }
   };
 
@@ -164,13 +201,20 @@ export default function ProfessionalProfilePage() {
             {/* Avatar Panel */}
             <div className="bg-white border border-slate-200 rounded-lg p-6 flex flex-col items-center text-center gap-4 shadow-sm">
               <div className="relative">
-                <img 
-                  src={formData.avatarUrl || "https://storage.googleapis.com/banani-avatars/avatar%2Ffemale%2F25-35%2FSoutheast%20Asian%2F1"}
-                  alt="Tutor Avatar" 
-                  className="w-32 h-32 rounded-full object-cover border-4 border-slate-100"
-                />
+                <div className="relative">
+                  <img 
+                    src={formData.avatarUrl || "https://storage.googleapis.com/banani-avatars/avatar%2Ffemale%2F25-35%2FSoutheast%20Asian%2F1"}
+                    alt="Tutor Avatar" 
+                    className="w-32 h-32 rounded-full object-cover border-4 border-slate-100"
+                  />
+                  {uploadingAvatar && (
+                    <div className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center">
+                      <Icon icon="lucide:loader-2" className="text-white text-2xl animate-spin" />
+                    </div>
+                  )}
+                </div>
                 <input type="file" ref={avatarInputRef} className="hidden" accept="image/*" onChange={handleAvatarChange} />
-                <button onClick={() => avatarInputRef.current?.click()} className="absolute bottom-0 right-0 bg-white border border-slate-200 rounded-full w-8 h-8 flex items-center justify-center text-blue-600 shadow-sm hover:bg-slate-50">
+                <button onClick={() => avatarInputRef.current?.click()} disabled={uploadingAvatar} className="absolute bottom-0 right-0 bg-white border border-slate-200 rounded-full w-8 h-8 flex items-center justify-center text-blue-600 shadow-sm hover:bg-slate-50 disabled:opacity-50">
                   <Icon icon="lucide:camera" />
                 </button>
               </div>
@@ -178,7 +222,7 @@ export default function ProfessionalProfilePage() {
                 <h4 className="text-base font-semibold text-slate-900 mb-1">Ảnh đại diện</h4>
                 <p className="text-xs text-slate-500">Định dạng JPG, PNG. Kích thước tối đa 5MB.</p>
               </div>
-              <button onClick={() => avatarInputRef.current?.click()} className="w-full py-2 border border-slate-200 rounded-md text-sm font-medium hover:bg-slate-50 transition-colors">
+              <button onClick={() => avatarInputRef.current?.click()} disabled={uploadingAvatar} className="w-full py-2 border border-slate-200 rounded-md text-sm font-medium hover:bg-slate-50 transition-colors disabled:opacity-50">
                 Tải ảnh mới
               </button>
             </div>

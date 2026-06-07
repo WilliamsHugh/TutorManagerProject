@@ -5,9 +5,6 @@ import {
   Award, Medal, BadgeCheck,
 } from "lucide-react";
 import Image from "next/image";
-import Header from "@/components/layout/Header";
-import Footer from "@/components/layout/Footer";
-
 // ─── Data ────────────────────────────────────────────────────────────────────
 const STEPS = [
   {
@@ -109,7 +106,7 @@ export default function AboutPage() {
             width={1200}
             height={800}
             priority
-            className="rounded-2xl shadow-xl object-cover w-full h-auto max-h-[400px]"
+            className="rounded-2xl shadow-xl object-cover w-full h-auto max-h-100"
           />
         </div>
       </section>
@@ -175,9 +172,6 @@ export default function AboutPage() {
           ))}
         </div>
       </section>
-
-      {/* ── Footer ── */}
-      <Footer />
     </div>
   );
 }

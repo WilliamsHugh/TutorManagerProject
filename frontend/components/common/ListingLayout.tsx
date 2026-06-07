@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { ChevronDown, SlidersHorizontal, X } from "lucide-react";
-import Footer from "@/components/layout/Footer";
 import Sidebar from "@/components/layout/Sidebar";
 import FilterWidget from "@/components/common/FilterWidget";
 import Pagination from "@/components/common/Pagination";
@@ -234,7 +233,6 @@ export default function ListingLayout<T>({
           </div>
         </div>
       </div>
-      <Footer />
     </div>
   );
 }

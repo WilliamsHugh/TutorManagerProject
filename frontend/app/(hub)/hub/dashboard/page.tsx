@@ -242,7 +242,7 @@ export default function AdminDashboardPage() {
         credentials: "include",
       });
       if (res.ok) {
-        showToast(status === "approved" ? "Đã phê duyệt hồ sơ gia sư!" : "Đã từ chối hồ sơ gia sư!");
+        showToast(status === "approved" ? "Đã phê duyệt hồ sơ gia sư! Tài khoản đã được kích hoạt." : "Đã từ chối hồ sơ gia sư!");
         setSelectedTutor(null);
         fetchTutors();
         fetchStats();
@@ -1287,6 +1287,33 @@ export default function AdminDashboardPage() {
                 <p className="bg-[#0f172a] p-3 rounded-lg border border-slate-800 text-slate-300 leading-relaxed max-h-28 overflow-y-auto">
                   {selectedTutor.experience || "Không có thông tin mô tả chi tiết kinh nghiệm giảng dạy."}
                 </p>
+              </div>
+
+              {/* CV Download */}
+              <div className="col-span-2">
+                <div className="bg-[#0f172a] p-3 rounded-lg border border-slate-800">
+                  <span className="text-slate-500 text-xs">CV / Bằng cấp, chứng chỉ đính kèm:</span>
+                  <div className="mt-2">
+                    {selectedTutor.cvUrl ? (
+                      <a
+                        href={selectedTutor.cvUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border text-xs font-semibold transition-colors hover:bg-yellow-500/10 hover:border-yellow-500/50"
+                        style={{
+                          borderColor: "rgba(255,255,255,0.15)",
+                          color: "#fbbf24",
+                        }}
+                      >
+                        <FileText size={16} />
+                        Xem CV / Chứng chỉ
+                        <span className="text-[10px] text-slate-400 ml-1">(Mở tab mới)</span>
+                      </a>
+                    ) : (
+                      <span className="text-slate-600 italic text-[11px]">Không có file đính kèm</span>
+                    )}
+                  </div>
+                </div>
               </div>
               {selectedTutor.approvedBy && (
                 <div className="col-span-2 bg-[#0f172a] p-3 rounded-lg border border-slate-800 grid grid-cols-2 gap-2 text-[11px] text-slate-400">

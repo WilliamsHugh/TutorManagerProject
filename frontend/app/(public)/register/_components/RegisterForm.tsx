@@ -50,7 +50,9 @@ export default function RegisterForm() {
         "Luyện thi ĐH",
         "Vật Lý 12",
     ]);
-    const [file, setFile] = useState<string | null>("Bang_Tot_Nghiep_DH.pdf");
+    const [cvFile, setCvFile] = useState<{ name: string; url: string } | null>(null);
+    const [cvUploading, setCvUploading] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     const [fullName, setFullName] = useState("");
     const [email, setEmail] = useState("");
@@ -143,6 +145,9 @@ export default function RegisterForm() {
             payload.education = education;
             payload.experience = experience;
             payload.subjects = subjects_selected;
+            if (cvFile?.url) {
+                payload.cvUrl = cvFile.url;
+            }
         }
 
         try {
@@ -675,11 +680,49 @@ export default function RegisterForm() {
                                     {/* Certificate Upload - Full Width */}
                                     <div>
                                         <label className="block text-sm font-medium mb-2" style={{ color: "var(--foreground)" }}>
-                                            Tải lên bằng cấp / chứng chỉ <span style={{ color: "var(--destructive)" }}>*</span>
+                                            Tải lên CV / Bằng cấp, chứng chỉ <span style={{ color: "var(--destructive)" }}>*</span>
                                         </label>
 
-                                        {!file ? (
+                                        <input
+                                            ref={fileInputRef}
+                                            type="file"
+                                            accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                                            onChange={async (e) => {
+                                                const file = e.target.files?.[0];
+                                                if (!file) return;
+
+                                                setCvUploading(true);
+                                                try {
+                                                    const formData = new FormData();
+                                                    formData.append('file', file);
+
+                                                    const res = await fetch('http://localhost:3001/api/upload/cv', {
+                                                        method: 'POST',
+                                                        body: formData,
+                                                        credentials: 'include',
+                                                    });
+
+                                                    if (!res.ok) {
+                                                        const err = await res.json();
+                                                        throw new Error(err.message || 'Tải CV thất bại');
+                                                    }
+
+                                                    const data = await res.json();
+                                                    setCvFile({ name: data.fileName || file.name, url: data.url });
+                                                } catch (err: any) {
+                                                    setError(err.message || 'Không thể tải CV lên. Vui lòng thử lại.');
+                                                } finally {
+                                                    setCvUploading(false);
+                                                }
+                                                // Reset input để có thể chọn lại cùng file
+                                                if (fileInputRef.current) fileInputRef.current.value = '';
+                                            }}
+                                            style={{ display: 'none' }}
+                                        />
+
+                                        {!cvFile && !cvUploading && (
                                             <div
+                                                onClick={() => fileInputRef.current?.click()}
                                                 className="flex flex-col items-center justify-center gap-2 p-8 rounded-lg border-2 border-dashed text-center cursor-pointer transition-colors hover:opacity-80"
                                                 style={{
                                                     borderColor: "var(--border)",
@@ -698,10 +741,25 @@ export default function RegisterForm() {
                                                     </span>
                                                 </p>
                                                 <p className="text-xs" style={{ color: "var(--muted-foreground)" }}>
-                                                    Hỗ trợ định dạng JPG, PNG, PDF (Tối đa 5MB)
+                                                    Hỗ trợ PDF, DOC, DOCX, JPEG, PNG (Tối đa 10MB)
                                                 </p>
                                             </div>
-                                        ) : (
+                                        )}
+
+                                        {cvUploading && (
+                                            <div
+                                                className="flex items-center justify-center gap-3 p-5 rounded-lg border-2 border-dashed"
+                                                style={{
+                                                    borderColor: "var(--border)",
+                                                    backgroundColor: "var(--background)",
+                                                }}
+                                            >
+                                                <div className="w-5 h-5 rounded-full border-2 border-t-transparent animate-spin" style={{ borderColor: "var(--primary)", borderTopColor: "transparent" }} />
+                                                <span className="text-sm" style={{ color: "var(--foreground)" }}>Đang tải CV lên...</span>
+                                            </div>
+                                        )}
+
+                                        {cvFile && !cvUploading && (
                                             <div
                                                 className="flex items-center justify-between p-3.5 rounded-md border"
                                                 style={{
@@ -710,19 +768,21 @@ export default function RegisterForm() {
                                                 }}
                                             >
                                                 <div className="flex items-center gap-3">
-                                                    <div style={{ color: "var(--primary)" }}>📄</div>
+                                                    <div className="flex items-center justify-center w-8 h-8 rounded-lg" style={{ backgroundColor: "color-mix(in srgb, var(--primary) 15%, transparent)" }}>
+                                                        <UploadCloud size={16} style={{ color: "var(--primary)" }} />
+                                                    </div>
                                                     <div>
                                                         <div className="text-sm font-medium" style={{ color: "var(--foreground)" }}>
-                                                            {file}
+                                                            {cvFile.name}
                                                         </div>
                                                         <div className="text-xs" style={{ color: "var(--muted-foreground)" }}>
-                                                            1.2 MB
+                                                            Đã tải lên thành công
                                                         </div>
                                                     </div>
                                                 </div>
                                                 <button
                                                     type="button"
-                                                    onClick={() => setFile(null)}
+                                                    onClick={() => setCvFile(null)}
                                                     className="border-none bg-transparent cursor-pointer p-1"
                                                     style={{ color: "var(--destructive)" }}
                                                 >

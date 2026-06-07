@@ -231,7 +231,7 @@ export class AdminController {
     });
     if (!tutor) throw new NotFoundException('Không tìm thấy gia sư');
 
-    const statusInput = body.status?.toUpperCase();
+    const statusInput = body.status?.toLowerCase();
     if (!Object.values(ApprovalStatus).includes(statusInput as any)) {
       throw new ConflictException('Trạng thái phê duyệt không hợp lệ');
     }

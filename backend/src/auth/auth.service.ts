@@ -60,6 +60,7 @@ export class AuthService {
       {
         educationLevel: dto.education,
         experience: dto.experience,
+        cvUrl: dto.cvUrl,
       },
       dto.subjects || [],
     );

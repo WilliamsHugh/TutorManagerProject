@@ -124,7 +124,15 @@ export default function Header({ title, showSearch = false, userProfile }: Heade
               setIsNotificationsOpen(false);
             }}
           >
-            <img className="avatar" src={userProfile?.avatarUrl || userProfile?.avatar || user?.avatarUrl || "https://storage.googleapis.com/banani-avatars/avatar%2Ffemale%2F25-35%2FSoutheast%20Asian%2F1"} alt="Avatar" style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover' }} />
+            <div className="avatar" style={{ width: '40px', height: '40px', borderRadius: '50%', overflow: 'hidden', flexShrink: 0, backgroundColor: (userProfile?.avatarUrl || userProfile?.avatar || user?.avatarUrl) ? 'transparent' : '#e0e7ff', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid #e0e7ff' }}>
+              {(userProfile?.avatarUrl || userProfile?.avatar || user?.avatarUrl) ? (
+                <img className="avatar" src={userProfile?.avatarUrl || userProfile?.avatar || user?.avatarUrl} alt="Avatar" style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover' }} />
+              ) : (
+                <span style={{ fontSize: '16px', fontWeight: 700, color: '#4f46e5' }}>
+                  {(userProfile?.fullName || user?.fullName || user?.email || '?').charAt(0).toUpperCase()}
+                </span>
+              )}
+            </div>
             <div className="user-info" style={{ display: 'flex', flexDirection: 'column' }}>
               <span className="name" style={{ fontWeight: 600, fontSize: '14px' }}>{userProfile?.fullName || user?.fullName || 'Gia sư'}</span>
               <span className="role" style={{ fontSize: '12px', color: '#64748b' }}>{userProfile?.roleName || 'Gia sư hệ thống'}</span>

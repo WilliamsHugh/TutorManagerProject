@@ -55,6 +55,9 @@ export class Tutor {
   @Column({ type: 'text', nullable: true })
   bio!: string;
 
+  @Column({ name: 'cv_url', type: 'varchar', length: 500, nullable: true })
+  cvUrl!: string;
+
   @Column({ type: 'varchar', length: 255, nullable: true })
   university!: string;
 

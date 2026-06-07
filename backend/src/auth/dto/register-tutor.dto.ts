@@ -1,4 +1,4 @@
-import { IsEmail, IsString, MinLength, IsArray } from 'class-validator';
+import { IsEmail, IsString, IsOptional, MinLength, IsArray } from 'class-validator';
 
 export class RegisterTutorDto {
   @IsString()
@@ -22,4 +22,8 @@ export class RegisterTutorDto {
 
   @IsArray()
   subjects!: string[];
+
+  @IsOptional()
+  @IsString()
+  cvUrl?: string;
 }

@@ -228,7 +228,7 @@ export default function StudentProfilePage() {
           <div className="lg:col-span-1">
             <div className="bg-white rounded-2xl border border-[#e2e8f0] p-6 text-center shadow-sm sticky top-24">
               <div className="relative mx-auto w-28 h-28 mb-4">
-                <div className="w-full h-full rounded-full overflow-hidden bg-gradient-to-br from-[#0b5fff] to-[#6366f1] flex items-center justify-center">
+                <div className="w-full h-full rounded-full overflow-hidden flex items-center justify-center" style={{ background: student?.user?.avatarUrl ? 'transparent' : 'linear-gradient(135deg, #0b5fff, #6366f1)' }}>
                   {student?.user?.avatarUrl ? (
                     <img
                       src={student.user.avatarUrl}
@@ -236,7 +236,7 @@ export default function StudentProfilePage() {
                       className="w-full h-full object-cover"
                     />
                   ) : (
-                    <User size={48} className="text-white/80" />
+                    <span className="text-3xl font-bold text-white/90">{(student?.user?.fullName || student?.user?.email || '?').charAt(0).toUpperCase()}</span>
                   )}
                   {uploadingAvatar && (
                     <div className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center">

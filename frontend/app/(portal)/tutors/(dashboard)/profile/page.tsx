@@ -202,11 +202,17 @@ export default function ProfessionalProfilePage() {
             <div className="bg-white border border-slate-200 rounded-lg p-6 flex flex-col items-center text-center gap-4 shadow-sm">
               <div className="relative">
                 <div className="relative">
-                  <img 
-                    src={formData.avatarUrl || "https://storage.googleapis.com/banani-avatars/avatar%2Ffemale%2F25-35%2FSoutheast%20Asian%2F1"}
-                    alt="Tutor Avatar" 
-                    className="w-32 h-32 rounded-full object-cover border-4 border-slate-100"
-                  />
+                  {formData.avatarUrl ? (
+                    <img 
+                      src={formData.avatarUrl}
+                      alt="Tutor Avatar" 
+                      className="w-32 h-32 rounded-full object-cover border-4 border-slate-100"
+                    />
+                  ) : (
+                    <div className="w-32 h-32 rounded-full flex items-center justify-center text-3xl font-bold text-indigo-600 border-4 border-slate-100" style={{ backgroundColor: '#e0e7ff' }}>
+                      {(formData.fullName || formData.email || '?').charAt(0).toUpperCase()}
+                    </div>
+                  )}
                   {uploadingAvatar && (
                     <div className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center">
                       <Icon icon="lucide:loader-2" className="text-white text-2xl animate-spin" />

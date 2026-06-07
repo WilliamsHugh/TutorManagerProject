@@ -54,7 +54,9 @@ export function StaffHeader({
             onClick={() => setShowUserMenu(!showUserMenu)}
             className="flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-foreground hover:bg-secondary transition-colors border-none bg-transparent cursor-pointer"
           >
-            <div className="size-7 rounded-full bg-[linear-gradient(135deg,#0b63d6,#ffb020)]" />
+            <div className="size-7 rounded-full flex items-center justify-center text-[10px] font-bold text-white" style={{ background: 'linear-gradient(135deg, #0b63d6, #ffb020)' }}>
+              {(user?.fullName || user?.email || 'S').charAt(0).toUpperCase()}
+            </div>
             {user && <span className="hidden sm:inline max-w-24 truncate">{user.fullName}</span>}
             <ChevronDown size={12} className={`transition-transform duration-200 ${showUserMenu ? 'rotate-180' : ''}`} />
           </button>

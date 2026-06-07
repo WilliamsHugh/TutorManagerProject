@@ -1,6 +1,6 @@
 "use client";
 
-import { GraduationCap, Menu, X, Bell, ChevronDown, LogOut, User as UserIcon, Shield, LayoutDashboard } from "lucide-react";
+import { GraduationCap, Menu, X, Bell, ChevronDown, LogOut, Shield, LayoutDashboard } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { useState, useEffect } from "react";
@@ -131,11 +131,11 @@ export default function Header({
                   className="flex items-center gap-2 sm:gap-3 bg-white hover:bg-gray-50 border border-black/5 rounded-full py-1.5 pl-1.5 pr-3 transition-all cursor-pointer shadow-sm"
                   onClick={() => setShowUserMenu(!showUserMenu)}
                 >
-                  <div className="h-8 w-8 rounded-full bg-indigo-50 flex items-center justify-center overflow-hidden border border-indigo-100 shrink-0">
+                  <div className="h-8 w-8 rounded-full flex items-center justify-center overflow-hidden border shrink-0" style={{ backgroundColor: user.avatar ? 'transparent' : '#e0e7ff', borderColor: '#e0e7ff' }}>
                     {user.avatar ? (
                       <Image src={user.avatar} alt={user.fullName} width={32} height={32} className="object-cover" />
                     ) : (
-                      <UserIcon size={18} className="text-indigo-600" />
+                      <span className="text-xs font-bold text-indigo-600">{(user.fullName || user.email || '?').charAt(0).toUpperCase()}</span>
                     )}
                   </div>
                   <div className="hidden lg:block text-left max-w-37.5">

@@ -9,6 +9,7 @@ import { ReportsModule } from './reports/reports.module';
 import { SubjectsModule } from './subjects/subjects.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { UploadModule } from './upload/upload.module';
+import { SettingsModule } from './settings/settings.module';
 
 // Entities
 import { Role } from './users/entities/role.entity';
@@ -25,6 +26,7 @@ import { Review } from './classes/entities/review.entity';
 import { Notification } from './notifications/notification.entity';
 import { Otp } from './auth/entities/otp.entity';
 import { RefreshToken } from './auth/entities/refresh-token.entity';
+import { Setting } from './settings/setting.entity';
 
 @Module({
   imports: [
@@ -59,6 +61,7 @@ import { RefreshToken } from './auth/entities/refresh-token.entity';
             Notification,
             Otp,
             RefreshToken,
+            Setting,
           ],
           synchronize: true,
           autoLoadEntities: true,
@@ -74,6 +77,7 @@ import { RefreshToken } from './auth/entities/refresh-token.entity';
     SubjectsModule,
     NotificationsModule,
     UploadModule,
+    SettingsModule,
   ],
 })
 export class AppModule {}

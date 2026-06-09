@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ForbiddenException, OnModuleInit } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException, OnModuleInit, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between, In } from 'typeorm';
 
@@ -141,6 +141,65 @@ export class TutorsService implements OnModuleInit {
     if (!studentExists) {
       console.log('--- Student user not found. Seeding mock tutor and student accounts into database... ---');
       await this.seedMockData();
+    }
+
+    // Tự động dọn dẹp các lịch học trùng lặp (trùng class, ngày và giờ) khi khởi chạy module
+    try {
+      const allSchedules = await this.scheduleRepository.find({
+        relations: ['class'],
+      });
+      const groups = new Map<string, Schedule[]>();
+      for (const s of allSchedules) {
+        const classId = s.class?.id || 'no-class';
+        const dateObj = s.sessionDate instanceof Date ? s.sessionDate : new Date(s.sessionDate);
+        const y = dateObj.getFullYear();
+        const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+        const d = String(dateObj.getDate()).padStart(2, '0');
+        const dateStr = `${y}-${m}-${d}`;
+        const startTime = s.startTime || 'no-start';
+        const endTime = s.endTime || 'no-end';
+        const key = `${classId}_${dateStr}_${startTime}_${endTime}`;
+
+        const list = groups.get(key) || [];
+        list.push(s);
+        groups.set(key, list);
+      }
+
+      let deletedCount = 0;
+      for (const [key, list] of groups.entries()) {
+        if (list.length > 1) {
+          const toDelete = list.slice(1);
+          for (const d of toDelete) {
+            await this.scheduleRepository.delete(d.id);
+            deletedCount++;
+          }
+        }
+      }
+      if (deletedCount > 0) {
+        console.log(`--- Cleaned up ${deletedCount} duplicate schedules from the database successfully! ---`);
+      }
+    } catch (err) {
+      console.error('Error during automatic duplicate schedule cleanup:', err);
+    }
+
+    // Xóa lịch học của Nguyễn Thị Hà từ 17-19h theo yêu cầu
+    try {
+      const schedulesToDelete = await this.scheduleRepository.find({
+        where: {
+          class: { student: { user: { email: 'nguyen_thi_ha@tutoredu.com' } } },
+          startTime: '17:00:00',
+          endTime: '19:00:00'
+        },
+        relations: ['class', 'class.student', 'class.student.user']
+      });
+
+      if (schedulesToDelete.length > 0) {
+        const ids = schedulesToDelete.map(s => s.id);
+        await this.scheduleRepository.delete(ids);
+        console.log(`--- Deleted ${schedulesToDelete.length} schedules of Nguyễn Thị Hà from 17:00-19:00 ---`);
+      }
+    } catch (err) {
+      console.error('Error deleting Nguyễn Thị Hà schedules:', err);
     }
   }
 
@@ -343,7 +402,8 @@ export class TutorsService implements OnModuleInit {
       subject: s.class?.subject?.name || 'Môn học',
       student: s.class?.student?.user?.fullName || 'Học viên',
       location: s.class?.location || 'Online',
-      status: s.sessionStatus
+      status: s.sessionStatus,
+      note: s.note || null
     });
 
     if (view === 'month' || view === 'day') {
@@ -548,8 +608,89 @@ export class TutorsService implements OnModuleInit {
         await this.tutorSubjectRepository.save(ts);
       }
     }
+  }
 
-    return { message: 'Cập nhật danh sách môn học thành công' };
+  async createLeaveSchedule(userId: string, body: { startDate: string; endDate: string; startTime: string; endTime: string; note: string }) {
+    const profile = await this.getTutorProfileData(userId);
+    const tutorId = profile.id;
+
+    // Parse the start and end of the holiday into UTC dates to avoid timezone shifts
+    const [startYear, startMonth, startDay] = body.startDate.split('-').map(Number);
+    const [startH, startM] = body.startTime.split(':').map(Number);
+    const leaveStart = new Date(Date.UTC(startYear, startMonth - 1, startDay, startH, startM, 0, 0));
+
+    const [endYear, endMonth, endDay] = body.endDate.split('-').map(Number);
+    const [endH, endM] = body.endTime.split(':').map(Number);
+    const leaveEnd = new Date(Date.UTC(endYear, endMonth - 1, endDay, endH, endM, 0, 0));
+
+    // Fetch schedules spanning the entire date range
+    const startRange = new Date(body.startDate);
+    startRange.setHours(0, 0, 0, 0);
+    const endRange = new Date(body.endDate);
+    endRange.setHours(23, 59, 59, 999);
+
+    const schedules = await this.scheduleRepository.find({
+      where: {
+        class: { tutor: { id: tutorId } },
+        sessionDate: Between(startRange, endRange),
+        sessionStatus: SessionStatus.SCHEDULED
+      },
+    });
+
+    let cancelledCount = 0;
+    for (const schedule of schedules) {
+      // Get the correct date components for sessionDate without local timezone shifting
+      const sDateObj = schedule.sessionDate instanceof Date ? schedule.sessionDate : new Date(schedule.sessionDate);
+      const dateStr = sDateObj.toISOString().split('T')[0];
+      const [year, month, day] = dateStr.split('-').map(Number);
+
+      const [sh, sm] = schedule.startTime.split(':').map(Number);
+      const [eh, em] = schedule.endTime.split(':').map(Number);
+
+      const sStart = new Date(Date.UTC(year, month - 1, day, sh, sm, 0, 0));
+      const sEnd = new Date(Date.UTC(year, month - 1, day, eh, em, 0, 0));
+
+      // Overlap: sStart < leaveEnd AND sEnd > leaveStart
+      if (sStart < leaveEnd && sEnd > leaveStart) {
+        schedule.sessionStatus = SessionStatus.CANCELLED;
+        schedule.note = body.note;
+        await this.scheduleRepository.save(schedule);
+        cancelledCount++;
+      }
+    }
+
+    return { 
+      message: cancelledCount > 0 
+        ? `Đã hủy ${cancelledCount} buổi học thành công` 
+        : 'Đăng ký nghỉ thành công (không có buổi học nào trong khung giờ này)',
+      cancelledCount
+    };
+  }
+
+  async cancelLeaveSchedule(userId: string, scheduleId: string) {
+    const profile = await this.getTutorProfileData(userId);
+    const tutorId = profile.id;
+
+    const schedule = await this.scheduleRepository.findOne({
+      where: { id: scheduleId, class: { tutor: { id: tutorId } } },
+    });
+
+    if (!schedule) {
+      throw new NotFoundException('Không tìm thấy buổi học hoặc buổi học không thuộc quản lý của bạn.');
+    }
+
+    if (schedule.sessionStatus !== SessionStatus.CANCELLED) {
+      throw new BadRequestException('Buổi học này không ở trạng thái nghỉ học.');
+    }
+
+    schedule.sessionStatus = SessionStatus.SCHEDULED;
+    schedule.note = null as any; // Clear the leave note
+    await this.scheduleRepository.save(schedule);
+
+    return {
+      message: 'Đã hủy lịch nghỉ và khôi phục buổi học thành công.',
+      schedule
+    };
   }
 
   async getReportsByClass(classId: string, userId: string) {
@@ -583,7 +724,42 @@ export class TutorsService implements OnModuleInit {
       reportDate: new Date(),
     });
 
-    return this.learningReportRepository.save(newReport);
+    const savedReport = await this.learningReportRepository.save(newReport);
+
+    // Auto-update the oldest SCHEDULED schedule of this class to COMPLETED
+    try {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      // Check if there is a scheduled session today
+      let schedule = await this.scheduleRepository.findOne({
+        where: {
+          class: { id: classId },
+          sessionDate: today,
+          sessionStatus: SessionStatus.SCHEDULED
+        }
+      });
+
+      // If not, find the oldest scheduled session
+      if (!schedule) {
+        schedule = await this.scheduleRepository.findOne({
+          where: {
+            class: { id: classId },
+            sessionStatus: SessionStatus.SCHEDULED
+          },
+          order: { sessionDate: 'ASC', startTime: 'ASC' }
+        });
+      }
+
+      if (schedule) {
+        schedule.sessionStatus = SessionStatus.COMPLETED;
+        await this.scheduleRepository.save(schedule);
+      }
+    } catch (err) {
+      console.error('Error auto-completing schedule on report submit:', err);
+    }
+
+    return savedReport;
   }
 
   async updateReport(reportId: string, userId: string, dto: Partial<CreateLearningReportDto>) {
@@ -603,8 +779,37 @@ export class TutorsService implements OnModuleInit {
     const profile = await this.getTutorProfileData(userId);
     const tutorId = profile.id;
 
-    const result = await this.learningReportRepository.delete({ id: reportId, tutor: { id: tutorId } });
-    if (result.affected === 0) throw new NotFoundException('Không tìm thấy báo cáo để xóa');
+    const report = await this.learningReportRepository.findOne({
+      where: { id: reportId, tutor: { id: tutorId } },
+      relations: ['class']
+    });
+
+    if (!report) throw new NotFoundException('Không tìm thấy báo cáo để xóa');
+
+    const classId = report.class?.id;
+
+    await this.learningReportRepository.delete(reportId);
+
+    // Revert the latest COMPLETED schedule of this class back to SCHEDULED
+    if (classId) {
+      try {
+        const schedule = await this.scheduleRepository.findOne({
+          where: {
+            class: { id: classId },
+            sessionStatus: SessionStatus.COMPLETED
+          },
+          order: { sessionDate: 'DESC', startTime: 'DESC' }
+        });
+
+        if (schedule) {
+          schedule.sessionStatus = SessionStatus.SCHEDULED;
+          await this.scheduleRepository.save(schedule);
+        }
+      } catch (err) {
+        console.error('Error auto-reverting schedule on report delete:', err);
+      }
+    }
+
     return { message: 'Xóa báo cáo thành công' };
   }
 

@@ -30,7 +30,7 @@ export default function Sidebar() {
   };
 
   return (
-    <aside className="sidebar" style={{ width: '260px', background: '#ffffff', borderRight: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column' }}>
+    <aside className="sidebar" style={{ position: 'sticky', top: 0, height: '100vh', width: '260px', background: '#ffffff', borderRight: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column' }}>
       <div className="sidebar-header" style={{ padding: '24px', display: 'flex', alignItems: 'center', gap: '12px' }}>
         <div className="logo-icon" style={{ width: '36px', height: '36px', background: '#2563eb', color: '#fff', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <Icon icon="lucide:graduation-cap" fontSize={24} />

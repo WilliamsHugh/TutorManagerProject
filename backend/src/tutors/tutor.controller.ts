@@ -62,6 +62,23 @@ export class TutorController {
     return this.tutorsService.findScheduleByTutor(tutorId, date, view);
   }
 
+  // Đăng ký lịch nghỉ học cho gia sư (theo khoảng thời gian)
+  @Post('schedule/leave')
+  async createLeaveSchedule(
+    @Request() req,
+    @Body() body: { startDate: string; endDate: string; startTime: string; endTime: string; note: string }
+  ) {
+    const tutorId = req.user.id || req.user.sub;
+    return this.tutorsService.createLeaveSchedule(tutorId, body);
+  }
+
+  // Hủy lịch nghỉ (phục hồi lại lịch dạy bình thường cho một buổi học cụ thể)
+  @Delete('schedule/leave/:id')
+  async cancelLeaveSchedule(@Param('id') id: string, @Request() req) {
+    const tutorId = req.user.id || req.user.sub;
+    return this.tutorsService.cancelLeaveSchedule(tutorId, id);
+  }
+
   // Lấy danh sách học viên của tôi
   @Get('students')
   async getMyStudents(@Request() req) {

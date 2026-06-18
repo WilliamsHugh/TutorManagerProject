@@ -26,6 +26,23 @@ export default function TutorDashboard() {
   const [profile, setProfile] = useState<any>(null);
   const [currentDate, setCurrentDate] = useState(new Date());
 
+  // State cho custom toast notification
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
+
+  // State cho custom confirm modal
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    message: string;
+    onConfirm: () => void;
+  } | null>(null);
+
+  const showToast = (message: string, type: 'success' | 'error' | 'info' = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => {
+      setToast(null);
+    }, 4000);
+  };
+
   // State cho Modals
   const [selectedEvent, setSelectedEvent] = useState<any>(null);
   const [selectedSuggestedClass, setSelectedSuggestedClass] = useState<any>(null);
@@ -103,7 +120,7 @@ export default function TutorDashboard() {
 
   const handleSaveReport = async () => {
     if (!reportingClass?.classId) {
-      alert("Không tìm thấy mã định danh lớp học (UUID). Vui lòng thử tải lại trang.");
+      showToast("Không tìm thấy mã định danh lớp học (UUID). Vui lòng thử tải lại trang.", "error");
       return;
     }
 
@@ -121,7 +138,7 @@ export default function TutorDashboard() {
         });
       }
 
-      alert(isEditingReport ? "Cập nhật báo cáo thành công!" : "Gửi báo cáo thành công!");
+      showToast(isEditingReport ? "Cập nhật báo cáo thành công!" : "Gửi báo cáo thành công!", "success");
       
       // Tải lại danh sách báo cáo và đóng Modal
       const updated = await getLearningReports(reportingClass.classId);
@@ -131,14 +148,24 @@ export default function TutorDashboard() {
       setReportFormData({ content: '', homework: '', progressRating: 'good', attendanceStatus: true });
     } catch (err: any) { 
       console.error("Report Save Error:", err);
-      alert(err.message || "Lỗi khi lưu báo cáo. Vui lòng kiểm tra lại dữ liệu."); 
+      showToast(err.message || "Lỗi khi lưu báo cáo. Vui lòng kiểm tra lại dữ liệu.", "error"); 
     }
   };
 
   const handleDeleteReport = async (id: string) => {
-    if (!confirm("Xác nhận xóa báo cáo này?")) return;
-    await deleteLearningReport(id);
-    setReports(reports.filter(r => r.id !== id));
+    setConfirmModal({
+      isOpen: true,
+      message: "Xác nhận xóa báo cáo này?",
+      onConfirm: async () => {
+        try {
+          await deleteLearningReport(id);
+          showToast("Xóa báo cáo thành công!", "success");
+          setReports(reports.filter(r => r.id !== id));
+        } catch (err: any) {
+          showToast(err.message || "Không thể xóa báo cáo", "error");
+        }
+      }
+    });
   };
 
   const handleShowClassDetail = async (id: string) => {
@@ -146,7 +173,7 @@ export default function TutorDashboard() {
       const detail = await getClassRequestDetail(id);
       setSelectedSuggestedClass(detail);
     } catch (error) {
-      alert("Không thể lấy chi tiết lớp học này.");
+      showToast("Không thể lấy chi tiết lớp học này.", "error");
     }
   };
 
@@ -280,7 +307,7 @@ export default function TutorDashboard() {
                   <h2 className="card-title" style={{ fontSize: '16px', fontWeight: 600 }}>Lớp học mới gợi ý</h2>
                   <Link href="/tutors/new-classes" style={{ fontSize: '13px', color: '#2563eb', textDecoration: 'none' }}>Xem tất cả</Link>
                 </div>
-                <div className="suggested-list" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div className="suggested-list" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px', maxHeight: '390px', overflowY: 'auto' }}>
                   {suggestedClasses.length > 0 ? suggestedClasses.map((cls, i) => (
                     <div key={i} className="s-item" style={{ border: '1px solid #e2e8f0', padding: '16px', borderRadius: '6px' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
@@ -341,7 +368,7 @@ export default function TutorDashboard() {
                           title="Báo cáo"
                         ><Icon icon="lucide:file-text" fontSize={18} /></button>
                         <button 
-                          onClick={() => alert("Tính năng nhắn tin đang được phát triển (Database chưa có bảng Messages)")}
+                          onClick={() => showToast("Tính năng nhắn tin đang được phát triển (Database chưa có bảng Messages)", "info")}
                           style={{ background: 'none', border: 'none', cursor: 'pointer' }} 
                           title="Nhắn tin"
                         ><Icon icon="lucide:message-square" fontSize={18} /></button>
@@ -436,6 +463,103 @@ export default function TutorDashboard() {
           </div>
         )}
       </div>
+
+      {/* Toast Notification */}
+      {toast && (
+        <div 
+          style={{
+            position: 'fixed',
+            bottom: '24px',
+            right: '24px',
+            zIndex: 9999,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px',
+            padding: '14px 20px',
+            borderRadius: '12px',
+            boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+            border: toast.type === 'success' ? '1px solid #bbf7d0' : toast.type === 'error' ? '1px solid #fecaca' : '1px solid #bfdbfe',
+            background: toast.type === 'success' ? '#f0fdf4' : toast.type === 'error' ? '#fef2f2' : '#eff6ff',
+            color: toast.type === 'success' ? '#166534' : toast.type === 'error' ? '#991b1b' : '#1e40af',
+            animation: 'slideIn 0.3s ease-out forwards',
+            maxWidth: '350px',
+          }}
+        >
+          <Icon 
+            icon={toast.type === 'success' ? 'lucide:check-circle' : toast.type === 'error' ? 'lucide:alert-circle' : 'lucide:info'} 
+            fontSize={20} 
+            color={toast.type === 'success' ? '#15803d' : toast.type === 'error' ? '#dc2626' : '#2563eb'}
+          />
+          <div style={{ fontSize: '13.5px', fontWeight: 550, lineHeight: 1.4 }}>{toast.message}</div>
+          <button 
+            onClick={() => setToast(null)}
+            style={{ 
+              background: 'transparent', 
+              border: 'none', 
+              cursor: 'pointer', 
+              padding: 0, 
+              marginLeft: 'auto',
+              color: toast.type === 'success' ? '#166534' : toast.type === 'error' ? '#991b1b' : '#1e40af',
+              opacity: 0.6,
+            }}
+          >
+            <Icon icon="lucide:x" fontSize={16} />
+          </button>
+        </div>
+      )}
+
+      {/* Custom Confirm Modal */}
+      {confirmModal && confirmModal.isOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-[110] flex items-center justify-center p-4"
+          onClick={() => setConfirmModal(null)}
+        >
+          <div 
+            className="bg-white rounded-xl w-full max-w-sm overflow-hidden flex flex-col shadow-2xl animate-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-5 flex flex-col items-center text-center gap-3">
+              <div style={{ width: 48, height: 48, borderRadius: 24, background: '#fee2e2', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Icon icon="lucide:alert-triangle" fontSize={24} color="#ef4444" style={{ margin: 'auto' }} />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-slate-900" style={{ margin: 0 }}>Xác nhận</h3>
+                <p className="text-sm text-slate-500 mt-1" style={{ margin: 0 }}>{confirmModal.message}</p>
+              </div>
+            </div>
+            <div className="p-4 bg-slate-50 border-t flex gap-3 justify-end">
+              <button 
+                onClick={() => setConfirmModal(null)}
+                className="border border-slate-200 hover:bg-slate-100 text-slate-700 px-4 py-2 rounded-lg font-medium transition-colors bg-white cursor-pointer text-xs"
+              >
+                Hủy bỏ
+              </button>
+              <button 
+                onClick={() => {
+                  confirmModal.onConfirm();
+                  setConfirmModal(null);
+                }}
+                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-semibold transition-colors cursor-pointer border-none text-xs"
+              >
+                Xác nhận
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <style>{`
+        @keyframes slideIn {
+          from {
+            transform: translateY(100px) scale(0.9);
+            opacity: 0;
+          }
+          to {
+            transform: translateY(0) scale(1);
+            opacity: 1;
+          }
+        }
+      `}</style>
     </>
   );
 }

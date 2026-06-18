@@ -410,6 +410,13 @@ async function seed() {
       gradeLevel: 'Lớp 12',
       parentName: 'Hoàng Gia Bảo',
     },
+    {
+      email: 'nguyen_thi_ha@tutoredu.com',
+      fullName: 'Nguyễn Thị Hà',
+      phone: '0908888999',
+      gradeLevel: 'Lớp 11',
+      parentName: 'Nguyễn Thị Hà',
+    },
   ];
 
   const seededStudentsMap = new Map<string, Student>();
@@ -516,13 +523,28 @@ async function seed() {
   const studentDuyen = seededStudentsMap.get('tran_my_duyen@tutoredu.com');
   const studentTan = seededStudentsMap.get('le_trong_tan@tutoredu.com');
 
+  const scheduleRepo = dataSource.getRepository(Schedule);
+
+  // Tính toán các ngày trong tuần hiện tại để hiển thị trên Calendar
+  const today = new Date();
+  const day = today.getDay();
+  const diff = day === 0 ? -6 : 1 - day; // Lấy Thứ 2 tuần này
+  const monday = new Date(today);
+  monday.setDate(today.getDate() + diff);
+
+  const monDate = new Date(monday);
+  const tueDate = new Date(monday); tueDate.setDate(monday.getDate() + 1);
+  const wedDate = new Date(monday); wedDate.setDate(monday.getDate() + 2);
+  const thuDate = new Date(monday); thuDate.setDate(monday.getDate() + 3);
+  const friDate = new Date(monday); friDate.setDate(monday.getDate() + 4);
+
   if (activeTutorCam && studentDuyen) {
-    const existingClass = await classRepo.findOneBy({
+    let existingClass = await classRepo.findOneBy({
       tutor: { id: activeTutorCam.id },
       student: { id: studentDuyen.id },
     });
     if (!existingClass) {
-      await classRepo.save(
+      existingClass = await classRepo.save(
         classRepo.create({
           tutor: activeTutorCam,
           student: studentDuyen,
@@ -536,6 +558,86 @@ async function seed() {
       );
       console.log('Seeded active class: Student Duyen & Tutor Cam');
     }
+
+    // Seed lịch học (Schedule) cho lớp này
+    const monSchedule = await scheduleRepo.findOneBy({
+      class: { id: existingClass.id },
+      sessionDate: monDate,
+    });
+    if (!monSchedule) {
+      await scheduleRepo.save(
+        scheduleRepo.create({
+          class: existingClass,
+          sessionDate: monDate,
+          dayOfWeek: 'Thứ 2',
+          startTime: '19:00:00',
+          endTime: '21:00:00',
+          sessionStatus: 'scheduled' as any,
+          note: 'Học lý thuyết hóa hữu cơ',
+        }),
+      );
+    }
+
+    const wedSchedule = await scheduleRepo.findOneBy({
+      class: { id: existingClass.id },
+      sessionDate: wedDate,
+    });
+    if (!wedSchedule) {
+      await scheduleRepo.save(
+        scheduleRepo.create({
+          class: existingClass,
+          sessionDate: wedDate,
+          dayOfWeek: 'Thứ 4',
+          startTime: '19:00:00',
+          endTime: '21:00:00',
+          sessionStatus: 'scheduled' as any,
+          note: 'Giải bài tập phản ứng este hóa',
+        }),
+      );
+    }
+
+    const friSchedule = await scheduleRepo.findOneBy({
+      class: { id: existingClass.id },
+      sessionDate: friDate,
+    });
+    if (!friSchedule) {
+      await scheduleRepo.save(
+        scheduleRepo.create({
+          class: existingClass,
+          sessionDate: friDate,
+          dayOfWeek: 'Thứ 6',
+          startTime: '19:00:00',
+          endTime: '21:00:00',
+          sessionStatus: 'scheduled' as any,
+          note: 'Kiểm tra định kỳ 15 phút',
+        }),
+      );
+    }
+  }
+
+  const studentHa = seededStudentsMap.get('nguyen_thi_ha@tutoredu.com');
+  if (activeTutorCam && studentHa) {
+    let existingClass = await classRepo.findOneBy({
+      tutor: { id: activeTutorCam.id },
+      student: { id: studentHa.id },
+    });
+    if (!existingClass) {
+      existingClass = await classRepo.save(
+        classRepo.create({
+          tutor: activeTutorCam,
+          student: studentHa,
+          subject: mathSubject!,
+          feePerSession: 250000,
+          totalSessions: 15,
+          status: 'active' as any,
+          startDate: new Date('2026-06-01'),
+          location: 'Quận 7, TP.HCM',
+        }),
+      );
+      console.log('Seeded active class: Student Ha & Tutor Cam');
+    }
+
+    // Seed lịch học (Schedule) cho lớp mới này - Đã xóa theo yêu cầu
   }
 
   if (activeTutorBinh && studentTan) {

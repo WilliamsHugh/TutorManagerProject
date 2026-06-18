@@ -15,6 +15,8 @@ import {
 import Link from "next/link";
 import { useState, useRef, useEffect } from "react";
 
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:3001";
+
 // Danh sách đầy đủ các môn học
 const ALL_SUBJECTS = [
     // Toán & Khoa học
@@ -131,8 +133,8 @@ export default function RegisterForm() {
         setLoading(true);
 
         const endpoint = selectedRole === "student"
-            ? "http://localhost:3001/api/auth/register/student"
-            : "http://localhost:3001/api/auth/register/tutor";
+            ? `${BACKEND_URL}/api/auth/register/student`
+            : `${BACKEND_URL}/api/auth/register/tutor`;
 
         const payload: any = {
             fullName,
@@ -696,7 +698,7 @@ export default function RegisterForm() {
                                                     const formData = new FormData();
                                                     formData.append('file', file);
 
-                                                    const res = await fetch('http://localhost:3001/api/upload/cv', {
+                                                    const res = await fetch(`${BACKEND_URL}/api/upload/cv`, {
                                                         method: 'POST',
                                                         body: formData,
                                                         credentials: 'include',

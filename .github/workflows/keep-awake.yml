@@ -1,0 +1,88 @@
+# ============================================================
+# Keep Backend Awake - GitHub Actions Cron Job
+# ============================================================
+# Mục đích:
+#   Render free tier sẽ tự động sleep sau 15 phút không có request.
+#   Workflow này ping backend mỗi 14 phút để giữ nó luôn thức,
+#   tránh việc phải chờ 30-60s wake-up khi có người dùng truy cập.
+#
+# Cách hoạt động:
+#   1. GitHub Actions chạy theo lịch cron */14 * * * *
+#      (tức mỗi 14 phút một lần, 24/7)
+#   2. Gửi GET request đến endpoint /api/subjects của backend
+#   3. Log kết quả HTTP status code để dễ debug
+#
+# Chi phí:
+#   GitHub Actions có 2000 phút/tháng free cho public repo,
+#   300 phút/tháng cho private repo. Workflow này chạy ~103
+#   phút/tháng, hoàn toàn trong giới hạn free.
+# ============================================================
+
+name: Keep Backend Awake
+
+on:
+  # Lịch chạy tự động - mỗi 14 phút một lần
+  # Cron format: phút giờ ngày tháng thứ_trong_tuần
+  # */14 = mỗi 14 phút (an toàn hơn threshold 15 phút của Render)
+  schedule:
+    - cron: '*/14 * * * *'
+
+  # Cho phép chạy thủ công từ GitHub UI
+  workflow_dispatch:
+
+jobs:
+  ping-backend:
+    # Runner rẻ nhất - Ubuntu là free
+    runs-on: ubuntu-latest
+
+    # Timeout 30 giây là đủ cho một request
+    timeout-minutes: 1
+
+    # Biến môi trường dùng chung
+    env:
+      BACKEND_URL: https://tutorbackend-2e8a.onrender.com
+
+    steps:
+      # Bước 1: Ping backend
+      - name: 🏓 Ping backend
+        id: ping
+        run: |
+          echo "⏰ Pinging at $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+          echo "📍 URL: ${{ env.BACKEND_URL }}/api/subjects"
+          echo ""
+          
+          # Gửi GET request và lấy HTTP status code + response time
+          RESPONSE=$(curl -s -o /dev/null -w "%{http_code}|%{time_total}s" \
+            --connect-timeout 10 \
+            --max-time 20 \
+            "${{ env.BACKEND_URL }}/api/subjects" 2>&1)
+          
+          HTTP_CODE=$(echo "$RESPONSE" | cut -d'|' -f1)
+          RESPONSE_TIME=$(echo "$RESPONSE" | cut -d'|' -f2)
+          
+          # Fallback nếu curl thất bại (ví dụ: DNS lỗi, timeout)
+          HTTP_CODE=${HTTP_CODE:-000}
+          RESPONSE_TIME=${RESPONSE_TIME:-0s}
+          
+          echo "✅ HTTP Status: $HTTP_CODE"
+          echo "⚡ Response Time: ${RESPONSE_TIME}"
+          
+          # Lưu kết quả để step sau dùng
+          echo "status=$HTTP_CODE" >> $GITHUB_OUTPUT
+          echo "time=$RESPONSE_TIME" >> $GITHUB_OUTPUT
+
+      # Bước 2: Kiểm tra kết quả
+      - name: 📊 Kiểm tra kết quả
+        run: |
+          STATUS="${{ steps.ping.outputs.status }}"
+          TIME="${{ steps.ping.outputs.time }}"
+          
+          echo "📋 Kết quả: HTTP $STATUS (${TIME})"
+          
+          if [ "$STATUS" = "200" ]; then
+            echo "✅ Backend đang hoạt động tốt!"
+          elif [ "$STATUS" = "000" ]; then
+            echo "⚠️ Không thể kết nối tới backend (có thể đang sleep hoặc lỗi mạng)"
+          else
+            echo "⚠️ Backend trả về HTTP $STATUS (không phải 200)"
+          fi

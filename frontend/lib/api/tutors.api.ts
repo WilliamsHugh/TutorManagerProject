@@ -128,3 +128,38 @@ export async function getTutorStudents() {
   if (!res.ok) throw new Error('Không thể tải danh sách học viên');
   return res.json();
 }
+
+// Hàm đăng ký lịch nghỉ học cho gia sư (theo khoảng thời gian)
+export async function createLeaveSchedule(data: { startDate: string; endDate: string; startTime: string; endTime: string; note: string }) {
+  const token = getToken();
+  const res = await fetch(`${API_URL}/tutor/schedule/leave`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || 'Không thể tạo lịch nghỉ');
+  }
+  return res.json();
+}
+
+// Hàm hủy lịch nghỉ (khôi phục buổi học)
+export async function cancelLeaveSchedule(scheduleId: string) {
+  const token = getToken();
+  const res = await fetch(`${API_URL}/tutor/schedule/leave/${scheduleId}`, {
+    method: 'DELETE',
+    headers: {
+      'Authorization': `Bearer ${token}`
+    },
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || 'Không thể hủy lịch nghỉ');
+  }
+  return res.json();
+}
+

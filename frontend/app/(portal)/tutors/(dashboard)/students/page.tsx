@@ -4,6 +4,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Icon } from '@iconify/react';
 import { getTutorStudents } from '@/lib/api';
+import Header from '@/components/tutor/Header';
 
 export default function MyStudentsPage() {
   const [students, setStudents] = useState<any[]>([]);
@@ -12,7 +13,7 @@ export default function MyStudentsPage() {
   
   // Search & Filter State
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState('ALL'); // 'ALL', 'Đang học', 'Tạm dừng', 'Hoàn thành'
+  const [statusFilter, setStatusFilter] = useState('ALL'); // 'ALL', 'Đang học', 'Tạm dừng'
   
   const router = useRouter();
 
@@ -59,31 +60,31 @@ export default function MyStudentsPage() {
 
   return (
     <>
-
+      <Header title="Học viên của tôi" userProfile={profile} />
       
-      <div className="flex-1 w-full max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8 flex flex-col gap-8 animate-in fade-in duration-300">
+      <main className="p-8 flex flex-col gap-8 animate-in fade-in duration-300">
         
         {/* Page Title & Subtitle */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight">Danh sách học viên</h2>
-            <p className="text-slate-500 text-sm mt-1">Quản lý, theo dõi tiến độ và đánh giá kết quả của tất cả học viên bạn đang giảng dạy.</p>
+            <h1 className="text-2xl font-bold text-slate-900">Danh sách học viên</h1>
+            <p className="text-sm text-slate-500 mt-1">Theo dõi tiến trình, nộp báo cáo giảng dạy và quản lý học tập của học viên bạn phụ trách.</p>
           </div>
-          <div className="flex items-center gap-2 text-xs bg-indigo-50 text-indigo-700 font-semibold px-3 py-1.5 rounded-full self-start md:self-auto border border-indigo-100">
+          <div className="flex items-center gap-2 text-xs bg-blue-50 text-blue-700 font-semibold px-3.5 py-2 rounded-full border border-blue-100 shadow-sm self-start md:self-auto">
             <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-600"></span>
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-600"></span>
             </span>
             Hệ thống quản lý trực tuyến
           </div>
         </div>
 
         {/* Stats Metrics Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
           {/* Card 1: Total Students */}
-          <div className="bg-white rounded-2xl border border-slate-100 p-6 flex items-center justify-between shadow-sm hover:shadow-md transition-all duration-300 group">
+          <div className="bg-white rounded-2xl border border-slate-100 p-6 flex items-center justify-between shadow-[0_8px_30px_rgb(0,0,0,0.015)] hover:shadow-[0_8px_30px_rgb(0,0,0,0.04)] transition-all duration-300 group">
             <div className="flex flex-col gap-1">
-              <span className="text-sm font-semibold text-slate-400">Tổng số học viên</span>
+              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Tổng số học viên</span>
               <span className="text-3xl font-black text-slate-800">{loading ? '...' : stats.total}</span>
             </div>
             <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
@@ -92,9 +93,9 @@ export default function MyStudentsPage() {
           </div>
 
           {/* Card 2: Active Students */}
-          <div className="bg-white rounded-2xl border border-slate-100 p-6 flex items-center justify-between shadow-sm hover:shadow-md transition-all duration-300 group">
+          <div className="bg-white rounded-2xl border border-slate-100 p-6 flex items-center justify-between shadow-[0_8px_30px_rgb(0,0,0,0.015)] hover:shadow-[0_8px_30px_rgb(0,0,0,0.04)] transition-all duration-300 group">
             <div className="flex flex-col gap-1">
-              <span className="text-sm font-semibold text-slate-400">Đang học tích cực</span>
+              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Đang học tích cực</span>
               <span className="text-3xl font-black text-emerald-600">{loading ? '...' : stats.active}</span>
             </div>
             <div className="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
@@ -103,9 +104,9 @@ export default function MyStudentsPage() {
           </div>
 
           {/* Card 3: Paused Students */}
-          <div className="bg-white rounded-2xl border border-slate-100 p-6 flex items-center justify-between shadow-sm hover:shadow-md transition-all duration-300 group">
+          <div className="bg-white rounded-2xl border border-slate-100 p-6 flex items-center justify-between shadow-[0_8px_30px_rgb(0,0,0,0.015)] hover:shadow-[0_8px_30px_rgb(0,0,0,0.04)] transition-all duration-300 group">
             <div className="flex flex-col gap-1">
-              <span className="text-sm font-semibold text-slate-400">Tạm dừng / Đã xong</span>
+              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Tạm dừng / Đã xong</span>
               <span className="text-3xl font-black text-amber-600">{loading ? '...' : stats.paused}</span>
             </div>
             <div className="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
@@ -115,10 +116,10 @@ export default function MyStudentsPage() {
         </div>
 
         {/* Main List Container */}
-        <div className="bg-white rounded-2xl border border-slate-150 shadow-sm overflow-hidden flex flex-col">
+        <div className="bg-white rounded-2xl border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.015)] overflow-hidden flex flex-col">
           
           {/* Search, Filter & Actions Bar */}
-          <div className="p-5 border-b border-slate-100 bg-slate-50/50 flex flex-col sm:flex-row gap-4 items-center justify-between">
+          <div className="p-6 border-b border-slate-100 flex flex-col sm:flex-row gap-4 items-center justify-between bg-slate-50/20">
             {/* Search Input */}
             <div className="relative w-full sm:max-w-md">
               <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
@@ -129,27 +130,27 @@ export default function MyStudentsPage() {
                 placeholder="Tìm học viên theo tên, môn học, lớp..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all duration-200 shadow-inner"
+                className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-800 placeholder-slate-450 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200"
               />
               {searchQuery && (
                 <button 
                   onClick={() => setSearchQuery('')}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 transition-colors"
+                  className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-650 transition-colors border-none bg-transparent cursor-pointer"
                 >
                   <Icon icon="lucide:x" fontSize={16} />
                 </button>
               )}
             </div>
 
-            {/* Filter Buttons / Select */}
+            {/* Filter Buttons */}
             <div className="flex gap-2 w-full sm:w-auto shrink-0 overflow-x-auto pb-1 sm:pb-0">
               {['ALL', 'Đang học', 'Tạm dừng'].map((status) => (
                 <button
                   key={status}
                   onClick={() => setStatusFilter(status)}
-                  className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold border transition-all duration-200 cursor-pointer whitespace-nowrap ${
+                  className={`px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold border transition-all duration-200 cursor-pointer whitespace-nowrap ${
                     statusFilter === status 
-                      ? 'bg-indigo-600 border-indigo-600 text-white shadow-sm'
+                      ? 'bg-blue-600 border-blue-600 text-white shadow-[0_4px_12px_rgba(37,99,235,0.15)]'
                       : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
                   }`}
                 >
@@ -162,34 +163,34 @@ export default function MyStudentsPage() {
           {/* Table / List View */}
           {loading ? (
             <div className="py-24 text-center flex flex-col items-center justify-center gap-3">
-              <Icon icon="lucide:loader-2" className="animate-spin text-indigo-600" fontSize={40} />
+              <Icon icon="lucide:loader-2" className="animate-spin text-blue-600" fontSize={40} />
               <p className="text-slate-500 font-medium text-sm">Đang tải danh sách học viên...</p>
             </div>
           ) : filteredStudents.length > 0 ? (
             <div className="overflow-x-auto">
               <table className="w-full border-collapse text-left">
                 <thead>
-                  <tr className="bg-slate-50 border-b border-slate-100 text-xs font-bold text-slate-400 uppercase tracking-wider">
+                  <tr className="bg-slate-50/50 border-b border-slate-100 text-xs font-bold text-slate-400 uppercase tracking-wider">
                     <th className="py-4 px-6">Học viên</th>
                     <th className="py-4 px-6">Cấp học</th>
                     <th className="py-4 px-6">Môn học gần nhất</th>
                     <th className="py-4 px-6">Trạng thái</th>
-                    <th className="py-4 px-6 text-right">Hành động</th>
+                    <th className="py-4 px-6 text-right">Thao tác</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {filteredStudents.map((student) => (
                     <tr 
                       key={student.id} 
-                      className="hover:bg-slate-50/50 transition-colors duration-150 group"
+                      className="hover:bg-blue-50/10 transition-colors duration-150 group"
                     >
                       {/* Name & Email Info */}
-                      <td className="py-4.5 px-6">
-                        <div className="flex items-center gap-3.5">
+                      <td className="py-4 px-6">
+                        <div className="flex items-center gap-4">
                           <div className="relative shrink-0">
                             <img 
                               src={student.avatar || "https://storage.googleapis.com/banani-avatars/avatar%2Ffemale%2F25-35%2FSoutheast%20Asian%2F1"} 
-                              className="w-11 h-11 rounded-full object-cover ring-2 ring-slate-100 group-hover:ring-indigo-100 transition-all duration-200" 
+                              className="w-11 h-11 rounded-full object-cover ring-2 ring-slate-100 group-hover:ring-blue-100 transition-all duration-200" 
                               alt={student.fullName} 
                             />
                             <span className={`absolute bottom-0 right-0 block h-2.5 w-2.5 rounded-full ring-2 ring-white ${
@@ -197,46 +198,46 @@ export default function MyStudentsPage() {
                             }`} />
                           </div>
                           <div className="flex flex-col">
-                            <span className="font-bold text-slate-800 text-sm group-hover:text-indigo-600 transition-colors duration-150">{student.fullName}</span>
-                            <span className="text-slate-400 text-xs">{student.email}</span>
+                            <span className="font-bold text-slate-800 text-sm group-hover:text-blue-600 transition-colors duration-150">{student.fullName}</span>
+                            <span className="text-slate-400 text-xs mt-0.5">{student.email}</span>
                           </div>
                         </div>
                       </td>
 
                       {/* Grade Level */}
-                      <td className="py-4.5 px-6">
-                        <span className="text-sm font-medium text-slate-600 bg-slate-100 px-2.5 py-1 rounded-lg">
+                      <td className="py-4 px-6">
+                        <span className="text-xs font-bold text-slate-655 bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200/30">
                           {student.gradeLevel}
                         </span>
                       </td>
 
                       {/* Last Subject */}
-                      <td className="py-4.5 px-6">
+                      <td className="py-4 px-6">
                         <div className="flex items-center gap-1.5 text-sm font-semibold text-slate-700">
-                          <Icon icon="lucide:book-open" className="text-indigo-500" fontSize={16} />
+                          <Icon icon="lucide:book-open" className="text-blue-500" fontSize={16} />
                           {student.lastSubject}
                         </div>
                       </td>
 
                       {/* Status Badge */}
-                      <td className="py-4.5 px-6">
-                        <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold ring-1 ${
+                      <td className="py-4 px-6">
+                        <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ring-1 ${
                           student.status === 'Đang học' 
                             ? 'bg-emerald-50 text-emerald-700 ring-emerald-600/10' 
-                            : 'bg-slate-100 text-slate-600 ring-slate-600/10'
+                            : 'bg-slate-50 text-slate-500 ring-slate-650/10'
                         }`}>
                           <span className={`h-1.5 w-1.5 rounded-full ${
-                            student.status === 'Đang học' ? 'bg-emerald-600 animate-pulse' : 'bg-slate-500'
+                            student.status === 'Đang học' ? 'bg-emerald-600 animate-pulse' : 'bg-slate-400'
                           }`} />
                           {student.status}
                         </span>
                       </td>
 
                       {/* Actions Button */}
-                      <td className="py-4.5 px-6 text-right">
+                      <td className="py-4 px-6 text-right">
                         <button 
                           onClick={() => router.push(`/tutors/students/${student.id}`)} 
-                          className="inline-flex items-center gap-1.5 text-xs font-bold text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100/80 px-3.5 py-2 rounded-xl transition-all duration-200 shadow-sm hover:shadow active:scale-95 cursor-pointer"
+                          className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-600 hover:text-white bg-blue-50 hover:bg-blue-600 px-4 py-2 rounded-xl transition-all duration-200 shadow-sm active:scale-95 cursor-pointer border border-blue-100/30"
                         >
                           <Icon icon="lucide:eye" fontSize={14} />
                           <span>Chi tiết</span>
@@ -249,7 +250,7 @@ export default function MyStudentsPage() {
             </div>
           ) : (
             <div className="py-24 px-6 text-center flex flex-col items-center justify-center gap-4 max-w-md mx-auto">
-              <div className="w-16 h-16 rounded-2xl bg-slate-50 text-slate-400 flex items-center justify-center border border-slate-100">
+              <div className="w-16 h-16 rounded-2xl bg-slate-50 text-slate-400 flex items-center justify-center border border-slate-100 shadow-sm">
                 <Icon icon="lucide:users" fontSize={32} />
               </div>
               <div className="flex flex-col gap-1.5">
@@ -264,7 +265,7 @@ export default function MyStudentsPage() {
               {(searchQuery || statusFilter !== 'ALL') && (
                 <button
                   onClick={() => { setSearchQuery(''); setStatusFilter('ALL'); }}
-                  className="mt-2 text-xs font-bold text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100/60 px-4 py-2 rounded-xl transition-colors cursor-pointer"
+                  className="mt-2 text-xs font-bold text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100/60 px-4 py-2 rounded-xl transition-colors cursor-pointer border border-blue-100/20"
                 >
                   Đặt lại bộ lọc
                 </button>
@@ -272,7 +273,7 @@ export default function MyStudentsPage() {
             </div>
           )}
         </div>
-      </div>
+      </main>
     </>
   );
 }

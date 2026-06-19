@@ -43,33 +43,38 @@ jobs:
       BACKEND_URL: https://tutorbackend-2e8a.onrender.com
 
     steps:
-      # Bước 1: Ping backend
+      # Bước 1: Ping backend (có retry 1 lần nếu timeout)
       - name: 🏓 Ping backend
         id: ping
         run: |
-          echo "⏰ Pinging at $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
-          echo "📍 URL: ${{ env.BACKEND_URL }}/api/subjects"
-          echo ""
+          for attempt in 1 2; do
+            echo "⏰ Pinging at $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+            echo "📍 URL: ${{ env.BACKEND_URL }}/api/subjects"
+            echo ""
+            
+            # Thêm || true để ngăn exit code timeout (28) làm crash step
+            RESPONSE=$(curl -s -o /dev/null -w "%{http_code}|%{time_total}s" \
+              --connect-timeout 10 \
+              --max-time 20 \
+              "${{ env.BACKEND_URL }}/api/subjects" 2>&1) || true
+            
+            STATUS=$(echo "$RESPONSE" | cut -d'|' -f1)
+            TIME=$(echo "$RESPONSE" | cut -d'|' -f2)
+            STATUS=${STATUS:-000}
+            TIME=${TIME:-0s}
+            
+            echo "✅ Attempt $attempt: HTTP $STATUS (${TIME}s)"
+            echo ""
+            
+            # Nếu thành công thì thoát sớm
+            [ "$STATUS" != "000" ] && break
+            # Nếu lần 1 timeout, đợi 5s rồi retry
+            [ "$attempt" = "1" ] && echo "🔁 Lần đầu timeout, thử lại sau 5 giây..." && sleep 5
+          done
           
-          # Gửi GET request và lấy HTTP status code + response time
-          RESPONSE=$(curl -s -o /dev/null -w "%{http_code}|%{time_total}s" \
-            --connect-timeout 10 \
-            --max-time 20 \
-            "${{ env.BACKEND_URL }}/api/subjects" 2>&1)
-          
-          HTTP_CODE=$(echo "$RESPONSE" | cut -d'|' -f1)
-          RESPONSE_TIME=$(echo "$RESPONSE" | cut -d'|' -f2)
-          
-          # Fallback nếu curl thất bại (ví dụ: DNS lỗi, timeout)
-          HTTP_CODE=${HTTP_CODE:-000}
-          RESPONSE_TIME=${RESPONSE_TIME:-0s}
-          
-          echo "✅ HTTP Status: $HTTP_CODE"
-          echo "⚡ Response Time: ${RESPONSE_TIME}"
-          
-          # Lưu kết quả để step sau dùng
-          echo "status=$HTTP_CODE" >> $GITHUB_OUTPUT
-          echo "time=$RESPONSE_TIME" >> $GITHUB_OUTPUT
+          # Ghi kết quả cuối cùng vào GITHUB_OUTPUT
+          echo "status=$STATUS" >> $GITHUB_OUTPUT
+          echo "time=$TIME" >> $GITHUB_OUTPUT
 
       # Bước 2: Kiểm tra kết quả
       - name: 📊 Kiểm tra kết quả

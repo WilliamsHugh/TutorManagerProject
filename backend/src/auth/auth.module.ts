@@ -10,11 +10,13 @@ import { UsersModule } from '../users/users.module';
 import { Otp } from './entities/otp.entity';
 import { RefreshToken } from './entities/refresh-token.entity';
 import { AccessControlService } from './services/access-control.service';
+import { MailModule } from '../mail/mail.module';
 
 @Module({
   imports: [
     UsersModule,
     PassportModule,
+    MailModule,
     TypeOrmModule.forFeature([Otp, RefreshToken]),
     JwtModule.registerAsync({
       imports: [ConfigModule],

@@ -17,6 +17,7 @@ import { LoginDto } from './dto/login.dto';
 import { ApprovalStatus } from '../users/entities/tutor.entity';
 import { Otp } from './entities/otp.entity';
 import { RefreshToken } from './entities/refresh-token.entity';
+import { MailService } from '../mail/mail.service';
 
 @Injectable()
 export class AuthService {
@@ -27,6 +28,7 @@ export class AuthService {
     private otpRepository: Repository<Otp>,
     @InjectRepository(RefreshToken)
     private refreshTokenRepository: Repository<RefreshToken>,
+    private mailService: MailService,
   ) {}
 
   async registerStudent(dto: RegisterStudentDto) {
@@ -143,8 +145,8 @@ export class AuthService {
     });
     await this.otpRepository.save(otp);
 
-    // Mock Email sending
-    console.log(`[MAILER] Gửi OTP reset password tới ${email}: ${code}`);
+    // Gửi email OTP qua SMTP
+    await this.mailService.sendOtpEmail(email, code);
 
     return { message: 'Mã OTP đã được gửi tới email của bạn' };
   }

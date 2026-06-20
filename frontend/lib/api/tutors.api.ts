@@ -147,6 +147,16 @@ export async function createLeaveSchedule(data: { startDate: string; endDate: st
   return res.json();
 }
 
+// Hàm lấy báo cáo thu nhập của gia sư
+export async function getTutorEarnings() {
+  const token = getToken();
+  const res = await fetch(`${API_URL}/tutor/earnings`, {
+    headers: { 'Authorization': `Bearer ${token}` },
+  });
+  if (!res.ok) throw new Error('Không thể tải báo cáo thu nhập');
+  return res.json();
+}
+
 // Hàm hủy lịch nghỉ (khôi phục buổi học)
 export async function cancelLeaveSchedule(scheduleId: string) {
   const token = getToken();

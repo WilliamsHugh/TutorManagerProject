@@ -9,9 +9,8 @@ import {
   getLearningReports, 
   submitLearningReport, 
   updateLearningReport, 
-  deleteLearningReport 
-} from '@/lib/api'; 
-import { getAuthUser } from '@/lib/auth';
+  deleteLearningReport
+} from '@/lib/api';
 import Link from 'next/link';
 import Header from '@/components/tutor/Header';
 

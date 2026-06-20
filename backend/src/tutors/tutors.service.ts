@@ -201,6 +201,9 @@ export class TutorsService implements OnModuleInit {
     } catch (err) {
       console.error('Error deleting Nguyễn Thị Hà schedules:', err);
     }
+
+    // Seed completed schedules để test earnings
+    await this.seedEarningsTestData();
   }
 
   // Hàm dùng chung để lấy thông tin profile cho Header các trang
@@ -272,11 +275,31 @@ export class TutorsService implements OnModuleInit {
       .filter(s => s.sessionStatus === SessionStatus.COMPLETED)
       .reduce((acc, curr) => acc + Number(curr.class?.feePerSession || 0), 0);
 
+    // Tính tổng thu nhập tất cả các thời kỳ
+    const allCompletedSchedules = await this.scheduleRepository.find({
+      where: {
+        class: { tutor: { id: tutorId } },
+        sessionStatus: SessionStatus.COMPLETED,
+      },
+      relations: ['class'],
+    });
+    const totalEarnings = allCompletedSchedules.reduce(
+      (acc, curr) => acc + Number(curr.class?.feePerSession || 0),
+      0,
+    );
+    const totalCompletedSessions = allCompletedSchedules.length;
+
     const stats = [
       { label: 'Lớp đang phụ trách', value: activeClasses.toString(), icon: 'lucide:book-open', color: 'blue' },
       { label: 'Giờ dạy tuần này', value: `${totalHours}h`, icon: 'lucide:clock', color: 'green' },
       { label: 'Đánh giá trung bình', value: '5.0', sub: '/5.0', icon: 'lucide:star', color: 'orange' },
-      { label: 'Thu nhập thực tế', value: `${weeklyIncome.toLocaleString('vi-VN')}đ`, icon: 'lucide:wallet', color: 'purple' },
+      { 
+        label: 'Tổng thu nhập', 
+        value: `${totalEarnings.toLocaleString('vi-VN')}đ`, 
+        sub: weeklyIncome > 0 ? `Tuần này: ${weeklyIncome.toLocaleString('vi-VN')}đ` : `${totalCompletedSessions} buổi đã dạy`,
+        icon: 'lucide:wallet', 
+        color: 'purple' 
+      },
     ];
 
     // Lấy Suggested Classes từ database (ClassRequest)
@@ -811,6 +834,300 @@ export class TutorsService implements OnModuleInit {
     }
 
     return { message: 'Xóa báo cáo thành công' };
+  }
+
+  /** Seed completed schedules cho các tutor có sẵn để test tính năng earnings */
+  private async seedEarningsTestData() {
+    try {
+      // Kiểm tra đã có completed schedules chưa (nếu có rồi thì skip)
+      const existingCompleted = await this.scheduleRepository.count({
+        where: { sessionStatus: SessionStatus.COMPLETED },
+      });
+      if (existingCompleted > 0) {
+        console.log('--- Completed schedules already exist. Skipping earnings seed. ---');
+        return;
+      }
+
+      console.log('--- Seeding completed schedules for earnings testing... ---');
+      const scheduleRepo = this.scheduleRepository;
+      const now = new Date();
+      const mathSubject = await this.subjectRepository.findOne({
+        where: { name: 'Toán học' },
+      });
+
+      // Helper: tạo completed schedule
+      const createCompleted = async (
+        classEntity: Class,
+        daysAgo: number,
+        startTime: string,
+        endTime: string,
+        note: string,
+      ) => {
+        const date = new Date(now);
+        date.setDate(date.getDate() - daysAgo);
+        date.setHours(0, 0, 0, 0);
+
+        // Check trùng lịch
+        const existing = await scheduleRepo.findOneBy({
+          class: { id: classEntity.id },
+          sessionDate: date,
+        });
+        if (existing) return existing;
+
+        return scheduleRepo.save(
+          scheduleRepo.create({
+            class: classEntity,
+            sessionDate: date,
+            dayOfWeek: ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'][date.getDay()],
+            startTime,
+            endTime,
+            sessionStatus: SessionStatus.COMPLETED,
+            note,
+          }),
+        );
+      };
+
+      // ========== TUTOR CÂM (tran_thi_cam@tutoredu.com) ==========
+      const tutorCam = await this.tutorRepository.findOne({
+        where: { user: { email: 'tran_thi_cam@tutoredu.com' } },
+      });
+
+      if (tutorCam) {
+        // Class 1: Duyen - Hóa học - 300k/buổi
+        const studentDuyen = await this.studentRepository.findOne({
+          where: { user: { email: 'tran_my_duyen@tutoredu.com' } },
+        });
+        const chemSubject = await this.subjectRepository.findOne({
+          where: { name: 'Hóa học' },
+        });
+
+        if (studentDuyen && chemSubject) {
+          let classDuyen = await this.classRepository.findOne({
+            where: { tutor: { id: tutorCam.id }, student: { id: studentDuyen.id } },
+            relations: ['subject', 'student', 'student.user'],
+          });
+          if (!classDuyen) {
+            classDuyen = await this.classRepository.save(
+              this.classRepository.create({
+                tutor: tutorCam,
+                student: studentDuyen,
+                subject: chemSubject,
+                feePerSession: 300000,
+                totalSessions: 20,
+                status: ClassStatus.ACTIVE,
+                startDate: new Date('2026-05-01'),
+                location: 'Quận 7, TP.HCM',
+              }),
+            );
+          }
+
+          // 3 completed schedules cho class Duyen
+          await createCompleted(classDuyen, 14, '19:00:00', '21:00:00', 'Phản ứng oxy hóa khử');
+          await createCompleted(classDuyen, 12, '19:00:00', '21:00:00', 'Cân bằng phương trình hóa học');
+          await createCompleted(classDuyen, 7, '19:00:00', '21:00:00', 'Bài tập về nồng độ dung dịch');
+        }
+
+        // Class 2: Ha - Toán học - 250k/buổi
+        const studentHa = await this.studentRepository.findOne({
+          where: { user: { email: 'nguyen_thi_ha@tutoredu.com' } },
+        });
+
+        if (studentHa && mathSubject) {
+          let classHa = await this.classRepository.findOne({
+            where: { tutor: { id: tutorCam.id }, student: { id: studentHa.id } },
+          });
+        if (!classHa) {
+          classHa = await this.classRepository.save(
+            this.classRepository.create({
+              tutor: tutorCam,
+              student: studentHa,
+              subject: mathSubject,
+              feePerSession: 250000,
+              totalSessions: 15,
+              status: ClassStatus.ACTIVE,
+              startDate: new Date('2026-06-01'),
+              location: 'Quận 7, TP.HCM',
+            }),
+          );
+        }
+
+          // 2 completed schedules cho class Ha
+          await createCompleted(classHa, 10, '17:00:00', '19:00:00', 'Ôn tập chương 1 - Hàm số');
+          await createCompleted(classHa, 8, '17:00:00', '19:00:00', 'Giải bài tập chương 1');
+        }
+      }
+
+      // ========== TUTOR BÌNH (nguyen_van_binh@tutoredu.com) ==========
+      // Class with Tan - Toán học - 250k/buổi (5 completed)
+      const tutorBinh = await this.tutorRepository.findOne({
+        where: { user: { email: 'nguyen_van_binh@tutoredu.com' } },
+      });
+      const studentTan = await this.studentRepository.findOne({
+        where: { user: { email: 'le_trong_tan@tutoredu.com' } },
+      });
+
+      if (tutorBinh && studentTan && mathSubject) {
+        let classTan = await this.classRepository.findOne({
+          where: { tutor: { id: tutorBinh.id }, student: { id: studentTan.id } },
+        });
+        if (!classTan) {
+          classTan = await this.classRepository.save(
+            this.classRepository.create({
+              tutor: tutorBinh,
+              student: studentTan,
+              subject: mathSubject,
+              feePerSession: 250000,
+              totalSessions: 10,
+              status: ClassStatus.COMPLETED,
+              startDate: new Date('2026-04-01'),
+              endDate: new Date('2026-05-01'),
+              location: 'Quận 1, TP.HCM',
+            }),
+          );
+        }
+
+        // 5 completed schedules cho class Tan
+        await createCompleted(classTan, 30, '19:00:00', '21:00:00', 'Hàm số bậc nhất');
+        await createCompleted(classTan, 28, '19:00:00', '21:00:00', 'Hàm số bậc hai');
+        await createCompleted(classTan, 26, '19:00:00', '21:00:00', 'Phương trình & hệ phương trình');
+        await createCompleted(classTan, 24, '19:00:00', '21:00:00', 'Bất phương trình');
+        await createCompleted(classTan, 22, '19:00:00', '21:00:00', 'Ôn tập giữa kỳ');
+      }
+
+      // ========== TUTOR TEST (tutor@test.com - 123456) ==========
+      // Tìm class của tutor test và mark schedule là completed
+      const tutorTest = await this.tutorRepository.findOne({
+        where: { user: { email: 'tutor@test.com' } },
+      });
+      if (tutorTest) {
+        const testClass = await this.classRepository.findOne({
+          where: { tutor: { id: tutorTest.id } },
+          relations: ['subject', 'student', 'student.user'],
+        });
+        if (testClass && !testClass.feePerSession) {
+          testClass.feePerSession = 200000;
+          await this.classRepository.save(testClass);
+        }
+
+        // Tạo completed schedule hôm qua
+        if (testClass) {
+          const yesterday = new Date(now);
+          yesterday.setDate(yesterday.getDate() - 1);
+          yesterday.setHours(0, 0, 0, 0);
+
+          const pastSchedule = await scheduleRepo.findOne({
+            where: {
+              class: { id: testClass.id },
+              sessionDate: yesterday,
+            },
+          });
+
+          if (!pastSchedule) {
+            await scheduleRepo.save(
+              scheduleRepo.create({
+                class: testClass,
+                sessionDate: yesterday,
+                dayOfWeek: ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'][yesterday.getDay()],
+                startTime: '19:00:00',
+                endTime: '21:00:00',
+                sessionStatus: SessionStatus.COMPLETED,
+                note: 'Buổi học đầu tiên - Làm quen',
+              }),
+            );
+          }
+        }
+      }
+
+      // (Class Duyen completed schedules đã được tạo ở phần Tutor Câm bên trên)
+
+      console.log('--- Earnings test data seeded successfully! ---');
+    } catch (err) {
+      console.error('Error seeding earnings test data:', err);
+    }
+  }
+
+  async getTutorEarnings(userId: string) {
+    // Tìm tutor entity trực tiếp thay vì dùng getTutorProfileData (tránh lỗi nested relations)
+    const tutorEntity = await this.tutorRepository.findOne({
+      where: { user: { id: userId } },
+    });
+    if (!tutorEntity) throw new NotFoundException('Không tìm thấy hồ sơ gia sư');
+    const tutorId = tutorEntity.id;
+
+    // Lấy completed schedules + class với relations đơn giản hơn (student.user có eager loading)
+    const completedSchedules = await this.scheduleRepository.find({
+      where: {
+        class: { tutor: { id: tutorId } },
+        sessionStatus: SessionStatus.COMPLETED,
+      },
+      relations: ['class', 'class.subject', 'class.student'],
+      order: { sessionDate: 'DESC' },
+    });
+
+    // Tính tổng thu nhập
+    let totalEarnings = 0;
+    const classEarningsMap = new Map<string, {
+      classId: string;
+      subject: string;
+      studentName: string;
+      feePerSession: number;
+      sessions: number;
+      totalEarnings: number;
+    }>();
+
+    for (const s of completedSchedules) {
+      const fee = Number(s.class?.feePerSession || 0);
+      totalEarnings += fee;
+
+      const classId = s.class?.id || 'unknown';
+      if (!classEarningsMap.has(classId)) {
+        classEarningsMap.set(classId, {
+          classId,
+          subject: s.class?.subject?.name || 'Chưa rõ',
+          studentName: s.class?.student?.user?.fullName || 'Chưa rõ',
+          feePerSession: fee,
+          sessions: 0,
+          totalEarnings: 0,
+        });
+      }
+      const entry = classEarningsMap.get(classId)!;
+      entry.sessions += 1;
+      entry.totalEarnings += fee;
+    }
+
+    // Tính thu nhập theo tháng
+    const monthlyMap = new Map<string, number>();
+    for (const s of completedSchedules) {
+      const date = s.sessionDate instanceof Date ? s.sessionDate : new Date(s.sessionDate);
+      const monthKey = `${date.getMonth() + 1}/${date.getFullYear()}`;
+      const fee = Number(s.class?.feePerSession || 0);
+      monthlyMap.set(monthKey, (monthlyMap.get(monthKey) || 0) + fee);
+    }
+
+    const monthlyEarnings = Array.from(monthlyMap.entries())
+      .map(([month, amount]) => ({ month, amount }))
+      .sort((a, b) => {
+        const [mA, yA] = a.month.split('/').map(Number);
+        const [mB, yB] = b.month.split('/').map(Number);
+        return yB - yA || mB - mA;
+      });
+
+    // Thống kê tháng hiện tại
+    const now = new Date();
+    const currentMonthKey = `${now.getMonth() + 1}/${now.getFullYear()}`;
+    const currentMonthEarnings = monthlyMap.get(currentMonthKey) || 0;
+
+    // Số buổi đã dạy
+    const totalSessions = completedSchedules.length;
+
+    return {
+      totalEarnings,
+      totalSessions,
+      currentMonthEarnings,
+      averagePerSession: totalSessions > 0 ? Math.round(totalEarnings / totalSessions) : 0,
+      byClass: Array.from(classEarningsMap.values()).sort((a, b) => b.totalEarnings - a.totalEarnings),
+      monthly: monthlyEarnings,
+    };
   }
 
   async seedMockData() {

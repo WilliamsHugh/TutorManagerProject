@@ -149,6 +149,13 @@ export class TutorController {
     return this.tutorsService.deleteReport(id, tutorId);
   }
 
+  // Lấy báo cáo thu nhập của gia sư
+  @Get('earnings')
+  async getEarnings(@Request() req) {
+    const tutorId = req.user?.sub || req.user?.id;
+    return this.tutorsService.getTutorEarnings(tutorId);
+  }
+
   // API Endpoint sinh dữ liệu mẫu
   @Post('seed')
   async seedData() {

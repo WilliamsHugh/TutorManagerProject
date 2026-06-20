@@ -10,6 +10,7 @@ import { SubjectsModule } from './subjects/subjects.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { UploadModule } from './upload/upload.module';
 import { SettingsModule } from './settings/settings.module';
+import { MailModule } from './mail/mail.module';
 
 // Entities
 import { Role } from './users/entities/role.entity';
@@ -78,6 +79,7 @@ import { Setting } from './settings/setting.entity';
     NotificationsModule,
     UploadModule,
     SettingsModule,
+    MailModule,
   ],
 })
 export class AppModule {}

@@ -30,11 +30,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 
-const BACKEND_URL =
-    process.env.NEXT_PUBLIC_API_URL ??
-    process.env.NEXT_PUBLIC_BACKEND_URL ??
-    "http://localhost:3001/api";
-
 type ViewType = "dashboard" | "users" | "tutors" | "subjects" | "reports" | "create-account";
 
 export default function AdminDashboardPage() {
@@ -95,7 +90,7 @@ export default function AdminDashboardPage() {
   useEffect(() => {
     const verifySession = async () => {
       try {
-        const res = await fetch(`${BACKEND_URL}/auth/me`, {
+        const res = await fetch(`/api/auth/me`, {
           headers: { "Content-Type": "application/json" },
           credentials: "include",
         });
@@ -134,7 +129,7 @@ export default function AdminDashboardPage() {
   // API Call Helpers
   const fetchUsers = async () => {
     try {
-      const res = await fetch(`${BACKEND_URL}/admin/users`, { credentials: "include" });
+      const res = await fetch(`/api/admin/users`, { credentials: "include" });
       if (res.ok) setUsers(await res.json());
     } catch (err) {
       console.error(err);
@@ -143,7 +138,7 @@ export default function AdminDashboardPage() {
 
   const fetchTutors = async () => {
     try {
-      const res = await fetch(`${BACKEND_URL}/admin/tutors`, { credentials: "include" });
+      const res = await fetch(`/api/admin/tutors`, { credentials: "include" });
       if (res.ok) setTutors(await res.json());
     } catch (err) {
       console.error(err);
@@ -152,7 +147,7 @@ export default function AdminDashboardPage() {
 
   const fetchSubjects = async () => {
     try {
-      const res = await fetch(`${BACKEND_URL}/admin/subjects`, { credentials: "include" });
+      const res = await fetch(`/api/admin/subjects`, { credentials: "include" });
       if (res.ok) setSubjects(await res.json());
     } catch (err) {
       console.error(err);
@@ -161,7 +156,7 @@ export default function AdminDashboardPage() {
 
   const fetchStats = async () => {
     try {
-      let url = `${BACKEND_URL}/admin/stats`;
+      let url = `/api/admin/stats`;
       if (fromDate && toDate) {
         url += `?fromDate=${fromDate}&toDate=${toDate}`;
       }
@@ -175,7 +170,7 @@ export default function AdminDashboardPage() {
   // Actions
   const handleLogout = async () => {
     try {
-      await fetch(`${BACKEND_URL}/auth/logout`, { method: "POST", credentials: "include" });
+      await fetch(`/api/auth/logout`, { method: "POST", credentials: "include" });
     } catch (error) {
       console.error("Logout error:", error);
     }
@@ -185,7 +180,7 @@ export default function AdminDashboardPage() {
 
   const handleToggleUserStatus = async (userId: string, currentStatus: boolean) => {
     try {
-      const res = await fetch(`${BACKEND_URL}/admin/users/${userId}/status`, {
+      const res = await fetch(`/api/admin/users/${userId}/status`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ isActive: !currentStatus }),
@@ -207,7 +202,7 @@ export default function AdminDashboardPage() {
     e.preventDefault();
     if (!editingUser) return;
     try {
-      const res = await fetch(`${BACKEND_URL}/admin/users/${editingUser.id}`, {
+      const res = await fetch(`/api/admin/users/${editingUser.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -235,7 +230,7 @@ export default function AdminDashboardPage() {
 
   const handleApproveTutor = async (tutorId: string, status: "approved" | "rejected") => {
     try {
-      const res = await fetch(`${BACKEND_URL}/admin/tutors/${tutorId}/approve`, {
+      const res = await fetch(`/api/admin/tutors/${tutorId}/approve`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status }),
@@ -259,7 +254,7 @@ export default function AdminDashboardPage() {
     e.preventDefault();
     if (!newSubject.name) return;
     try {
-      const res = await fetch(`${BACKEND_URL}/admin/subjects`, {
+      const res = await fetch(`/api/admin/subjects`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(newSubject),
@@ -279,7 +274,7 @@ export default function AdminDashboardPage() {
 
   const handleToggleSubjectStatus = async (subId: string, currentStatus: boolean) => {
     try {
-      const res = await fetch(`${BACKEND_URL}/admin/subjects/${subId}/status`, {
+      const res = await fetch(`/api/admin/subjects/${subId}/status`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ isActive: !currentStatus }),
@@ -298,7 +293,7 @@ export default function AdminDashboardPage() {
     e.preventDefault();
     if (!editingSubject) return;
     try {
-      const res = await fetch(`${BACKEND_URL}/admin/subjects/${editingSubject.id}`, {
+      const res = await fetch(`/api/admin/subjects/${editingSubject.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(editingSubject),
@@ -317,7 +312,7 @@ export default function AdminDashboardPage() {
   const handleCreateAccount = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const res = await fetch(`${BACKEND_URL}/admin/users`, {
+      const res = await fetch(`/api/admin/users`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(newAccount),

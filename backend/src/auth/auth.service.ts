@@ -18,6 +18,7 @@ import { LoginDto } from './dto/login.dto';
 import { ApprovalStatus } from '../users/entities/tutor.entity';
 import { Otp } from './entities/otp.entity';
 import { RefreshToken } from './entities/refresh-token.entity';
+import { MailService } from '../mail/mail.service';
 
 @Injectable()
 export class AuthService {

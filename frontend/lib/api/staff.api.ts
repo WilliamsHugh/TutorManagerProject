@@ -3,13 +3,9 @@
 import type { ApiClassRequest, ApiTutorRecommendation } from '@/types/class_request';
 import type { ApiClass, ApiClassStatus } from '@/types/staff';
 
-const explicitApiUrl = process.env.NEXT_PUBLIC_API_URL;
-const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
-
-export const STAFF_API_URL =
-  explicitApiUrl ??
-  backendUrl ??
-  'http://localhost:3001/api';
+// Dùng proxy Next.js (/api) thay vì direct backend URL để tránh lỗi CORS
+// Next.js rewrites (next.config.ts) sẽ forward /api/:path* tới backend
+export const STAFF_API_URL = '/api';
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${STAFF_API_URL}${path}`, {

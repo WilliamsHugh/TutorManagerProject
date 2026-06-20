@@ -5,11 +5,6 @@ import Link from "next/link";
 import { useState } from "react";
 import { saveAuth } from "@/lib/auth";
 
-const BACKEND_URL =
-    process.env.NEXT_PUBLIC_API_URL ??
-    process.env.NEXT_PUBLIC_BACKEND_URL ??
-    "http://localhost:3001/api";
-
 export default function HubLoginForm() {
     const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
@@ -31,7 +26,8 @@ export default function HubLoginForm() {
         setErrorMsg(null);
 
         try {
-            const res = await fetch(`${BACKEND_URL}/auth/login`, {
+            // Dùng proxy Next.js (/api) thay vì direct BACKEND_URL để tránh lỗi CORS
+            const res = await fetch(`/api/auth/login`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 credentials: "include",

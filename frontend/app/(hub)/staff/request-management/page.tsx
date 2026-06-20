@@ -22,22 +22,28 @@ export default function RequestManagementPage() {
   const [loading, setLoading] = useState(true)
   const [requests, setRequests] = useState<RequestItem[]>([])
   const [search, setSearch] = useState("")
+  const [statusFilter, setStatusFilter] = useState("")
   const [error, setError] = useState<string | null>(null)
   const [selectedRequest, setSelectedRequest] = useState<RequestItem | null>(null)
   const [tutors, setTutors] = useState<TutorRecommendation[]>([])
   const [loadingTutors, setLoadingTutors] = useState(false)
+  const [currentPage, setCurrentPage] = useState(1)
+  const pageSize = 10
 
   const loadRequests = useCallback(async () => {
     setError(null)
     try {
-      const data = await getClassRequests({ search: search.trim() })
+      const data = await getClassRequests({
+        search: search.trim(),
+        status: statusFilter || undefined,
+      })
       setRequests(data.map(mapClassRequest))
     } catch (err) {
       setError(err instanceof Error ? err.message : "Không thể tải danh sách yêu cầu.")
     } finally {
       setLoading(false)
     }
-  }, [search])
+  }, [search, statusFilter])
 
   useEffect(() => {
     loadRequests()
@@ -78,14 +84,14 @@ export default function RequestManagementPage() {
     setSelectedRequest(mapped)
   }
 
-  const visibleRequests = useMemo(() => requests, [requests])
+  const paginatedRequests = useMemo(() => {
+    return requests.slice((currentPage - 1) * pageSize, currentPage * pageSize)
+  }, [requests, currentPage])
 
   if (loading) {
     return (
       <StaffShell>
-        <div className="rounded border border-border bg-white p-5 text-sm text-muted-foreground">
-          Đang tải dữ liệu yêu cầu...
-        </div>
+        <RequestTableSkeleton />
       </StaffShell>
     )
   }
@@ -99,10 +105,21 @@ export default function RequestManagementPage() {
       ) : null}
 
       <RequestManagementPanel
-        requests={visibleRequests}
+        requests={paginatedRequests}
         search={search}
+        statusFilter={statusFilter}
         totalCount={requests.length}
-        onSearchChange={setSearch}
+        currentPage={currentPage}
+        pageSize={pageSize}
+        onPageChange={setCurrentPage}
+        onSearchChange={(val) => {
+          setSearch(val)
+          setCurrentPage(1)
+        }}
+        onStatusFilterChange={(val) => {
+          setStatusFilter(val)
+          setCurrentPage(1)
+        }}
         onSelectRequest={setSelectedRequest}
       />
 
@@ -117,5 +134,61 @@ export default function RequestManagementPage() {
         />
       ) : null}
     </StaffShell>
+  )
+}
+
+function RequestTableSkeleton() {
+  return (
+    <div className="rounded border border-border bg-white p-5 space-y-4 shadow-sm">
+      {/* Title skeleton */}
+      <div className="space-y-2">
+        <div className="h-6 w-48 bg-muted rounded animate-pulse" />
+        <div className="h-4.5 w-96 bg-muted rounded animate-pulse" />
+      </div>
+
+      {/* Toolbar skeleton */}
+      <div className="flex justify-between items-center gap-3">
+        <div className="h-9 w-64 bg-muted rounded animate-pulse" />
+        <div className="h-9 w-24 bg-muted rounded animate-pulse" />
+      </div>
+
+      {/* Table skeleton structure */}
+      <div className="overflow-hidden rounded border border-border">
+        {/* Header row */}
+        <div className="grid grid-cols-[120px_170px_170px_1fr_100px_90px] bg-[#e9eff7] px-3 py-3 gap-2">
+          {Array.from({ length: 6 }).map((_, idx) => (
+            <div key={idx} className="h-3.5 bg-slate-300 rounded animate-pulse" />
+          ))}
+        </div>
+        
+        {/* Rows skeletons */}
+        {Array.from({ length: 5 }).map((_, rowIdx) => (
+          <div key={rowIdx} className="grid grid-cols-[120px_170px_170px_1fr_100px_90px] items-center border-t border-border bg-white px-3 py-4 gap-4">
+            <div className="space-y-2">
+              <div className="h-5 w-16 bg-muted rounded animate-pulse" />
+              <div className="h-3.5 w-20 bg-muted rounded animate-pulse" />
+            </div>
+            <div className="space-y-2">
+              <div className="h-4.5 w-24 bg-muted rounded animate-pulse" />
+              <div className="h-3.5 w-16 bg-muted rounded animate-pulse" />
+            </div>
+            <div className="space-y-2">
+              <div className="h-4.5 w-20 bg-muted rounded animate-pulse" />
+              <div className="h-3.5 w-24 bg-muted rounded animate-pulse" />
+            </div>
+            <div className="space-y-2">
+              <div className="h-4.5 w-32 bg-muted rounded animate-pulse" />
+              <div className="h-3.5 w-24 bg-muted rounded animate-pulse" />
+            </div>
+            <div>
+              <div className="h-6 w-16 bg-muted rounded-md animate-pulse" />
+            </div>
+            <div>
+              <div className="h-8 w-16 bg-muted rounded animate-pulse" />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
   )
 }

@@ -37,10 +37,10 @@ export function StaffSidebar() {
         <div className="flex size-6 items-center justify-center rounded bg-primary text-primary-foreground">
           <GraduationCap size={14} />
         </div>
-        <span className="text-base font-bold">TutorEdu</span>
+        <span className="text-[17px] font-bold">TutorEdu</span>
       </div>
 
-      <nav className="space-y-1 px-3 py-5">
+      <nav className="space-y-1.5 px-3 py-5">
         {navItems.map((item) => {
           const Icon = item.icon
           const active =
@@ -50,14 +50,14 @@ export function StaffSidebar() {
           return (
             <Link
               key={item.label}
-              className={`flex h-9 w-full items-center gap-3 rounded px-3 text-left text-xs font-semibold transition-colors ${
+              className={`flex h-10 w-full items-center gap-3 rounded px-3 text-left text-sm font-medium transition-colors ${
                 active
-                  ? "bg-primary text-primary-foreground"
+                  ? "bg-primary text-primary-foreground font-semibold"
                   : "text-foreground hover:bg-secondary"
               }`}
               href={item.href}
             >
-              <Icon size={14} />
+              <Icon size={15} />
               {item.label}
             </Link>
           )

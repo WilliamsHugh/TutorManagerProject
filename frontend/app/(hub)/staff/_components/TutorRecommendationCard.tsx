@@ -1,4 +1,5 @@
 import Link from "next/link"
+import { Mail, Phone } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -36,6 +37,23 @@ export function TutorRecommendationCard({
           {tutor.match}
         </Badge>
       </div>
+
+      {/* Thông tin liên hệ */}
+      <div className="mt-2.5 space-y-1 rounded bg-slate-50 p-2 text-[10px] text-muted-foreground border border-slate-100">
+        <div className="flex items-center gap-1.5">
+          <Phone size={10} className="text-slate-400 shrink-0" />
+          <span className="font-semibold text-slate-500">SĐT:</span>
+          <span className="font-medium text-foreground">{tutor.phone}</span>
+        </div>
+        <div className="flex items-center gap-1.5 truncate">
+          <Mail size={10} className="text-slate-400 shrink-0" />
+          <span className="font-semibold text-slate-500">Email:</span>
+          <span className="font-medium text-foreground truncate" title={tutor.email}>
+            {tutor.email}
+          </span>
+        </div>
+      </div>
+
       <div className="mt-3 flex flex-wrap gap-1">
         {tutor.tags.map((tag) => (
           <span
@@ -55,7 +73,9 @@ export function TutorRecommendationCard({
             <Link href={href}>{actionLabel}</Link>
           </Button>
         ) : (
-          <Button className="h-8 rounded text-xs">{actionLabel}</Button>
+          <Button disabled className="h-8 rounded text-xs bg-muted text-muted-foreground hover:bg-muted cursor-not-allowed">
+            {actionLabel}
+          </Button>
         )}
       </div>
     </div>

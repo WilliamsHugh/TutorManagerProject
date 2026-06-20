@@ -25,8 +25,13 @@ export async function acceptClassRequest(id: string) {
 // Hàm lấy danh sách báo cáo của một lớp
 export async function getLearningReports(classId: string) {
   const token = getToken();
+  const headers: Record<string, string> = {};
+  if (token && token !== "null" && token !== "undefined") {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
   const res = await fetch(`${API_URL}/tutor/classes/${classId}/reports`, {
-    headers: { 'Authorization': `Bearer ${token}` },
+    credentials: 'include',
+    headers,
   });
   if (!res.ok) {
     const errData = await res.json().catch(() => ({}));

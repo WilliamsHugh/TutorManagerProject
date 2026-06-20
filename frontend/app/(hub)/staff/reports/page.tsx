@@ -11,11 +11,14 @@ import type { StaffClassItem } from "@/types/staff"
 import { mapStaffClass } from "@/types/staff"
 
 import { StaffShell } from "../_components/StaffShell"
+import { TablePagination } from "../_components/TablePagination"
 
 export default function StaffReportsPage() {
   const [classes, setClasses] = useState<StaffClassItem[]>([])
   const [search, setSearch] = useState("")
   const [loading, setLoading] = useState(true)
+  const [currentPage, setCurrentPage] = useState(1)
+  const pageSize = 10
 
   useEffect(() => {
     async function loadClasses() {
@@ -42,6 +45,10 @@ export default function StaffReportsPage() {
         .includes(query),
     )
   }, [classes, search])
+
+  const paginated = useMemo(() => {
+    return rows.slice((currentPage - 1) * pageSize, currentPage * pageSize)
+  }, [rows, currentPage])
 
   function exportCsv() {
     const header = ["Mã lớp", "Học viên", "Gia sư", "Môn học", "Trạng thái", "Ngày bắt đầu", "Ngày kết thúc"]
@@ -94,42 +101,91 @@ export default function StaffReportsPage() {
               className="h-8 rounded pl-9 text-xs"
               placeholder="Lọc theo mã lớp, học viên, gia sư..."
               value={search}
-              onChange={(event) => setSearch(event.target.value)}
+              onChange={(event) => {
+                setSearch(event.target.value)
+                setCurrentPage(1)
+              }}
             />
           </div>
 
-          <div className="overflow-hidden rounded border border-border">
-            <div className="grid min-w-[820px] grid-cols-[110px_1fr_1fr_150px_120px] bg-[#e9eff7] px-3 py-2 text-[11px] font-bold text-muted-foreground">
-              <div>Mã lớp</div>
-              <div>Học viên</div>
-              <div>Gia sư</div>
-              <div>Môn học</div>
-              <div>Trạng thái</div>
-            </div>
+          <div className="overflow-x-auto rounded border border-border">
+            <div className="min-w-[820px] flex flex-col">
+              {/* Table header */}
+              <div className="grid grid-cols-[110px_1fr_1fr_150px_120px] bg-[#e9eff7] px-3 py-2 text-[11px] font-bold text-muted-foreground shrink-0">
+                <div>Mã lớp</div>
+                <div>Học viên</div>
+                <div>Gia sư</div>
+                <div>Môn học</div>
+                <div>Trạng thái</div>
+              </div>
 
-            {loading ? (
-              <div className="bg-white px-3 py-6 text-sm text-muted-foreground">
-                Đang tải báo cáo...
-              </div>
-            ) : rows.length ? (
-              rows.map((item) => (
-                <div
-                  key={item.id}
-                  className="grid min-w-[820px] grid-cols-[110px_1fr_1fr_150px_120px] border-t border-border bg-white px-3 py-3 text-xs"
-                >
-                  <div className="font-bold">{item.code}</div>
-                  <div>{item.studentName}</div>
-                  <div>{item.tutorName}</div>
-                  <div>{item.subject}</div>
-                  <div>{item.status}</div>
+              {loading ? (
+                <div className="divide-y divide-border">
+                  {Array.from({ length: 5 }).map((_, rowIdx) => (
+                    <div
+                      key={rowIdx}
+                      className="grid grid-cols-[110px_1fr_1fr_150px_120px] items-center bg-white px-3 py-4 gap-4"
+                    >
+                      <div>
+                        <div className="h-4 w-16 bg-muted rounded animate-pulse" />
+                      </div>
+                      <div>
+                        <div className="h-4 w-28 bg-muted rounded animate-pulse" />
+                      </div>
+                      <div>
+                        <div className="h-4 w-28 bg-muted rounded animate-pulse" />
+                      </div>
+                      <div>
+                        <div className="h-4 w-24 bg-muted rounded animate-pulse" />
+                      </div>
+                      <div>
+                        <div className="h-5 w-16 bg-muted rounded animate-pulse" />
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              ))
-            ) : (
-              <div className="bg-white px-3 py-6 text-sm text-muted-foreground">
-                Chưa có dữ liệu báo cáo.
-              </div>
-            )}
+              ) : (
+                <div className="max-h-[500px] overflow-y-auto divide-y divide-border">
+                  {paginated.length ? (
+                    paginated.map((item) => (
+                      <div
+                        key={item.id}
+                        className="grid grid-cols-[110px_1fr_1fr_150px_120px] items-center bg-white px-3 py-3 text-xs"
+                      >
+                        <div className="font-bold">{item.code}</div>
+                        <div>{item.studentName}</div>
+                        <div>{item.tutorName}</div>
+                        <div>{item.subject}</div>
+                        <div>{item.status}</div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="bg-white px-3 py-6 text-sm text-muted-foreground text-center">
+                      Chưa có dữ liệu báo cáo.
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
+
+          {!loading && (
+            <div className="flex flex-col gap-4">
+              <div className="text-[11px] text-muted-foreground">
+                Tổng số: <strong>{rows.length}</strong> dòng dữ liệu
+                {search && rows.length !== classes.length && (
+                  <span> (lọc từ {classes.length})</span>
+                )}
+              </div>
+              <TablePagination
+                currentPage={currentPage}
+                totalItems={rows.length}
+                pageSize={pageSize}
+                onPageChange={setCurrentPage}
+                itemName="dòng báo cáo"
+              />
+            </div>
+          )}
         </CardContent>
       </Card>
     </StaffShell>

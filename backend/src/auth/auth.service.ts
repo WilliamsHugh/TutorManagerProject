@@ -8,6 +8,7 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { MailerService } from '@nestjs-modules/mailer';
 import * as bcrypt from 'bcryptjs';
 import { v4 as uuidv4 } from 'uuid';
 import { UsersService } from '../users/users.service';
@@ -27,6 +28,7 @@ export class AuthService {
     private otpRepository: Repository<Otp>,
     @InjectRepository(RefreshToken)
     private refreshTokenRepository: Repository<RefreshToken>,
+    private mailerService: MailerService,
   ) {}
 
   async registerStudent(dto: RegisterStudentDto) {
@@ -143,8 +145,31 @@ export class AuthService {
     });
     await this.otpRepository.save(otp);
 
-    // Mock Email sending
-    console.log(`[MAILER] Gửi OTP reset password tới ${email}: ${code}`);
+    // Send real email using MailerService
+    try {
+      await this.mailerService.sendMail({
+        to: email,
+        subject: '[Tutor Manager] Mã OTP Đặt Lại Mật Khẩu',
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; rounded-lg: 8px;">
+            <h2 style="color: #0b5fff; text-align: center;">Yêu cầu đặt lại mật khẩu</h2>
+            <p>Xin chào,</p>
+            <p>Chúng tôi nhận được yêu cầu đặt lại mật khẩu cho tài khoản liên kết với email này. Vui lòng sử dụng mã OTP dưới đây để hoàn tất quá trình:</p>
+            <div style="text-align: center; margin: 30px 0;">
+              <span style="font-size: 32px; font-weight: bold; color: #0b5fff; letter-spacing: 5px; padding: 10px 20px; background-color: #f0f7ff; border-radius: 4px; border: 1px dashed #0b5fff;">
+                ${code}
+              </span>
+            </div>
+            <p style="color: #64748b; font-size: 13px;">Mã OTP này có hiệu lực trong vòng <b>10 phút</b>. Nếu bạn không gửi yêu cầu này, vui lòng bỏ qua email.</p>
+            <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0;">
+            <p style="font-size: 11px; color: #94a3b8; text-align: center;">Đây là email tự động, vui lòng không phản hồi thư này.</p>
+          </div>
+        `,
+      });
+      console.log(`[MAILER] Đã gửi OTP đặt lại mật khẩu thành công tới ${email}`);
+    } catch (error) {
+      console.error(`[MAILER ERROR] Lỗi khi gửi mail tới ${email}:`, error);
+    }
 
     return { message: 'Mã OTP đã được gửi tới email của bạn' };
   }

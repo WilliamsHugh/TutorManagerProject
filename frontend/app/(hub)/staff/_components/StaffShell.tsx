@@ -11,13 +11,19 @@ type StaffShellProps = {
 
 export function StaffShell({ children, current, parent }: StaffShellProps) {
   return (
-    <div className="min-h-screen bg-[#f4f7fb] text-foreground">
-      <div className="flex min-h-screen">
-        <StaffSidebar />
-        <div className="min-w-0 flex-1">
-          <StaffHeader current={current} parent={parent} />
-          <main className="p-5">{children}</main>
-        </div>
+    <div className="h-screen overflow-hidden bg-[#f4f7fb] text-foreground flex">
+      {/* Sidebar cố định bên trái */}
+      <StaffSidebar />
+      
+      {/* Container bên phải chiếm toàn bộ chiều cao còn lại và không cuộn */}
+      <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
+        {/* Header ngang cố định phía trên */}
+        <StaffHeader current={current} parent={parent} />
+        
+        {/* Phần nội dung có thể cuộn dọc */}
+        <main className="flex-1 overflow-y-auto p-5">
+          {children}
+        </main>
       </div>
     </div>
   )

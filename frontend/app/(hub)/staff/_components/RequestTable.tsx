@@ -14,9 +14,9 @@ export function RequestTable({
 }: RequestTableProps) {
   return (
     <div className="overflow-hidden rounded border border-border">
-      <div className="max-h-[365px] overflow-auto">
+      <div className="max-h-[600px] overflow-auto">
         <div className="min-w-[960px]">
-          <div className="grid grid-cols-[120px_170px_170px_1fr_100px_90px] bg-[#e9eff7] px-3 py-2 text-[11px] font-bold text-muted-foreground">
+          <div className="grid grid-cols-[120px_170px_170px_1fr_100px_90px] bg-[#e9eff7] px-3 py-2 text-[11px] font-bold text-muted-foreground sticky top-0 z-10 shadow-sm">
             <div>Mã YC & Ngày tạo</div>
             <div>Thông tin liên hệ</div>
             <div>Nội dung Yêu cầu</div>
@@ -80,12 +80,13 @@ export function RequestTable({
                 <Button
                   className="h-8 rounded text-xs"
                   type="button"
+                  variant={request.status === "Đã ghép" || request.status === "Đã hủy" ? "outline" : "default"}
                   onClick={(event) => {
                     event.stopPropagation()
                     onSelectRequest(request)
                   }}
                 >
-                  Ghép
+                  {request.status === "Đã ghép" || request.status === "Đã hủy" ? "Xem" : "Ghép"}
                 </Button>
               </div>
             </div>

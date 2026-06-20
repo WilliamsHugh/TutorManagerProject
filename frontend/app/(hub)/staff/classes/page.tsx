@@ -72,7 +72,7 @@ export default function StaffClassesPage() {
       "Học phí/Buổi",
       "Tổng số buổi"
     ]
-    const body = filteredClasses.map((item) => [
+    const body = classes.map((item) => [
       item.code,
       item.studentName,
       item.tutorName,

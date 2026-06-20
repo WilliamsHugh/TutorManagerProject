@@ -536,7 +536,13 @@ async function seed() {
   mockStudentsData.push(...extraStudents);
 
   const seededStudentsMap = new Map<string, Student>();
-  for (const item of mockStudentsData) {
+  for (let i = 0; i < mockStudentsData.length; i++) {
+    const item = mockStudentsData[i];
+    const isMale = i % 2 === 0;
+    const genderStr = isMale ? 'male' : 'female';
+    const avatarNum = (i % 10) + 1;
+    const avatarUrl = `https://storage.googleapis.com/banani-avatars/avatar%2F${genderStr}%2F18-25%2FSoutheast%20Asian%2F${avatarNum}`;
+
     const existingUser = await userRepo.findOneBy({ email: item.email });
     let student: Student;
     if (!existingUser) {
@@ -547,6 +553,7 @@ async function seed() {
           passwordHash: hashedPassword,
           fullName: item.fullName,
           phone: item.phone,
+          avatarUrl: avatarUrl,
           role: studentRole!,
           isActive: true,
         }),
@@ -562,6 +569,11 @@ async function seed() {
       );
       console.log(`Seeded student: ${item.fullName}`);
     } else {
+      if (!existingUser.avatarUrl) {
+        existingUser.avatarUrl = avatarUrl;
+        await userRepo.save(existingUser);
+        console.log(`Updated avatar for existing student: ${item.fullName}`);
+      }
       student = (await studentRepo.findOne({
         where: { user: { id: existingUser.id } },
       }))!;

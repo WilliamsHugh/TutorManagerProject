@@ -1,9 +1,10 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
-import { BookOpen, CalendarDays, MapPin, Search, Clock, Mail, Phone, GraduationCap, X } from "lucide-react"
+import { BookOpen, CalendarDays, MapPin, Search, Clock, Mail, Phone, GraduationCap, X, Download } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { getClasses, getLearningReports } from "@/lib/api"
@@ -59,6 +60,41 @@ export default function StaffClassesPage() {
     return filteredClasses.slice((currentPage - 1) * pageSize, currentPage * pageSize)
   }, [filteredClasses, currentPage])
 
+  function exportCsv() {
+    const header = [
+      "Mã lớp",
+      "Học viên",
+      "Gia sư",
+      "Môn học",
+      "Trạng thái",
+      "Ngày bắt đầu",
+      "Địa điểm học",
+      "Học phí/Buổi",
+      "Tổng số buổi"
+    ]
+    const body = filteredClasses.map((item) => [
+      item.code,
+      item.studentName,
+      item.tutorName,
+      item.subject,
+      item.status,
+      item.startDate,
+      item.location,
+      item.feePerSession,
+      item.totalSessions,
+    ])
+    const csv = [header, ...body]
+      .map((row) => row.map((cell) => `"${(cell || "").replace(/"/g, '""')}"`).join(","))
+      .join("\n")
+    const blob = new Blob([`\uFEFF${csv}`], { type: "text/csv;charset=utf-8" })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement("a")
+    link.href = url
+    link.download = "danh-sach-lop-hoc.csv"
+    link.click()
+    URL.revokeObjectURL(url)
+  }
+
   return (
     <StaffShell current="Danh sách" parent="Quản lý Lớp học">
       <Card className="rounded-md border-border shadow-none">
@@ -70,20 +106,31 @@ export default function StaffClassesPage() {
                 Theo dõi các lớp đã ghép thành công, trạng thái vận hành và thông tin học phí.
               </p>
             </div>
-            <div className="relative w-full max-w-[360px]">
-              <Search
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
-                size={14}
-              />
-              <Input
-                className="h-8 rounded pl-9 text-xs"
-                placeholder="Tìm mã lớp, học viên, gia sư..."
-                value={search}
-                onChange={(event) => {
-                  setSearch(event.target.value)
-                  setCurrentPage(1)
-                }}
-              />
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <Button
+                className="h-8 rounded text-xs gap-1.5"
+                variant="outline"
+                type="button"
+                onClick={exportCsv}
+              >
+                <Download size={14} />
+                Xuất CSV
+              </Button>
+              <div className="relative w-full max-w-[360px] flex-1 sm:flex-initial">
+                <Search
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                  size={14}
+                />
+                <Input
+                  className="h-8 rounded pl-9 text-xs"
+                  placeholder="Tìm mã lớp, học viên, gia sư..."
+                  value={search}
+                  onChange={(event) => {
+                    setSearch(event.target.value)
+                    setCurrentPage(1)
+                  }}
+                />
+              </div>
             </div>
           </div>
 

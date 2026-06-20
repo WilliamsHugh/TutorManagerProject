@@ -25,7 +25,6 @@ const navItems: NavItem[] = [
   { label: "Quản lý Gia sư", href: "/staff/tutors", icon: UsersRound },
   { label: "Quản lý Học viên", href: "/staff/students", icon: UserRound },
   { label: "Quản lý Lớp học", href: "/staff/classes", icon: BookOpen },
-  { label: "Báo cáo thống kê", href: "/staff/reports", icon: Clock3 },
 ]
 
 export function StaffSidebar() {

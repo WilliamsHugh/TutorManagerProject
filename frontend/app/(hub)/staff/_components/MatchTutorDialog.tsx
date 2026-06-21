@@ -51,7 +51,7 @@ export function MatchTutorDialog({
     >
       <section
         aria-modal="true"
-        className="max-h-[78vh] w-full max-w-170 overflow-y-auto rounded-md bg-white shadow-xl"
+        className="max-h-[85vh] w-full max-w-170 rounded-md bg-white shadow-xl flex flex-col"
         role="dialog"
         onClick={(event) => event.stopPropagation()}
       >
@@ -71,8 +71,8 @@ export function MatchTutorDialog({
               <label className="relative">
                 <span className="sr-only">Trạng thái yêu cầu</span>
                 <select
-                  className="h-8 appearance-none rounded border border-border bg-white pl-3 pr-8 text-xs font-semibold outline-none transition-colors hover:bg-muted focus:border-ring focus:ring-2 focus:ring-ring/30"
-                  disabled={savingStatus}
+                  className="h-8 appearance-none rounded border border-border bg-white pl-3 pr-8 text-xs font-semibold outline-none transition-colors hover:bg-muted focus:border-ring focus:ring-2 focus:ring-ring/30 disabled:opacity-60 disabled:cursor-not-allowed"
+                  disabled={savingStatus || request.status === "Đã ghép" || request.status === "Đã hủy"}
                   value={status}
                   onChange={(event) => handleStatusChange(event.target.value as RequestStatus)}
                 >
@@ -100,6 +100,18 @@ export function MatchTutorDialog({
         </div>
 
         <div className="space-y-3 p-5">
+          {(status === "Đã ghép" || status === "Đã hủy") && (
+            <div className={`rounded-lg p-3.5 text-xs font-semibold border ${
+              status === "Đã ghép" 
+                ? "bg-green-50 text-green-700 border-green-200" 
+                : "bg-slate-50 text-slate-700 border-slate-200"
+            }`}>
+              {status === "Đã ghép" 
+                ? "✓ Yêu cầu này đã được ghép lớp thành công. Không thể ghép thêm gia sư khác."
+                : "✕ Yêu cầu này đã bị hủy. Không thể thực hiện ghép gia sư."}
+            </div>
+          )}
+
           <div className="grid gap-3 md:grid-cols-2">
             <RequestContactCard request={request} />
             <RequestDetailCard request={request} />
@@ -140,24 +152,54 @@ export function MatchTutorDialog({
               </div>
             </div>
 
-            <div className="mt-3 grid gap-3 md:grid-cols-2">
+            <div className="mt-3 grid gap-3 md:grid-cols-2 overflow-y-auto max-h-[350px] pr-1.5 py-0.5">
               {loadingTutors ? (
-                <div className="col-span-full rounded border border-dashed border-border p-4 text-xs text-muted-foreground">
-                  Đang tải danh sách gia sư phù hợp...
-                </div>
+                <>
+                  {Array.from({ length: 4 }).map((_, idx) => (
+                    <div key={idx} className="rounded border border-border bg-white p-3 space-y-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex min-w-0 gap-3 w-full">
+                          <div className="size-9 shrink-0 rounded-full bg-muted animate-pulse" />
+                          <div className="min-w-0 flex-1 space-y-2">
+                            <div className="h-4 w-24 bg-muted rounded animate-pulse" />
+                            <div className="h-3 w-32 bg-muted rounded animate-pulse" />
+                          </div>
+                        </div>
+                        <div className="h-5 w-14 bg-muted rounded animate-pulse shrink-0" />
+                      </div>
+                      <div className="flex flex-wrap gap-1">
+                        <div className="h-4 w-12 bg-muted rounded animate-pulse" />
+                        <div className="h-4 w-16 bg-muted rounded animate-pulse" />
+                        <div className="h-4 w-14 bg-muted rounded animate-pulse" />
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <div className="h-3.5 w-16 bg-muted rounded animate-pulse" />
+                        <div className="h-8 w-20 bg-muted rounded animate-pulse" />
+                      </div>
+                    </div>
+                  ))}
+                </>
               ) : tutors.length ? (
-                tutors.map((tutor) => (
-                  <TutorRecommendationCard
-                    key={tutor.rawTutorId}
-                    actionLabel="Ghép lớp"
-                    href={`/staff/request-management/create-class?requestId=${encodeURIComponent(
-                      request.rawId
-                    )}&tutorId=${encodeURIComponent(tutor.rawTutorId)}&tutorName=${encodeURIComponent(
-                      tutor.name
-                    )}`}
-                    tutor={tutor}
-                  />
-                ))
+                tutors.map((tutor) => {
+                  const isMatched = status === "Đã ghép"
+                  const isCancelled = status === "Đã hủy"
+                  const actionLabel = isMatched ? "Đã ghép" : isCancelled ? "Bị hủy" : "Ghép lớp"
+                  const href = (isMatched || isCancelled)
+                    ? undefined
+                    : `/staff/request-management/create-class?requestId=${encodeURIComponent(
+                        request.rawId
+                      )}&tutorId=${encodeURIComponent(tutor.rawTutorId)}&tutorName=${encodeURIComponent(
+                        tutor.name
+                      )}`
+                  return (
+                    <TutorRecommendationCard
+                      key={tutor.rawTutorId}
+                      actionLabel={actionLabel}
+                      href={href}
+                      tutor={tutor}
+                    />
+                  )
+                })
               ) : (
                 <div className="col-span-full rounded border border-dashed border-border p-4 text-xs text-muted-foreground">
                   Chưa có gia sư phù hợp theo dữ liệu hiện tại.

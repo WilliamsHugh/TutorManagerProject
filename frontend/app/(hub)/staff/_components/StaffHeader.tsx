@@ -40,7 +40,7 @@ export function StaffHeader({
 
   return (
     <header className="flex h-12 items-center justify-between border-b border-border bg-white px-5">
-      <div className="flex items-center gap-2 text-xs font-semibold">
+      <div className="flex items-center gap-2 text-sm font-semibold">
         <span className="text-muted-foreground">{parent}</span>
         <span className="text-muted-foreground">›</span>
         <span>{current}</span>
@@ -52,13 +52,13 @@ export function StaffHeader({
         <div className="relative">
           <button
             onClick={() => setShowUserMenu(!showUserMenu)}
-            className="flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-foreground hover:bg-secondary transition-colors border-none bg-transparent cursor-pointer"
+            className="flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm font-semibold text-foreground hover:bg-secondary transition-colors border-none bg-transparent cursor-pointer"
           >
             <div className="size-7 rounded-full flex items-center justify-center text-[10px] font-bold text-white" style={{ background: 'linear-gradient(135deg, #0b63d6, #ffb020)' }}>
               {(user?.fullName || user?.email || 'S').charAt(0).toUpperCase()}
             </div>
             {user && <span className="hidden sm:inline max-w-24 truncate">{user.fullName}</span>}
-            <ChevronDown size={12} className={`transition-transform duration-200 ${showUserMenu ? 'rotate-180' : ''}`} />
+            <ChevronDown size={13} className={`transition-transform duration-200 ${showUserMenu ? 'rotate-180' : ''}`} />
           </button>
 
           {showUserMenu && (

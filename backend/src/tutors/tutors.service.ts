@@ -717,13 +717,22 @@ export class TutorsService implements OnModuleInit {
   }
 
   async getReportsByClass(classId: string, userId: string) {
-    const profile = await this.getTutorProfileData(userId);
-    const tutorId = profile.id;
+    try {
+      const profile = await this.getTutorProfileData(userId);
+      const tutorId = profile.id;
 
-    return this.learningReportRepository.find({
-      where: { class: { id: classId }, tutor: { id: tutorId } },
-      order: { reportDate: 'DESC' }
-    });
+      return this.learningReportRepository.find({
+        where: { class: { id: classId }, tutor: { id: tutorId } },
+        order: { reportDate: 'DESC' }
+      });
+    } catch (err) {
+      // Nếu không tìm thấy hồ sơ gia sư (ví dụ: Staff/Admin gọi),
+      // trả về toàn bộ báo cáo của lớp học đó.
+      return this.learningReportRepository.find({
+        where: { class: { id: classId } },
+        order: { reportDate: 'DESC' }
+      });
+    }
   }
 
   async createReport(userId: string, dto: CreateLearningReportDto) {

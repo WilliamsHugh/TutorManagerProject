@@ -137,7 +137,8 @@ async function seed() {
         'https://storage.googleapis.com/banani-avatars/avatar%2Fmale%2F25-35%2FSoutheast%20Asian%2F1',
       tutor: {
         educationLevel: 'Sinh viên',
-        major: 'ĐH Bách Khoa',
+        major: 'Khoa học máy tính',
+        university: 'Đại học Bách Khoa TP.HCM',
         experience: '2 năm kinh nghiệm dạy kèm môn Toán, Lý cấp 3',
         idCardNumber: '079123456789',
         availableAreas: 'Quận 1, Quận 5',
@@ -154,7 +155,8 @@ async function seed() {
         'https://storage.googleapis.com/banani-avatars/avatar%2Ffemale%2F25-35%2FSoutheast%20Asian%2F2',
       tutor: {
         educationLevel: 'Giáo viên',
-        major: 'THPT',
+        major: 'Sư phạm Vật lí',
+        university: 'Đại học Sư phạm TP.HCM',
         experience: '5 năm kinh nghiệm giảng dạy môn Toán và Hóa học',
         idCardNumber: '079123456788',
         availableAreas: 'Quận 1, Quận 4, Quận 7',
@@ -171,7 +173,8 @@ async function seed() {
         'https://storage.googleapis.com/banani-avatars/avatar%2Fmale%2F18-25%2FSoutheast%20Asian%2F2',
       tutor: {
         educationLevel: 'Sinh viên',
-        major: 'ĐH Khoa Học Tự Nhiên',
+        major: 'Công nghệ thông tin',
+        university: 'Đại học Khoa học Tự nhiên TP.HCM',
         experience: '1.5 năm kinh nghiệm, rành kèm học sinh trung học',
         idCardNumber: '079123456787',
         availableAreas: 'Quận 3, Quận 10',
@@ -189,6 +192,7 @@ async function seed() {
       tutor: {
         educationLevel: 'Cử nhân',
         major: 'Sư phạm Toán',
+        university: 'Đại học Sư phạm TP.HCM',
         experience: '3 năm kinh nghiệm dạy ôn thi',
         idCardNumber: '079123456786',
         availableAreas: 'Bình Thạnh',
@@ -206,7 +210,8 @@ async function seed() {
         'https://storage.googleapis.com/banani-avatars/avatar%2Ffemale%2F25-35%2FSoutheast%20Asian%2F4',
       tutor: {
         educationLevel: 'Tốt nghiệp',
-        major: 'ĐH Bách Khoa TP.HCM',
+        major: 'Kỹ thuật điện',
+        university: 'Đại học Bách Khoa TP.HCM',
         experience: '5 năm kinh nghiệm dạy kèm Toán THPT, luyện thi Đại học',
         idCardNumber: '079123456782',
         availableAreas: 'Quận 1, TP.HCM',
@@ -224,6 +229,7 @@ async function seed() {
       tutor: {
         educationLevel: 'Thạc sĩ',
         major: 'Toán ứng dụng',
+        university: 'Đại học Khoa học Tự nhiên TP.HCM',
         experience: '4 năm kinh nghiệm dạy kèm Toán lớp 10-12, luyện thi',
         idCardNumber: '079123456781',
         availableAreas: 'Quận 3, TP.HCM',
@@ -241,6 +247,7 @@ async function seed() {
       tutor: {
         educationLevel: 'Sinh viên',
         major: 'Sư phạm Toán',
+        university: 'Đại học Sư phạm TP.HCM',
         experience: '3 năm kinh nghiệm dạy kèm Toán cơ bản và Toán cấp 2',
         idCardNumber: '079123456780',
         availableAreas: 'Bình Thạnh',
@@ -257,7 +264,8 @@ async function seed() {
         'https://storage.googleapis.com/banani-avatars/avatar%2Fmale%2F18-25%2FSoutheast%20Asian%2F1',
       tutor: {
         educationLevel: 'Sinh viên',
-        major: 'ĐH Khoa Học Tự Nhiên',
+        major: 'Toán tin',
+        university: 'Đại học Khoa học Tự nhiên TP.HCM',
         experience: '2 năm kinh nghiệm dạy kèm 1-1 Toán THPT',
         idCardNumber: '079123456779',
         availableAreas: 'Thủ Đức',
@@ -275,7 +283,8 @@ async function seed() {
         'https://storage.googleapis.com/banani-avatars/avatar%2Ffemale%2F18-25%2FSoutheast%20Asian%2F1',
       tutor: {
         educationLevel: 'Sinh viên',
-        major: 'Sư Phạm Toán',
+        major: 'Sư phạm Toán',
+        university: 'Đại học Sư phạm Hà Nội',
         experience:
           '2 năm kinh nghiệm dạy kèm Toán cấp 3, luyện thi Đại học. Chuyên ôn thi cho học sinh lớp 12.',
         idCardNumber: '079123456785',
@@ -293,7 +302,8 @@ async function seed() {
         'https://storage.googleapis.com/banani-avatars/avatar%2Fmale%2F25-35%2FSoutheast%20Asian%2F2',
       tutor: {
         educationLevel: 'Cử nhân',
-        major: 'Ngôn Ngữ Anh',
+        major: 'Ngôn ngữ Anh',
+        university: 'Đại học Ngoại ngữ - ĐHQGHN',
         experience:
           'Cử nhân Ngôn Ngữ Anh, 4 năm kinh nghiệm giảng dạy tiếng Anh giao tiếp và luyện thi IELTS 7.5+.',
         idCardNumber: '079123456784',
@@ -311,7 +321,8 @@ async function seed() {
         'https://storage.googleapis.com/banani-avatars/avatar%2Ffemale%2F25-35%2FSoutheast%20Asian%2F3',
       tutor: {
         educationLevel: 'Giáo viên',
-        major: 'Tiểu học',
+        major: 'Giáo dục Tiểu học',
+        university: 'Đại học Sư phạm Đà Nẵng',
         experience:
           '7 năm kinh nghiệm giảng dạy tiểu học. Chuyên rèn chữ đẹp và toán tiểu học cho các em nhỏ.',
         idCardNumber: '079123456783',
@@ -321,10 +332,91 @@ async function seed() {
       subjects: ['Toán học', 'Ngữ văn'],
     },
   ];
+  const lastNames = ['Nguyễn', 'Trần', 'Lê', 'Phạm', 'Hoàng', 'Phan', 'Vũ', 'Võ', 'Đặng', 'Bùi', 'Đỗ', 'Hồ', 'Ngô', 'Dương', 'Lý'];
+  const middleNamesMale = ['Văn', 'Hữu', 'Minh', 'Đăng', 'Quốc', 'Hoàng', 'Thanh', 'Đức', 'Anh', 'Khánh'];
+  const middleNamesFemale = ['Thị', 'Ngọc', 'Quỳnh', 'Thu', 'Như', 'Khánh', 'Minh', 'Thanh', 'Trúc', 'Hồng'];
+  const firstNamesMale = ['Bình', 'Đạt', 'Phúc', 'Huy', 'Nam', 'Hùng', 'Kiệt', 'Anh', 'Tú', 'Lộc', 'Sơn', 'Tùng', 'Khoa', 'Lâm', 'Duy', 'Thịnh', 'Khải', 'Hải', 'Phong', 'Quang'];
+  const firstNamesFemale = ['Cẩm', 'Hà', 'Vy', 'Ngọc', 'Trang', 'Mai', 'Lan', 'Liên', 'Trúc', 'Phương', 'Linh', 'Thảo', 'Yến', 'Anh', 'Chi', 'Diệp', 'Trinh', 'Giang', 'Hương', 'Duyên'];
+
+  const extraTutors: any[] = [];
+  for (let i = 1; i <= 100; i++) {
+    const isMale = i % 2 === 0;
+    const lastName = lastNames[Math.floor(Math.random() * lastNames.length)];
+    const middleName = isMale 
+      ? middleNamesMale[Math.floor(Math.random() * middleNamesMale.length)]
+      : middleNamesFemale[Math.floor(Math.random() * middleNamesFemale.length)];
+    const firstName = isMale
+      ? firstNamesMale[Math.floor(Math.random() * firstNamesMale.length)]
+      : firstNamesFemale[Math.floor(Math.random() * firstNamesFemale.length)];
+    const fullName = `${lastName} ${middleName} ${firstName}`;
+    
+    const emailSlug = fullName.toLowerCase()
+      .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+      .replace(/đ/g, "d")
+      .replace(/\s+/g, "_");
+    
+    const email = `${emailSlug}_${i}@tutoredu.com`;
+    const phone = `098${String(i).padStart(3, '0')}${Math.floor(1000 + Math.random() * 9000)}`;
+    const address = `Quận ${Math.floor(1 + Math.random() * 12)}, TP.HCM`;
+    
+    const genderStr = isMale ? 'male' : 'female';
+    const avatarNum = (i % 10) + 1;
+    const avatarUrl = `https://storage.googleapis.com/banani-avatars/avatar%2F${genderStr}%2F18-25%2FSoutheast%20Asian%2F${avatarNum}`;
+    
+    const subjectsList = [['Toán học'], ['Vật lí'], ['Hóa học'], ['Tiếng Anh'], ['Ngữ văn'], ['Tin học']];
+    const tutorSubjects = subjectsList[i % subjectsList.length];
+    
+    const majors = ['Sư phạm Toán', 'Sư phạm Vật lí', 'Sư phạm Hóa', 'Ngôn ngữ Anh', 'Công nghệ thông tin', 'Toán tin'];
+    const major = majors[i % majors.length];
+    
+    const universities = ['Đại học Sư phạm TP.HCM', 'Đại học Bách Khoa TP.HCM', 'Đại học Khoa học Tự nhiên TP.HCM', 'Đại học Sài Gòn'];
+    const university = universities[i % universities.length];
+    
+    const educationLevels = ['Sinh viên', 'Cử nhân', 'Giáo viên', 'Thạc sĩ'];
+    const educationLevel = educationLevels[i % educationLevels.length];
+
+    extraTutors.push({
+      email,
+      fullName,
+      phone,
+      address,
+      avatarUrl,
+      tutor: {
+        educationLevel,
+        major,
+        university,
+        experience: `${Math.floor(1 + Math.random() * 5)} năm kinh nghiệm dạy kèm môn ${tutorSubjects.join(', ')}`,
+        idCardNumber: `079${Math.floor(100000000 + Math.random() * 900000000)}`,
+        availableAreas: address.split(',')[0],
+        approvalStatus: i % 10 === 0 ? ApprovalStatus.PENDING : ApprovalStatus.APPROVED,
+      },
+      subjects: tutorSubjects
+    });
+  }
+  mockTutorsData.push(...extraTutors);
 
   for (const item of mockTutorsData) {
     const existing = await userRepo.findOneBy({ email: item.email });
-    if (!existing) {
+    if (existing) {
+      const tutor = await tutorRepo.findOne({
+        where: { user: { id: existing.id } },
+      });
+      if (tutor) {
+        tutor.major = item.tutor.major;
+        tutor.university = item.tutor.university;
+        tutor.educationLevel = item.tutor.educationLevel;
+        await tutorRepo.save(tutor);
+      }
+      // Cập nhật avatar và các thông tin khác cho user của tutor đã tồn tại
+      if (existing.avatarUrl !== item.avatarUrl) {
+        existing.avatarUrl = item.avatarUrl;
+        existing.fullName = item.fullName;
+        existing.phone = item.phone;
+        existing.address = item.address;
+        await userRepo.save(existing);
+        console.log(`Updated avatar & info for existing tutor: ${item.fullName}`);
+      }
+    } else {
       const hashedPassword = await bcrypt.hash('Tutor123@', 10);
       const user = await userRepo.save(
         userRepo.create({
@@ -360,16 +452,6 @@ async function seed() {
         }
       }
       console.log(`Seeded tutor: ${item.fullName}`);
-    } else {
-      // Cập nhật avatar và các thông tin khác cho tutor đã tồn tại
-      if (existing.avatarUrl !== item.avatarUrl) {
-        existing.avatarUrl = item.avatarUrl;
-        existing.fullName = item.fullName;
-        existing.phone = item.phone;
-        existing.address = item.address;
-        await userRepo.save(existing);
-        console.log(`Updated avatar & info for existing tutor: ${item.fullName}`);
-      }
     }
   }
 
@@ -419,8 +501,48 @@ async function seed() {
     },
   ];
 
+  const extraStudents: any[] = [];
+  for (let i = 1; i <= 100; i++) {
+    const isMale = i % 2 === 0;
+    const lastName = lastNames[Math.floor(Math.random() * lastNames.length)];
+    const middleName = isMale 
+      ? middleNamesMale[Math.floor(Math.random() * middleNamesMale.length)]
+      : middleNamesFemale[Math.floor(Math.random() * middleNamesFemale.length)];
+    const firstName = isMale
+      ? firstNamesMale[Math.floor(Math.random() * firstNamesMale.length)]
+      : firstNamesFemale[Math.floor(Math.random() * firstNamesFemale.length)];
+    const fullName = `${lastName} ${middleName} ${firstName}`;
+    
+    const emailSlug = fullName.toLowerCase()
+      .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+      .replace(/đ/g, "d")
+      .replace(/\s+/g, "_");
+      
+    const email = `${emailSlug}_student_${i}@tutoredu.com`;
+    const phone = `090${String(i).padStart(3, '0')}${Math.floor(1000 + Math.random() * 9000)}`;
+    const gradeLevel = `Lớp ${Math.floor(1 + Math.random() * 12)}`;
+    
+    const parentLastName = lastNames[Math.floor(Math.random() * lastNames.length)];
+    const parentName = `${parentLastName} Văn ${isMale ? 'Hùng' : 'Dũng'}`;
+    
+    extraStudents.push({
+      email,
+      fullName,
+      phone,
+      gradeLevel,
+      parentName,
+    });
+  }
+  mockStudentsData.push(...extraStudents);
+
   const seededStudentsMap = new Map<string, Student>();
-  for (const item of mockStudentsData) {
+  for (let i = 0; i < mockStudentsData.length; i++) {
+    const item = mockStudentsData[i];
+    const isMale = i % 2 === 0;
+    const genderStr = isMale ? 'male' : 'female';
+    const avatarNum = (i % 10) + 1;
+    const avatarUrl = `https://storage.googleapis.com/banani-avatars/avatar%2F${genderStr}%2F18-25%2FSoutheast%20Asian%2F${avatarNum}`;
+
     const existingUser = await userRepo.findOneBy({ email: item.email });
     let student: Student;
     if (!existingUser) {
@@ -431,6 +553,7 @@ async function seed() {
           passwordHash: hashedPassword,
           fullName: item.fullName,
           phone: item.phone,
+          avatarUrl: avatarUrl,
           role: studentRole!,
           isActive: true,
         }),
@@ -446,6 +569,11 @@ async function seed() {
       );
       console.log(`Seeded student: ${item.fullName}`);
     } else {
+      if (!existingUser.avatarUrl) {
+        existingUser.avatarUrl = avatarUrl;
+        await userRepo.save(existingUser);
+        console.log(`Updated avatar for existing student: ${item.fullName}`);
+      }
       student = (await studentRepo.findOne({
         where: { user: { id: existingUser.id } },
       }))!;

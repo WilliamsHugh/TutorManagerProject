@@ -90,7 +90,7 @@ export class ClassesService {
       .leftJoinAndSelect('class.subject', 'subject')
       .leftJoinAndSelect('class.request', 'request')
       .leftJoinAndSelect('class.createdBy', 'createdBy')
-      .orderBy('class.startDate', 'DESC');
+      .orderBy('class.startDate', 'DESC', 'NULLS LAST');
 
     if (query.status) {
       qb.andWhere('class.status = :status', { status: query.status });

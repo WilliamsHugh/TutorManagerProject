@@ -314,33 +314,127 @@ export class AdminController {
       requestWhere.createdAt = Between(start, end);
     }
 
-    const activeClasses = await this.classesRepo.count({
-      where: { ...classWhere, status: 'active' as any },
+    const now = new Date();
+    const trendRanges = Array.from({ length: 6 }).map((_, i) => {
+      const index = 5 - i;
+      const d = new Date(now.getFullYear(), now.getMonth() - index, 1);
+      const year = d.getFullYear();
+      const month = d.getMonth();
+      const startOfMonth = new Date(year, month, 1);
+      const endOfMonth = new Date(year, month + 1, 0, 23, 59, 59, 999);
+      const monthLabel = `${String(month + 1).padStart(2, '0')}/${year}`;
+      return { startOfMonth, endOfMonth, monthLabel };
     });
 
-    const completedClasses = await this.classesRepo.count({
-      where: { ...classWhere, status: 'completed' as any },
-    });
+    // Run all database queries in parallel for maximum optimization (reducing ~15 queries to 1 concurrent roundtrip)
+    const [
+      activeClasses,
+      completedClasses,
+      newRequests,
+      activeTutors,
+      activeClassList,
+      classStatusCounts,
+      requestStatusCounts,
+      subjectPopularityRaw,
+      ...monthlyTrendCounts
+    ] = await Promise.all([
+      this.classesRepo.count({
+        where: { ...classWhere, status: 'active' as any },
+      }),
+      this.classesRepo.count({
+        where: { ...classWhere, status: 'completed' as any },
+      }),
+      this.requestsRepo.count({
+        where: { ...requestWhere, status: 'pending' as any },
+      }),
+      this.tutorsRepo.count({
+        where: {
+          approvalStatus: ApprovalStatus.APPROVED,
+          user: { isActive: true },
+        },
+      }),
+      this.classesRepo.find({
+        where: { status: 'active' as any },
+        relations: ['student'],
+      }),
+      
+      // Class status counts using group by
+      this.classesRepo
+        .createQueryBuilder('class')
+        .select('class.status', 'status')
+        .addSelect('COUNT(class.id)', 'count')
+        .groupBy('class.status')
+        .getRawMany(),
 
-    const newRequests = await this.requestsRepo.count({
-      where: { ...requestWhere, status: 'pending' as any },
-    });
+      // Request status counts using group by
+      this.requestsRepo
+        .createQueryBuilder('request')
+        .select('request.status', 'status')
+        .addSelect('COUNT(request.id)', 'count')
+        .groupBy('request.status')
+        .getRawMany(),
 
-    const activeTutors = await this.tutorsRepo.count({
-      where: {
-        approvalStatus: ApprovalStatus.APPROVED,
-        user: { isActive: true },
-      },
-    });
+      // Subject popularity raw
+      this.requestsRepo
+        .createQueryBuilder('request')
+        .leftJoinAndSelect('request.subject', 'subject')
+        .select('subject.name', 'subject')
+        .addSelect('COUNT(request.id)', 'count')
+        .groupBy('subject.name')
+        .orderBy('count', 'DESC')
+        .getRawMany(),
 
-    const activeClassList = await this.classesRepo.find({
-      where: { status: 'active' as any },
-      relations: ['student'],
-    });
+      // Parallelized monthly trend queries
+      ...trendRanges.map((range) =>
+        this.requestsRepo.count({
+          where: {
+            createdAt: Between(range.startOfMonth, range.endOfMonth),
+          },
+        })
+      ),
+    ]);
+
+    // Calculate unique student count
     const uniqueStudentIds = new Set(
       activeClassList.map((c) => c.student?.id).filter(Boolean),
     );
     const learningStudents = uniqueStudentIds.size;
+
+    // Process class status distribution object
+    const classStatusDistribution: Record<string, number> = {
+      active: 0,
+      completed: 0,
+      cancelled: 0,
+      suspended: 0,
+    };
+    classStatusCounts.forEach((c) => {
+      if (c.status in classStatusDistribution) {
+        classStatusDistribution[c.status] = parseInt(c.count, 10);
+      }
+    });
+
+    // Process request status distribution object
+    const requestStatusDistribution: Record<string, number> = {
+      pending: 0,
+      processing: 0,
+      matched: 0,
+      cancelled: 0,
+    };
+    requestStatusCounts.forEach((r) => {
+      if (r.status in requestStatusDistribution) {
+        requestStatusDistribution[r.status] = parseInt(r.count, 10);
+      }
+    });
+
+    const subjectPopularity = subjectPopularityRaw.map((item) => ({
+      subject: item.subject || 'Khác',
+      count: parseInt(item.count, 10),
+    }));
+
+    const monthlyRequestTrend = trendRanges.map((range, idx) => ({
+      month: range.monthLabel,
+      count: monthlyTrendCounts[idx],
+    }));
 
     return {
       activeClasses,
@@ -348,6 +442,10 @@ export class AdminController {
       newRequests,
       activeTutors,
       learningStudents,
+      classStatusDistribution,
+      requestStatusDistribution,
+      subjectPopularity,
+      monthlyRequestTrend,
     };
   }
 }

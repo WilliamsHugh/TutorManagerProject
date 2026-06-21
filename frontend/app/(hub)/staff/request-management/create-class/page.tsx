@@ -1,6 +1,6 @@
 "use client"
 
-import { CalendarDays } from "lucide-react"
+import { CalendarDays, UploadCloud, File, Trash2, Eye } from "lucide-react"
 import { Suspense, useEffect, useMemo, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 
@@ -51,10 +51,58 @@ function CreateClassContent() {
     notes: "",
   })
 
+  const [attachedFiles, setAttachedFiles] = useState<Array<{ name: string; url: string; type: string; size: string }>>([])
+
+  function handleFileChange(event: React.ChangeEvent<HTMLInputElement>) {
+    const selectedFiles = event.target.files
+    if (!selectedFiles) return
+
+    const newFiles = Array.from(selectedFiles).map((file) => {
+      const sizeMb = (file.size / (1024 * 1024)).toFixed(2)
+      return {
+        name: file.name,
+        url: URL.createObjectURL(file),
+        type: file.type,
+        size: `${sizeMb} MB`,
+      }
+    })
+
+    setAttachedFiles((prev) => [...prev, ...newFiles])
+  }
+
+  function removeFile(index: number) {
+    setAttachedFiles((prev) => prev.filter((_, i) => i !== index))
+  }
+
+  const todayStr = useMemo(() => {
+    return new Date().toISOString().split("T")[0]
+  }, [])
+
   const classCode = useMemo(() => {
     if (!requestId) return "CLASS-NEW"
     return `CLASS-${requestId.replace(/-/g, "").slice(0, 6).toUpperCase()}`
   }, [requestId])
+
+  // Load draft from localStorage on mount/change
+  useEffect(() => {
+    if (typeof window !== "undefined" && requestId && tutorId) {
+      const saved = localStorage.getItem(`create_class_draft_${requestId}_${tutorId}`)
+      if (saved) {
+        try {
+          setForm(JSON.parse(saved))
+        } catch (e) {
+          // ignore
+        }
+      }
+    }
+  }, [requestId, tutorId])
+
+  // Save draft to localStorage on form changes
+  useEffect(() => {
+    if (typeof window !== "undefined" && requestId && tutorId && (form.location || form.startDate || form.notes)) {
+      localStorage.setItem(`create_class_draft_${requestId}_${tutorId}`, JSON.stringify(form))
+    }
+  }, [form, requestId, tutorId])
 
   useEffect(() => {
     async function loadRequest() {
@@ -68,7 +116,10 @@ function CreateClassContent() {
         const data = await getClassRequest(requestId)
         const mapped = mapClassRequest(data)
         setRequest(mapped)
-        setForm((current) => ({ ...current, location: mapped.area }))
+        setForm((current) => {
+          if (current.location) return current // keep localStorage location if exists
+          return { ...current, location: mapped.area }
+        })
       } catch (err) {
         setError(err instanceof Error ? err.message : "Không thể tải thông tin yêu cầu")
       } finally {
@@ -85,13 +136,73 @@ function CreateClassContent() {
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
+    setError(null)
+
     if (!requestId || !tutorId) {
       setError("Thiếu thông tin yêu cầu hoặc gia sư để tạo lớp")
       return
     }
 
+    // 1. Check for empty fields
+    if (!form.location.trim()) {
+      setError("Vui lòng nhập địa điểm dạy học")
+      return
+    }
+    if (!form.feePerSession.trim()) {
+      setError("Vui lòng nhập học phí mỗi buổi")
+      return
+    }
+    if (!form.totalSessions.trim()) {
+      setError("Vui lòng nhập tổng số buổi học")
+      return
+    }
+    if (!form.startDate.trim()) {
+      setError("Vui lòng chọn ngày bắt đầu")
+      return
+    }
+    if (!form.endDate.trim()) {
+      setError("Vui lòng chọn ngày kết thúc dự kiến")
+      return
+    }
+
+    // 2. Validate numeric values
+    const fee = Number(form.feePerSession)
+    if (isNaN(fee) || fee <= 0) {
+      setError("Học phí mỗi buổi phải là một số dương hợp lệ")
+      return
+    }
+
+    const sessions = Number(form.totalSessions)
+    if (isNaN(sessions) || !Number.isInteger(sessions) || sessions <= 0) {
+      setError("Tổng số buổi học phải là một số nguyên dương hợp lệ")
+      return
+    }
+
+    // 3. Validate dates (prevent past dates and verify range)
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    
+    const start = new Date(form.startDate)
+    if (isNaN(start.getTime())) {
+      setError("Ngày bắt đầu không hợp lệ")
+      return
+    }
+    if (start < today) {
+      setError("Ngày bắt đầu không được ở trong quá khứ")
+      return
+    }
+
+    const end = new Date(form.endDate)
+    if (isNaN(end.getTime())) {
+      setError("Ngày kết thúc dự kiến không hợp lệ")
+      return
+    }
+    if (end <= start) {
+      setError("Ngày kết thúc dự kiến phải sau ngày bắt đầu")
+      return
+    }
+
     setSaving(true)
-    setError(null)
     try {
       await createClass({
         requestId,
@@ -103,9 +214,12 @@ function CreateClassContent() {
         endDate: form.endDate,
         notes: form.notes,
       })
+      if (typeof window !== "undefined") {
+        localStorage.removeItem(`create_class_draft_${requestId}_${tutorId}`)
+      }
       router.push("/staff/classes")
     } catch (err) {
-      setError("Đây là chế độ xem tạm không xác thực, nên thao tác tạo lớp chưa lưu vào DB.")
+      setError(err instanceof Error ? err.message : "Không thể tạo lớp học lúc này. Vui lòng kiểm tra lại thông tin.")
     } finally {
       setSaving(false)
     }
@@ -184,21 +298,86 @@ function CreateClassContent() {
                   />
                   <DateField
                     label="Ngày bắt đầu"
+                    min={todayStr}
                     value={form.startDate}
                     onChange={(value) => updateField("startDate", value)}
                   />
                   <DateField
                     label="Ngày kết thúc dự kiến"
+                    min={form.startDate || todayStr}
                     value={form.endDate}
                     onChange={(value) => updateField("endDate", value)}
                   />
                 </div>
 
-                <EditableField
-                  label="Ghi chú vận hành"
-                  value={form.notes}
-                  onChange={(value) => updateField("notes", value)}
-                />
+                <label className="block space-y-1.5">
+                  <span className="text-xs font-semibold">Ghi chú vận hành</span>
+                  <textarea
+                    className="flex min-h-24 w-full rounded-md border border-input bg-white px-3 py-2 text-sm shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary hover:border-primary/50 font-medium resize-y"
+                    value={form.notes}
+                    onChange={(event) => updateField("notes", event.target.value)}
+                    placeholder="Nhập thông tin chi tiết và ghi chú vận hành lớp học..."
+                  />
+                </label>
+
+                {/* Upload File Section */}
+                <div className="space-y-3 pt-2">
+                  <span className="text-xs font-semibold block">Tài liệu đính kèm (File)</span>
+                  <div className="flex items-center justify-center w-full">
+                    <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-border rounded-lg cursor-pointer bg-white hover:bg-secondary/40 hover:border-primary/50 transition-colors">
+                      <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                        <UploadCloud className="w-8 h-8 mb-2 text-muted-foreground" />
+                        <p className="mb-1 text-xs font-bold text-foreground">Click để tải lên tài liệu</p>
+                        <p className="text-[10px] text-muted-foreground">PDF, PNG, JPG, DOCX (Tối đa 10MB)</p>
+                      </div>
+                      <input 
+                        type="file" 
+                        multiple 
+                        className="hidden" 
+                        onChange={handleFileChange} 
+                      />
+                    </label>
+                  </div>
+
+                  {attachedFiles.length > 0 && (
+                    <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 mt-2">
+                      {attachedFiles.map((file, idx) => (
+                        <div key={idx} className="flex items-center justify-between p-2 border border-border rounded-lg bg-card text-xs">
+                          <div className="flex items-center gap-2 min-w-0">
+                            {file.type.startsWith("image/") ? (
+                              <img src={file.url} alt={file.name} className="w-8 h-8 object-cover rounded" />
+                            ) : (
+                              <File className="w-8 h-8 text-primary shrink-0" />
+                            )}
+                            <div className="min-w-0">
+                              <p className="font-semibold truncate max-w-[150px]">{file.name}</p>
+                              <p className="text-[10px] text-muted-foreground">{file.size}</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <a 
+                              href={file.url} 
+                              target="_blank" 
+                              rel="noreferrer" 
+                              className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-primary transition-colors"
+                              title="Xem tệp"
+                            >
+                              <Eye size={14} />
+                            </a>
+                            <button 
+                              type="button" 
+                              onClick={() => removeFile(idx)}
+                              className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-destructive transition-colors"
+                              title="Xóa tệp"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </FormSection>
 
               <div className="flex flex-wrap justify-end gap-3">
@@ -225,16 +404,16 @@ function CreateClassContent() {
 function CreateClassLoading() {
   return (
     <StaffShell current="Tạo lớp học">
-      <section className="mx-auto w-full max-w-[820px]">
+      <section className="mx-auto w-full max-w-[820px] animate-pulse">
         <Card className="rounded-xl border-border shadow-none">
           <CardContent className="p-5">
-            <div className="h-7 w-56 rounded bg-muted" />
-            <div className="mt-3 h-4 w-80 rounded bg-muted" />
+            <div className="h-7 w-56 rounded bg-muted animate-pulse" />
+            <div className="mt-3 h-4 w-80 rounded bg-muted animate-pulse" />
             <div className="mt-5 grid gap-3 md:grid-cols-2">
               {Array.from({ length: 8 }).map((_, index) => (
                 <div key={index} className="space-y-1.5">
-                  <div className="h-3.5 w-28 rounded bg-muted" />
-                  <div className="h-9 rounded-md bg-input" />
+                  <div className="h-3.5 w-28 rounded bg-muted animate-pulse" />
+                  <div className="h-9 rounded-md bg-muted animate-pulse" />
                 </div>
               ))}
             </div>
@@ -300,21 +479,54 @@ function EditableField({ inputMode, label, value, onChange }: EditableFieldProps
   )
 }
 
-type DateFieldProps = EditableFieldProps
+type DateFieldProps = EditableFieldProps & {
+  min?: string
+}
 
-function DateField({ label, value, onChange }: DateFieldProps) {
+function DateField({ label, value, onChange, min }: DateFieldProps) {
+  // Format YYYY-MM-DD display representation into DD/MM/YYYY
+  const displayValue = value ? (() => {
+    const parts = value.split("-")
+    if (parts.length === 3) {
+      return `${parts[2]}/${parts[1]}/${parts[0]}`
+    }
+    return value
+  })() : ""
+
   return (
     <label className="block space-y-1.5">
-      <span className="text-xs font-semibold">{label}</span>
-      <div className="relative">
-        <Input
-          className="h-9 rounded-md bg-white pr-10 text-sm font-medium"
+      <span className="text-xs font-semibold text-foreground/80">{label}</span>
+      <div className="relative group cursor-pointer">
+        {/* Formatted Date Overlay - enforces dd/mm/yyyy display regardless of browser language */}
+        <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-sm font-medium text-foreground z-10">
+          {displayValue || <span className="text-muted-foreground">dd/mm/yyyy</span>}
+        </div>
+        <input
           type="date"
+          min={min}
           value={value}
           onChange={(event) => onChange(event.target.value)}
+          onClick={(event) => {
+            try {
+              (event.target as any).showPicker()
+            } catch (e) {
+              // fallback
+            }
+          }}
+          onFocus={(event) => {
+            try {
+              (event.target as any).showPicker()
+            } catch (e) {
+              // fallback
+            }
+          }}
+          className="flex h-9 w-full rounded-md border border-input bg-white px-3 py-1 pr-10 text-sm shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary hover:border-primary/50 font-medium cursor-pointer [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0 [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-datetime-edit]:opacity-0 [&::-webkit-datetime-edit-fields-wrapper]:opacity-0 select-none"
+          style={{
+            colorScheme: "light"
+          }}
         />
         <CalendarDays
-          className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+          className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary group-hover:text-primary transition-colors z-20"
           size={16}
         />
       </div>

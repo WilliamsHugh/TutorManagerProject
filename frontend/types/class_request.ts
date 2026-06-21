@@ -14,6 +14,7 @@ export type ApiStudent = {
   schoolName?: string | null
   parentName?: string | null
   parentPhone?: string | null
+  parentEmail?: string | null
   user?: ApiUser
 }
 
@@ -78,4 +79,6 @@ export type TutorRecommendation = {
   tags: string[]
   status: string
   highlight: string
+  phone?: string
+  email?: string
 }

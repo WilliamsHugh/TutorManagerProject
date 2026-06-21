@@ -50,6 +50,7 @@ export type StaffClassItem = {
   status: ClassStatusLabel
   startDate: string
   endDate: string
+  raw?: ApiClass
 }
 
 export const requestStatusLabels: Record<ApiRequestStatus, RequestStatus> = {
@@ -129,6 +130,8 @@ export function mapTutorRecommendation(item: ApiTutorRecommendation): TutorRecom
     ],
     status: item.tutor.approvalStatus === "approved" ? "Hồ sơ đã duyệt" : "Cần kiểm tra hồ sơ",
     highlight: item.score >= 90 ? "bg-green-600" : item.score >= 80 ? "bg-orange-500" : "bg-slate-500",
+    phone: item.tutor.user?.phone ?? "Chưa cập nhật",
+    email: item.tutor.user?.email ?? "Chưa cập nhật",
   }
 }
 
@@ -147,5 +150,6 @@ export function mapStaffClass(item: ApiClass): StaffClassItem {
     status: classStatusLabels[item.status],
     startDate: formatDate(item.startDate),
     endDate: formatDate(item.endDate),
+    raw: item,
   }
 }

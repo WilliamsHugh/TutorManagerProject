@@ -1,6 +1,6 @@
 import { Card, CardContent } from "@/components/ui/card"
 
-import { RequestPagination } from "./RequestPagination"
+import { TablePagination } from "./TablePagination"
 import { RequestTable } from "./RequestTable"
 import { RequestToolbar } from "./RequestToolbar"
 import type { RequestItem } from "@/types/class_request"
@@ -8,16 +8,26 @@ import type { RequestItem } from "@/types/class_request"
 type RequestManagementPanelProps = {
   requests: RequestItem[]
   search: string
+  statusFilter: string
   totalCount: number
+  currentPage: number
+  pageSize: number
+  onPageChange: (page: number) => void
   onSearchChange: (value: string) => void
+  onStatusFilterChange: (value: string) => void
   onSelectRequest: (request: RequestItem) => void
 }
 
 export function RequestManagementPanel({
   requests,
   search,
+  statusFilter,
   totalCount,
+  currentPage,
+  pageSize,
+  onPageChange,
   onSearchChange,
+  onStatusFilterChange,
   onSelectRequest,
 }: RequestManagementPanelProps) {
   return (
@@ -33,9 +43,26 @@ export function RequestManagementPanel({
           </p>
         </div>
 
-        <RequestToolbar search={search} onSearchChange={onSearchChange} />
+        <RequestToolbar
+          search={search}
+          statusFilter={statusFilter}
+          onSearchChange={onSearchChange}
+          onStatusFilterChange={onStatusFilterChange}
+        />
         <RequestTable requests={requests} onSelectRequest={onSelectRequest} />
-        <RequestPagination totalCount={totalCount} visibleCount={requests.length} />
+        
+        <div className="flex flex-col gap-4">
+          <div className="text-[11px] text-muted-foreground">
+            Tổng số: <strong>{totalCount}</strong> yêu cầu
+          </div>
+          <TablePagination
+            currentPage={currentPage}
+            totalItems={totalCount}
+            pageSize={pageSize}
+            onPageChange={onPageChange}
+            itemName="yêu cầu"
+          />
+        </div>
       </CardContent>
     </Card>
   )

@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   Patch,
@@ -16,6 +17,8 @@ import { ClassStatus } from './entities/class.entity';
 import { ClassesService } from './classes.service';
 import { CreateClassDto } from './dto/create-class.dto';
 import { UpdateClassStatusDto } from './dto/update-class-status.dto';
+import { CreateScheduleDto } from './dto/create-schedule.dto';
+import { UpdateScheduleDto } from './dto/update-schedule.dto';
 
 @Controller('classes')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -47,9 +50,55 @@ export class ClassesController {
     return this.classesService.findOne(id);
   }
 
+  @Get(':id/schedule')
+  @Roles(RoleType.STAFF, RoleType.ADMIN)
+  getClassSchedule(@Param('id') id: string) {
+    return this.classesService.getClassSchedules(id);
+  }
+
   @Patch(':id/status')
   @Roles(RoleType.STAFF, RoleType.ADMIN)
   updateStatus(@Param('id') id: string, @Body() dto: UpdateClassStatusDto) {
     return this.classesService.updateStatus(id, dto.status);
+  }
+
+  @Get('tutor/:id/schedule')
+  @Roles(RoleType.STAFF, RoleType.ADMIN)
+  getTutorSchedule(@Param('id') id: string) {
+    return this.classesService.getTutorSchedules(id);
+  }
+
+  @Get('student/:id/schedule')
+  @Roles(RoleType.STAFF, RoleType.ADMIN)
+  getStudentSchedule(@Param('id') id: string) {
+    return this.classesService.getStudentSchedules(id);
+  }
+
+  @Post(':classId/schedules')
+  @Roles(RoleType.STAFF, RoleType.ADMIN)
+  addSchedule(
+    @Param('classId') classId: string,
+    @Body() dto: CreateScheduleDto,
+  ) {
+    return this.classesService.createSchedule(classId, dto);
+  }
+
+  @Patch(':classId/schedules/:scheduleId')
+  @Roles(RoleType.STAFF, RoleType.ADMIN)
+  updateSchedule(
+    @Param('classId') classId: string,
+    @Param('scheduleId') scheduleId: string,
+    @Body() dto: UpdateScheduleDto,
+  ) {
+    return this.classesService.updateSchedule(classId, scheduleId, dto);
+  }
+
+  @Delete(':classId/schedules/:scheduleId')
+  @Roles(RoleType.STAFF, RoleType.ADMIN)
+  deleteSchedule(
+    @Param('classId') classId: string,
+    @Param('scheduleId') scheduleId: string,
+  ) {
+    return this.classesService.deleteSchedule(classId, scheduleId);
   }
 }

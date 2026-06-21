@@ -417,6 +417,7 @@ export function MatchTutorDialog({
           name={activeScheduleModal.name}
           role={activeScheduleModal.role}
           onClose={() => setActiveScheduleModal(null)}
+          request={request}
         />
       )}
     </div>
@@ -428,20 +429,28 @@ type ScheduleViewDialogProps = {
   name: string
   role: "tutor" | "student"
   onClose: () => void
+  request: RequestItem
 }
 
-function ScheduleViewDialog({ id, name, role, onClose }: ScheduleViewDialogProps) {
-  const [schedules, setSchedules] = useState<any[]>([])
+function ScheduleViewDialog({ id, name, role, onClose, request }: ScheduleViewDialogProps) {
+  const [tutorSchedules, setTutorSchedules] = useState<any[]>([])
+  const [studentSchedules, setStudentSchedules] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
-  const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
 
   useEffect(() => {
     async function loadSchedule() {
       try {
-        const data = role === "tutor" 
-          ? await getTutorScheduleForStaff(id)
-          : await getStudentScheduleForStaff(id)
-        setSchedules(data)
+        if (role === "tutor") {
+          const [tutorData, studentData] = await Promise.all([
+            getTutorScheduleForStaff(id),
+            request.studentId ? getStudentScheduleForStaff(request.studentId) : Promise.resolve([])
+          ])
+          setTutorSchedules(tutorData)
+          setStudentSchedules(studentData)
+        } else {
+          const studentData = await getStudentScheduleForStaff(id)
+          setStudentSchedules(studentData)
+        }
       } catch (err) {
         console.error(err)
       } finally {
@@ -449,7 +458,7 @@ function ScheduleViewDialog({ id, name, role, onClose }: ScheduleViewDialogProps
       }
     }
     loadSchedule()
-  }, [id, role])
+  }, [id, role, request.studentId])
 
   const daysOfWeek = ["Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7", "Chủ nhật"]
   const timeSlots = [
@@ -461,10 +470,38 @@ function ScheduleViewDialog({ id, name, role, onClose }: ScheduleViewDialogProps
     { label: "Tối (19:00 - 21:00)", start: "19:00", end: "21:00" },
   ]
 
-  // Check if a schedule overlaps with a slot on a given day
-  function getSessionInSlot(day: string, slotStart: string, slotEnd: string) {
-    return schedules.find((s) => {
-      // Normalize day naming e.g. "T2" -> "Thứ 2"
+  // Parsing requested schedule
+  const preferred = useMemo(() => {
+    const scheduleStr = request.schedule
+    if (!scheduleStr || scheduleStr === "Linh hoạt") return null
+    const parts = scheduleStr.split("·")
+    if (parts.length !== 2) return null
+    const daysPart = parts[0].trim()
+    const timePart = parts[1].trim()
+
+    const days: string[] = []
+    const allDayNames = ["Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7", "Chủ nhật"]
+    allDayNames.forEach((d) => {
+      if (daysPart.includes(d)) days.push(d)
+    })
+
+    const timeParts = timePart.split("-")
+    if (timeParts.length !== 2) return null
+    const startTime = timeParts[0].trim()
+    const endTime = timeParts[1].trim()
+
+    return { days, startTime, endTime }
+  }, [request.schedule])
+
+  function isSlotRequested(day: string, slotStart: string, slotEnd: string) {
+    if (!preferred) return false
+    const dayMatched = preferred.days.includes(day)
+    if (!dayMatched) return false
+    return (preferred.startTime < slotEnd && preferred.endTime > slotStart)
+  }
+
+  function getTutorSession(day: string, slotStart: string, slotEnd: string) {
+    return tutorSchedules.find((s) => {
       const sDay = s.dayOfWeek === "T2" ? "Thứ 2" : 
                     s.dayOfWeek === "T3" ? "Thứ 3" :
                     s.dayOfWeek === "T4" ? "Thứ 4" :
@@ -474,8 +511,23 @@ function ScheduleViewDialog({ id, name, role, onClose }: ScheduleViewDialogProps
                     s.dayOfWeek === "CN" ? "Chủ nhật" : s.dayOfWeek
 
       if (sDay !== day) return false
+      const sStart = s.startTime.slice(0, 5)
+      const sEnd = s.endTime.slice(0, 5)
+      return (sStart < slotEnd && sEnd > slotStart)
+    })
+  }
 
-      // Check overlap
+  function getStudentSession(day: string, slotStart: string, slotEnd: string) {
+    return studentSchedules.find((s) => {
+      const sDay = s.dayOfWeek === "T2" ? "Thứ 2" : 
+                    s.dayOfWeek === "T3" ? "Thứ 3" :
+                    s.dayOfWeek === "T4" ? "Thứ 4" :
+                    s.dayOfWeek === "T5" ? "Thứ 5" :
+                    s.dayOfWeek === "T6" ? "Thứ 6" :
+                    s.dayOfWeek === "T7" ? "Thứ 7" :
+                    s.dayOfWeek === "CN" ? "Chủ nhật" : s.dayOfWeek
+
+      if (sDay !== day) return false
       const sStart = s.startTime.slice(0, 5)
       const sEnd = s.endTime.slice(0, 5)
       return (sStart < slotEnd && sEnd > slotStart)
@@ -485,41 +537,42 @@ function ScheduleViewDialog({ id, name, role, onClose }: ScheduleViewDialogProps
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4" onClick={onClose}>
       <div 
-        className={`w-full ${viewMode === "grid" ? "max-w-4xl" : "max-w-md"} bg-white rounded-xl shadow-xl flex flex-col max-h-[85vh] transition-all duration-300`} 
+        className="w-full max-w-4xl bg-white rounded-xl shadow-xl flex flex-col max-h-[85vh]" 
         onClick={(e) => e.stopPropagation()}
       >
+        {/* Header */}
         <div className="flex items-center justify-between border-b border-border px-5 py-3.5 bg-slate-50 rounded-t-xl">
           <div className="flex items-center gap-2">
-            <Calendar size={16} className="text-primary" />
+            <Calendar size={16} className="text-primary shrink-0" />
             <h3 className="text-sm font-bold text-foreground">
-              Lịch học & giảng dạy bận của {role === "tutor" ? "Gia sư" : "Học viên"}: <span className="text-primary">{name}</span>
+              {role === "tutor" ? (
+                <span>So khớp lịch thông minh: Học viên <span className="text-primary">{request.name}</span> ↔ Gia sư <span className="text-primary">{name}</span></span>
+              ) : (
+                <span>Lịch bận hiện tại của Học viên: <span className="text-primary">{name}</span></span>
+              )}
             </h3>
           </div>
-          <div className="flex items-center gap-3">
-            <div className="flex rounded border border-slate-200 p-0.5 bg-white text-[11px] font-semibold">
-              <button 
-                className={`px-2 py-0.5 rounded transition-colors ${viewMode === "grid" ? "bg-primary text-white" : "text-slate-500 hover:text-slate-800"}`}
-                onClick={() => setViewMode("grid")}
-              >
-                Thời khóa biểu
-              </button>
-              <button 
-                className={`px-2 py-0.5 rounded transition-colors ${viewMode === "list" ? "bg-primary text-white" : "text-slate-500 hover:text-slate-800"}`}
-                onClick={() => setViewMode("list")}
-              >
-                Danh sách
-              </button>
-            </div>
-            <button
-              onClick={onClose}
-              className="flex size-7 items-center justify-center rounded text-muted-foreground hover:bg-muted"
-              type="button"
-            >
-              <X size={15} />
-            </button>
-          </div>
+          <button
+            onClick={onClose}
+            className="flex size-7 items-center justify-center rounded text-muted-foreground hover:bg-muted"
+            type="button"
+          >
+            <X size={15} />
+          </button>
         </div>
 
+        {/* Legend for Smart Compare */}
+        {role === "tutor" && (
+          <div className="bg-slate-50 border-b border-slate-200 px-5 py-2.5 flex items-center gap-4 text-[10px] text-muted-foreground font-semibold flex-wrap">
+            <span className="flex items-center gap-1"><span className="size-2 bg-emerald-500 rounded-full" /> Khớp yêu cầu & Rảnh (Khuyên dùng)</span>
+            <span className="flex items-center gap-1"><span className="size-2 bg-red-500 rounded-full" /> Yêu cầu bị Trùng (Conflict)</span>
+            <span className="flex items-center gap-1"><span className="size-2 bg-slate-400 rounded-full" /> Lịch bận khác</span>
+            <span className="flex items-center gap-1"><span className="size-2 border border-slate-300 bg-white rounded-full" /> Trống</span>
+            <span className="ml-auto text-primary italic font-bold">Lớp yêu cầu: {request.schedule}</span>
+          </div>
+        )}
+
+        {/* Content Table */}
         <div className="overflow-y-auto p-5 flex-1 min-h-0">
           {loading ? (
             <div className="space-y-3 py-6">
@@ -527,94 +580,95 @@ function ScheduleViewDialog({ id, name, role, onClose }: ScheduleViewDialogProps
               <div className="h-20 w-full bg-slate-50 border border-slate-100 rounded animate-pulse" />
               <div className="h-20 w-full bg-slate-50 border border-slate-100 rounded animate-pulse" />
             </div>
-          ) : schedules.length > 0 ? (
-            viewMode === "grid" ? (
-              <div className="overflow-x-auto border border-slate-150 rounded-lg">
-                <table className="w-full border-collapse text-left text-xs min-w-[700px]">
-                  <thead>
-                    <tr className="bg-slate-50 border-b border-slate-150 text-[10px] uppercase font-bold text-slate-500 tracking-wider">
-                      <th className="p-3 border-r border-slate-150 w-[160px]">Khung giờ</th>
-                      {daysOfWeek.map((day) => (
-                        <th key={day} className="p-3 text-center border-r last:border-r-0 border-slate-150">{day}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {timeSlots.map((slot) => (
-                      <tr key={slot.label} className="border-b last:border-b-0 border-slate-150 hover:bg-slate-50/30">
-                        <td className="p-3 font-semibold text-slate-600 bg-slate-50/50 border-r border-slate-150">
-                          {slot.label}
-                        </td>
-                        {daysOfWeek.map((day) => {
-                          const session = getSessionInSlot(day, slot.start, slot.end)
-                          return (
-                            <td 
-                              key={day} 
-                              className={`p-2 border-r last:border-r-0 border-slate-150 text-center transition-colors ${
-                                session 
-                                  ? "bg-amber-50/80 text-amber-900" 
-                                  : "bg-white text-slate-300"
-                              }`}
-                            >
-                              {session ? (
-                                <div className="flex flex-col items-center justify-center p-1 rounded border border-amber-200 bg-white shadow-xs max-w-[110px] mx-auto">
-                                  <span className="font-bold text-[10px] text-amber-800 truncate w-full" title={session.class.subject?.name}>
-                                    {session.class.subject?.name}
-                                  </span>
-                                  <span className="text-[8px] font-bold text-slate-400 mt-0.5">
-                                    CLASS-{session.class.id.replace(/-/g, '').slice(0, 4).toUpperCase()}
-                                  </span>
-                                  <span className="text-[8px] text-slate-500 truncate w-full mt-0.5 font-medium">
-                                    {role === "tutor" 
-                                      ? session.class.student?.user?.fullName 
-                                      : session.class.tutor?.user?.fullName}
+          ) : (
+            <div className="overflow-x-auto border border-slate-150 rounded-lg">
+              <table className="w-full border-collapse text-left text-xs min-w-[750px]">
+                <thead>
+                  <tr className="bg-slate-50 border-b border-slate-150 text-[10px] uppercase font-bold text-slate-500 tracking-wider">
+                    <th className="p-3 border-r border-slate-150 w-[160px]">Khung giờ</th>
+                    {daysOfWeek.map((day) => (
+                      <th key={day} className="p-3 text-center border-r last:border-r-0 border-slate-150">{day}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {timeSlots.map((slot) => (
+                    <tr key={slot.label} className="border-b last:border-b-0 border-slate-150 hover:bg-slate-50/30">
+                      <td className="p-3 font-semibold text-slate-600 bg-slate-50/50 border-r border-slate-150">
+                        {slot.label}
+                      </td>
+                      {daysOfWeek.map((day) => {
+                        const tutorSession = role === "tutor" ? getTutorSession(day, slot.start, slot.end) : null
+                        const studentSession = getStudentSession(day, slot.start, slot.end)
+                        const requested = isSlotRequested(day, slot.start, slot.end)
+
+                        let bgClass = "bg-white text-slate-300"
+                        let cellContent = <span className="text-[10px] font-medium opacity-20">— Trống —</span>
+
+                        if (role === "tutor") {
+                          if (requested) {
+                            if (tutorSession || studentSession) {
+                              bgClass = "bg-red-50 text-red-900 border-red-150"
+                              cellContent = (
+                                <div className="flex flex-col items-center justify-center p-1 rounded border border-red-200 bg-white shadow-xs max-w-[110px] mx-auto text-[8px]">
+                                  <span className="font-bold text-red-700 text-[9px] uppercase tracking-wide">✗ Bị trùng</span>
+                                  <span className="text-[7px] text-slate-500 font-semibold mt-0.5">
+                                    {tutorSession && studentSession ? "Cả hai bận" : tutorSession ? "Gia sư bận" : "Học viên bận"}
                                   </span>
                                 </div>
-                              ) : (
-                                <span className="text-[10px] font-medium opacity-20">— Rảnh —</span>
-                              )}
-                            </td>
-                          )
-                        })}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            ) : (
-              <div className="space-y-2.5 max-w-md mx-auto">
-                <p className="text-[11px] text-muted-foreground mb-3">
-                  Danh sách các buổi học của lớp đang hoạt động (ACTIVE):
-                </p>
-                {schedules.map((s, idx) => {
-                  const classCode = `CLASS-${s.class.id.replace(/-/g, '').slice(0, 6).toUpperCase()}`
-                  const classSubject = s.class.subject?.name || "Môn học"
-                  const classPartner = role === "tutor"
-                    ? `Học viên: ${s.class.student?.user?.fullName || "Ẩn danh"}`
-                    : `Gia sư: ${s.class.tutor?.user?.fullName || "Ẩn danh"}`
+                              )
+                            } else {
+                              bgClass = "bg-emerald-50 text-emerald-900 border-emerald-150 font-bold"
+                              cellContent = (
+                                <div className="flex flex-col items-center justify-center p-1 rounded border border-emerald-300 bg-emerald-100/50 shadow-xs max-w-[110px] mx-auto text-[8px]">
+                                  <span className="font-bold text-emerald-800 text-[9px] uppercase tracking-wide">✓ Khuyên dùng</span>
+                                  <span className="text-[7px] text-emerald-700 font-bold mt-0.5">Trống & Khớp</span>
+                                </div>
+                              )
+                            }
+                          } else {
+                            if (tutorSession || studentSession) {
+                              bgClass = "bg-slate-50 text-slate-500"
+                              cellContent = (
+                                <div className="flex flex-col items-center justify-center p-1 rounded border border-slate-200 bg-white shadow-xs max-w-[110px] mx-auto text-[8px]">
+                                  <span className="font-bold text-slate-500">Bận</span>
+                                  <span className="text-[7px] text-slate-400 mt-0.5">
+                                    {tutorSession && studentSession ? "Cả hai bận" : tutorSession ? "Gia sư bận" : "Học viên bận"}
+                                  </span>
+                                </div>
+                              )
+                            }
+                          }
+                        } else {
+                          // Nếu chỉ xem lịch học viên bình thường
+                          if (studentSession) {
+                            bgClass = "bg-amber-50 text-amber-900"
+                            cellContent = (
+                              <div className="flex flex-col items-center justify-center p-1 rounded border border-amber-200 bg-white shadow-xs max-w-[110px] mx-auto text-[8px]">
+                                <span className="font-bold text-amber-800 truncate w-full" title={studentSession.class.subject?.name}>
+                                  {studentSession.class.subject?.name}
+                                </span>
+                                <span className="text-[7px] text-slate-500 truncate w-full mt-0.5">
+                                  GS: {studentSession.class.tutor?.user?.fullName}
+                                </span>
+                              </div>
+                            )
+                          }
+                        }
 
-                  return (
-                    <div key={idx} className="p-3 border border-slate-100 rounded-lg bg-slate-50/50 flex flex-col gap-1">
-                      <div className="flex items-center justify-between">
-                        <span className="font-bold text-primary">{s.dayOfWeek}</span>
-                        <span className="text-[10px] bg-slate-200 text-slate-700 px-1.5 py-0.5 rounded font-semibold">
-                          {s.startTime.slice(0, 5)} - {s.endTime.slice(0, 5)}
-                        </span>
-                      </div>
-                      <div className="text-[11px] font-semibold text-slate-800 mt-1">
-                        {classSubject} ({classCode})
-                      </div>
-                      <div className="text-[10px] text-muted-foreground">
-                        {classPartner}
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            )
-          ) : (
-            <div className="text-center py-10 text-muted-foreground">
-              Không có lịch bận nào (Chưa có lớp học đang diễn ra).
+                        return (
+                          <td 
+                            key={day} 
+                            className={`p-2 border-r last:border-r-0 border-slate-150 text-center transition-colors ${bgClass}`}
+                          >
+                            {cellContent}
+                          </td>
+                        )
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           )}
         </div>

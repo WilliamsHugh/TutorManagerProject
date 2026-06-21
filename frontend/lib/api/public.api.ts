@@ -49,11 +49,11 @@ function mapTutorData(raw: any) {
     avatar:
       raw.avatarUrl ||
       'https://randomuser.me/api/portraits/women/1.jpg',
-    rating: 5.0,
-    reviews: 0,
+    rating: raw.rating ?? 0,
+    reviews: raw.reviews ?? 0,
     location: raw.availableAreas || 'Toàn quốc',
     tags: raw.subjects || [],
-    price: 200000,
+    price: raw.price ?? 200000,
   };
 }
 
@@ -76,9 +76,9 @@ function mapTutorSuggestionData(raw: any) {
     experience: raw.experience || 'Chưa cập nhật',
     education: [raw.educationLevel, raw.major].filter(Boolean).join(' · ') || 'Chưa cập nhật',
     location: raw.availableAreas || 'Toàn quốc',
-    price: 'Thỏa thuận',
-    rating: 4.5,
-    reviews: 0,
+    price: raw.price ? `${raw.price.toLocaleString('vi-VN')}đ/giờ` : 'Thỏa thuận',
+    rating: raw.rating ?? 4.5,
+    reviews: raw.reviews ?? 0,
     teachingMode: 'Linh hoạt',
     availableTime: 'Linh hoạt',
     phone: raw.phone || '',

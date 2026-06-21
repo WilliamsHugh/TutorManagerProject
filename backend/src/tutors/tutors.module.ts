@@ -16,6 +16,7 @@ import { Subject } from '../subjects/subject.entity';
 import { Role } from '../users/entities/role.entity';
 import { Notification } from '../notifications/notification.entity';
 import { TutorSubject } from './tutor-subject.entity';
+import { Review } from '../classes/entities/review.entity';
 
 @Module({
   imports: [
@@ -31,6 +32,7 @@ import { TutorSubject } from './tutor-subject.entity';
       Role,
       Notification,
       TutorSubject,
+      Review,
     ]),
   ],
   controllers: [TutorController, PublicTutorController],

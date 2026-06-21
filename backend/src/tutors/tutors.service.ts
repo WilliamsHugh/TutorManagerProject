@@ -14,6 +14,7 @@ import { Subject } from '../subjects/subject.entity';
 import { Role } from '../users/entities/role.entity';
 import { Notification } from '../notifications/notification.entity';
 import { TutorSubject } from './tutor-subject.entity';
+import { Review } from '../classes/entities/review.entity';
 import { CreateLearningReportDto } from '../reports/dto/create-report.dto';
 
 @Injectable()
@@ -41,6 +42,8 @@ export class TutorsService implements OnModuleInit {
     private readonly notificationRepository: Repository<Notification>,
     @InjectRepository(TutorSubject)
     private readonly tutorSubjectRepository: Repository<TutorSubject>,
+    @InjectRepository(Review)
+    private readonly reviewRepository: Repository<Review>,
   ) {}
 
   async onModuleInit() {
@@ -1294,20 +1297,65 @@ export class TutorsService implements OnModuleInit {
       subjectMap.set(ts.tutor.id, list);
     }
 
-    const data = tutors.map((tutor) => ({
-      id: tutor.id,
-      fullName: tutor.user?.fullName || '',
-      email: tutor.user?.email || '',
-      phone: tutor.user?.phone || '',
-      address: tutor.user?.address || '',
-      avatarUrl: tutor.user?.avatarUrl || '',
-      bio: tutor.bio || '',
-      educationLevel: tutor.educationLevel || '',
-      major: tutor.major || '',
-      experience: tutor.experience || '',
-      availableAreas: tutor.availableAreas || '',
-      subjects: subjectMap.get(tutor.id) || [],
-    }));
+    // Lấy rating, review count và average price cho tất cả tutor trong 1 query mỗi loại
+    const reviewStatsMap = new Map<string, { avgRating: number; reviewCount: number }>();
+    if (tutorIds.length > 0) {
+      const reviewStats = await this.reviewRepository
+        .createQueryBuilder('r')
+        .select('r.tutor_id', 'tutorId')
+        .addSelect('AVG(r.rating)', 'avgRating')
+        .addSelect('COUNT(r.id)', 'reviewCount')
+        .where('r.tutor_id IN (:...tutorIds)', { tutorIds })
+        .groupBy('r.tutor_id')
+        .getRawMany();
+
+      for (const rs of reviewStats) {
+        reviewStatsMap.set(rs.tutorId, {
+          avgRating: Number(rs.avgRating) || 0,
+          reviewCount: Number(rs.reviewCount) || 0,
+        });
+      }
+    }
+
+    // Lấy average feePerSession từ classes
+    const priceMap = new Map<string, number>();
+    if (tutorIds.length > 0) {
+      const priceStats = await this.classRepository
+        .createQueryBuilder('c')
+        .select('c.tutor_id', 'tutorId')
+        .addSelect('AVG(c.fee_per_session)', 'avgPrice')
+        .where('c.tutor_id IN (:...tutorIds)', { tutorIds })
+        .andWhere('c.fee_per_session IS NOT NULL')
+        .groupBy('c.tutor_id')
+        .getRawMany();
+
+      for (const ps of priceStats) {
+        priceMap.set(ps.tutorId, Number(ps.avgPrice) || 0);
+      }
+    }
+
+    const data = tutors.map((tutor) => {
+      const reviewStat = reviewStatsMap.get(tutor.id);
+      const avgPrice = priceMap.get(tutor.id) || 200000;
+
+      return {
+        id: tutor.id,
+        fullName: tutor.user?.fullName || '',
+        email: tutor.user?.email || '',
+        phone: tutor.user?.phone || '',
+        address: tutor.user?.address || '',
+        avatarUrl: tutor.user?.avatarUrl || '',
+        bio: tutor.bio || '',
+        educationLevel: tutor.educationLevel || '',
+        major: tutor.major || '',
+        experience: tutor.experience || '',
+        availableAreas: tutor.availableAreas || '',
+        subjects: subjectMap.get(tutor.id) || [],
+        rating: reviewStat?.avgRating || 0,
+        reviews: reviewStat?.reviewCount || 0,
+        price: avgPrice,
+      };
+    });
 
     return {
       data,

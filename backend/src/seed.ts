@@ -791,6 +791,119 @@ async function seed() {
     }
   }
 
+  // ======================================================================
+  // 9. Seed MORE classes for prominent tutors (để có dữ liệu price thực tế)
+  // ======================================================================
+  const reviewRepo = dataSource.getRepository(Review);
+  const litSubject = await subjectRepo.findOneBy({ name: 'Ngữ văn' });
+
+  // Danh sách các cặp tutor-student-subject để tạo thêm classes
+  const additionalClassMappings = [
+    { tutorEmail: 'phan_ngoc_ha@tutoredu.com', studentEmail: 'tran_my_duyen@tutoredu.com',  subject: mathSubject!,  fee: 200000, status: 'active', location: 'Bình Thạnh, TP.HCM' },
+    { tutorEmail: 'nguyen_minh_anh@tutoredu.com', studentEmail: 'le_trong_tan@tutoredu.com',  subject: mathSubject!,  fee: 250000, status: 'active', location: 'Quận 1, TP.HCM' },
+    { tutorEmail: 'tran_hoang_phuc@tutoredu.com', studentEmail: 'hoang_gia_bao@tutoredu.com', subject: mathSubject!,  fee: 300000, status: 'active', location: 'Quận 3, TP.HCM' },
+    { tutorEmail: 'le_khanh_vy@tutoredu.com',    studentEmail: 'ngo_minh_an@tutoredu.com',  subject: mathSubject!,  fee: 180000, status: 'active', location: 'Bình Thạnh, TP.HCM' },
+    { tutorEmail: 'pham_quoc_huy@tutoredu.com',  studentEmail: 'pham_huu_duc@tutoredu.com', subject: mathSubject!,  fee: 220000, status: 'active', location: 'Thủ Đức, TP.HCM' },
+    { tutorEmail: 'nguyen_tran_bao_ngoc@tutoredu.com', studentEmail: 'nguyen_thi_ha@tutoredu.com', subject: mathSubject!, fee: 250000, status: 'active', location: 'Cầu Giấy, Hà Nội' },
+    { tutorEmail: 'le_hoang_nam@tutoredu.com',    studentEmail: 'ngo_minh_an@tutoredu.com',  subject: engSubject!,   fee: 350000, status: 'active', location: 'Quận 1, TP.HCM' },
+    { tutorEmail: 'tran_thi_mai@tutoredu.com',   studentEmail: 'pham_huu_duc@tutoredu.com',  subject: litSubject!,   fee: 200000, status: 'active', location: 'Hải Châu, Đà Nẵng' },
+  ];
+
+  for (const mapping of additionalClassMappings) {
+    const tutor = await tutorRepo.findOne({
+      where: { user: { email: mapping.tutorEmail } },
+    });
+    const student = seededStudentsMap.get(mapping.studentEmail);
+    if (!tutor || !student) {
+      console.log(`  Skipping class: tutor ${mapping.tutorEmail} or student ${mapping.studentEmail} not found`);
+      continue;
+    }
+
+    const existingClass = await classRepo.findOneBy({
+      tutor: { id: tutor.id },
+      student: { id: student.id },
+    });
+    if (!existingClass) {
+      await classRepo.save(
+        classRepo.create({
+          tutor,
+          student,
+          subject: mapping.subject,
+          feePerSession: mapping.fee,
+          totalSessions: 15,
+          status: mapping.status as any,
+          startDate: new Date('2026-05-01'),
+          location: mapping.location,
+        }),
+      );
+      console.log(`Seeded class: ${mapping.tutorEmail.split('@')[0]} + ${mapping.studentEmail.split('@')[0]} (${mapping.subject.name}, ${mapping.fee.toLocaleString('vi-VN')}đ/buổi)`);
+    }
+  }
+
+  // ======================================================================
+  // 10. Seed REVIEWS — tất cả các lớp đã có (cả cũ và mới)
+  // ======================================================================
+  const allReviewableClasses = await classRepo.find({
+    relations: ['tutor', 'student', 'subject'],
+  });
+
+  const reviewTemplates: { statusSubstring: string; minRating: number; maxRating: number; comments: string[] }[] = [
+    {
+      statusSubstring: 'completed',
+      minRating: 4,
+      maxRating: 5,
+      comments: [
+        'Gia sư dạy rất tận tình, dễ hiểu. Con tôi tiến bộ rõ rệt chỉ sau 1 tháng.',
+        'Phương pháp giảng dạy khoa học, phù hợp với học sinh. Rất hài lòng!',
+        'Cháu rất thích học với gia sư này. Kiến thức được truyền đạt một cách dễ hiểu và thú vị.',
+        'Gia sư chuyên nghiệp, đúng giờ, có giáo trình rõ ràng. Rất đáng tin cậy.',
+      ],
+    },
+    {
+      statusSubstring: 'active',
+      minRating: 3,
+      maxRating: 5,
+      comments: [
+        'Gia sư nhiệt tình, tuy nhiên cần cải thiện thêm về phương pháp giảng dạy cho phù hợp với học sinh yếu.',
+        'Dạy khá tốt, con tôi bắt đầu hiểu bài hơn. Hy vọng sẽ tiến bộ nhiều trong thời gian tới.',
+        'Gia sư có kiến thức vững vàng, thân thiện với học sinh. Rất hài lòng!',
+        'Rất may mắn tìm được gia sư phù hợp. Bé nhà tôi đã có hứng thú học tập trở lại.',
+        'Gia sư dạy có tâm, chuẩn bị bài kỹ càng trước mỗi buổi học. Điểm số của con đã cải thiện.',
+        'Học phí hợp lý, chất lượng giảng dạy tốt. Sẽ tiếp tục theo học dài hạn.',
+      ],
+    },
+  ];
+
+  let reviewCount = 0;
+  for (const cls of allReviewableClasses) {
+    // Kiểm tra đã có review cho class này chưa
+    const existingReview = await reviewRepo.findOneBy({
+      class: { id: cls.id },
+      student: { id: cls.student.id },
+    });
+    if (existingReview) continue;
+
+    // Chọn template dựa trên status
+    const template = reviewTemplates.find(t => cls.status.includes(t.statusSubstring as string)) || reviewTemplates[1];
+    const rating = Math.floor(Math.random() * (template.maxRating - template.minRating + 1)) + template.minRating;
+    const comment = template.comments[Math.floor(Math.random() * template.comments.length)];
+
+    await reviewRepo.save(
+      reviewRepo.create({
+        class: cls,
+        student: cls.student,
+        tutor: cls.tutor,
+        rating,
+        comment,
+      }),
+    );
+    reviewCount++;
+  }
+
+  if (reviewCount > 0) {
+    console.log(`Seeded ${reviewCount} reviews for tutor classes.`);
+  }
+
   console.log('Seeding completed successfully!');
   await dataSource.destroy();
 }

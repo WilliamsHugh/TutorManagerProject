@@ -107,6 +107,7 @@ export function mapClassRequest(request: ApiClassRequest): RequestItem {
     schedule: request.preferredSchedule ?? "Chưa cập nhật",
     note: request.requirements ?? "Không có yêu cầu đặc biệt",
     status: requestStatusLabels[request.status],
+    studentId: request.student?.id,
   }
 }
 

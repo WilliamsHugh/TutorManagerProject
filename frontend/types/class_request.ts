@@ -50,6 +50,7 @@ export type RequestItem = {
   schedule: string
   note: string
   status: RequestStatus
+  studentId?: string
 }
 
 export type ApiTutorRecommendation = {

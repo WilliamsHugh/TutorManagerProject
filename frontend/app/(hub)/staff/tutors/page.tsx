@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { Search, BookOpen, GraduationCap, MapPin, Phone, Mail, X } from "lucide-react"
+import { Search, BookOpen, GraduationCap, MapPin, Phone, Mail, X, Calendar } from "lucide-react"
 
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge"
 
 import { StaffShell } from "../_components/StaffShell"
 import { TablePagination } from "../_components/TablePagination"
-import { getStaffTutors, getClasses } from "@/lib/api"
+import { getStaffTutors, getClasses, getTutorScheduleForStaff } from "@/lib/api"
 
 interface TutorData {
   id: string
@@ -292,6 +292,9 @@ type TutorProfileDialogProps = {
 function TutorProfileDialog({ tutor, onClose }: TutorProfileDialogProps) {
   const [classes, setClasses] = useState<any[]>([])
   const [loadingClasses, setLoadingClasses] = useState(true)
+  const [schedules, setSchedules] = useState<any[]>([])
+  const [loadingSchedule, setLoadingSchedule] = useState(false)
+  const [showSchedule, setShowSchedule] = useState(false)
 
   useEffect(() => {
     async function loadTutorClasses() {
@@ -307,6 +310,50 @@ function TutorProfileDialog({ tutor, onClose }: TutorProfileDialogProps) {
     }
     loadTutorClasses()
   }, [tutor.id])
+
+  useEffect(() => {
+    async function loadSchedule() {
+      if (!showSchedule) return
+      setLoadingSchedule(true)
+      try {
+        const data = await getTutorScheduleForStaff(tutor.id)
+        setSchedules(data)
+      } catch (err) {
+        console.error(err)
+      } finally {
+        setLoadingSchedule(false)
+      }
+    }
+    loadSchedule()
+  }, [tutor.id, showSchedule])
+
+  const daysOfWeek = ["Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7", "Chủ nhật"]
+  const timeSlots = [
+    { label: "Sáng (08:00 - 10:00)", start: "08:00", end: "10:00" },
+    { label: "Sáng (10:00 - 12:00)", start: "10:00", end: "12:00" },
+    { label: "Chiều (14:00 - 16:00)", start: "14:00", end: "16:00" },
+    { label: "Chiều (16:00 - 18:00)", start: "16:00", end: "18:00" },
+    { label: "Tối (17:30 - 19:30)", start: "17:30", end: "19:30" },
+    { label: "Tối (19:00 - 21:00)", start: "19:00", end: "21:00" },
+  ]
+
+  function getSessionInSlot(day: string, slotStart: string, slotEnd: string) {
+    return schedules.find((s) => {
+      const sDay = s.dayOfWeek === "T2" ? "Thứ 2" : 
+                    s.dayOfWeek === "T3" ? "Thứ 3" :
+                    s.dayOfWeek === "T4" ? "Thứ 4" :
+                    s.dayOfWeek === "T5" ? "Thứ 5" :
+                    s.dayOfWeek === "T6" ? "Thứ 6" :
+                    s.dayOfWeek === "T7" ? "Thứ 7" :
+                    s.dayOfWeek === "CN" ? "Chủ nhật" : s.dayOfWeek
+
+      if (sDay !== day) return false
+
+      const sStart = s.startTime.slice(0, 5)
+      const sEnd = s.endTime.slice(0, 5)
+      return (sStart < slotEnd && sEnd > slotStart)
+    })
+  }
 
   const statusBadge = (status: string) => {
     switch (status) {
@@ -325,7 +372,7 @@ function TutorProfileDialog({ tutor, onClose }: TutorProfileDialogProps) {
       onClick={onClose}
     >
       <div
-        className="w-full max-w-lg bg-white rounded-xl shadow-xl flex flex-col max-h-[85vh]"
+        className="w-full max-w-2xl bg-white rounded-xl shadow-xl flex flex-col max-h-[85vh]"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -542,6 +589,82 @@ function TutorProfileDialog({ tutor, onClose }: TutorProfileDialogProps) {
                 </div>
               </>
             )}
+            {/* Lịch dạy / Lịch bận */}
+            <div className="pt-4 border-t border-slate-100 space-y-3">
+              <button
+                type="button"
+                className="w-full flex items-center justify-between font-bold text-xs text-slate-400 hover:text-slate-600 uppercase tracking-wider transition-colors"
+                onClick={() => setShowSchedule(!showSchedule)}
+              >
+                <span className="flex items-center gap-1.5">
+                  <Calendar size={13} className="text-slate-400 shrink-0" />
+                  Thời khóa biểu & Lịch dạy bận
+                </span>
+                <span>{showSchedule ? "▲ Thu gọn" : "▼ Mở rộng"}</span>
+              </button>
+
+              {showSchedule && (
+                <div className="space-y-2 text-xs">
+                  {loadingSchedule ? (
+                    <div className="h-20 w-full bg-slate-50 border border-slate-100 rounded-lg animate-pulse flex items-center justify-center text-slate-400">
+                      Đang tải lịch biểu bận...
+                    </div>
+                  ) : schedules.length > 0 ? (
+                    <div className="overflow-x-auto border border-slate-150 rounded-lg bg-white">
+                      <table className="w-full border-collapse text-left text-[11px] min-w-[550px]">
+                        <thead>
+                          <tr className="bg-slate-50 border-b border-slate-150 text-[9px] uppercase font-bold text-slate-500 tracking-wider">
+                            <th className="p-2 border-r border-slate-150 w-[120px]">Khung giờ</th>
+                            {daysOfWeek.map((day) => (
+                              <th key={day} className="p-2 text-center border-r last:border-r-0 border-slate-150">{day}</th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {timeSlots.map((slot) => (
+                            <tr key={slot.label} className="border-b last:border-b-0 border-slate-150 hover:bg-slate-50/30">
+                              <td className="p-2 font-semibold text-slate-600 bg-slate-50/50 border-r border-slate-150 text-[10px]">
+                                {slot.label}
+                              </td>
+                              {daysOfWeek.map((day) => {
+                                const session = getSessionInSlot(day, slot.start, slot.end)
+                                return (
+                                  <td 
+                                    key={day} 
+                                    className={`p-1 border-r last:border-r-0 border-slate-150 text-center transition-colors ${
+                                      session 
+                                        ? "bg-amber-50 text-amber-900" 
+                                        : "bg-white text-slate-300"
+                                    }`}
+                                  >
+                                    {session ? (
+                                      <div className="flex flex-col items-center justify-center p-0.5 rounded border border-amber-200 bg-white shadow-xs max-w-[85px] mx-auto text-[8px]">
+                                        <span className="font-bold text-amber-800 truncate w-full" title={session.class.subject?.name}>
+                                          {session.class.subject?.name}
+                                        </span>
+                                        <span className="text-[7px] text-slate-400 truncate w-full">
+                                          HV: {session.class.student?.user?.fullName || "Ẩn danh"}
+                                        </span>
+                                      </div>
+                                    ) : (
+                                      <span className="text-[9px] font-normal opacity-10">—</span>
+                                    )}
+                                  </td>
+                                )
+                              })}
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <div className="text-center py-5 border border-dashed border-slate-200 rounded-lg text-slate-500 bg-slate-50/30">
+                      Chưa có lịch dạy/lịch học bận nào (Không có lớp học hoạt động).
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>

@@ -1,10 +1,16 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { BookOpen, Clock, Mail, Phone, GraduationCap, X } from "lucide-react"
+import { BookOpen, Clock, Mail, Phone, GraduationCap, X, Calendar } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
-import { getLearningReports } from "@/lib/api"
+import {
+  getLearningReports,
+  getClassScheduleForStaff,
+  createClassSchedule,
+  updateClassSchedule,
+  deleteClassSchedule,
+} from "@/lib/api"
 import type { StaffClassItem } from "@/types/staff"
 
 export function getStatusBadge(status?: string, size: "sm" | "md" = "sm") {
@@ -48,26 +54,150 @@ type ClassDetailDialogProps = {
 export function ClassDetailDialog({ classItem, onClose }: ClassDetailDialogProps) {
   const [reports, setReports] = useState<any[]>([])
   const [loadingReports, setLoadingReports] = useState(true)
+  const [schedules, setSchedules] = useState<any[]>([])
+  const [loadingSchedules, setLoadingSchedules] = useState(true)
 
   useEffect(() => {
-    async function loadReports() {
+    async function loadData() {
       if (!classItem.id) return
       try {
-        const data = await getLearningReports(classItem.id)
-        setReports(data)
+        const [reportsData, schedulesData] = await Promise.all([
+          getLearningReports(classItem.id),
+          getClassScheduleForStaff(classItem.id)
+        ])
+        setReports(reportsData)
+        setSchedules(schedulesData)
       } catch (err) {
         console.error(err)
       } finally {
         setLoadingReports(false)
+        setLoadingSchedules(false)
       }
     }
-    loadReports()
+    loadData()
   }, [classItem.id])
+
+  const [editingSchedule, setEditingSchedule] = useState<any | null>(null)
+  const [isSavingSchedule, setIsSavingSchedule] = useState(false)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+
+  async function refreshSchedules() {
+    setLoadingSchedules(true)
+    try {
+      const data = await getClassScheduleForStaff(classItem.id)
+      setSchedules(data)
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setLoadingSchedules(false)
+    }
+  }
+
+  async function handleSaveSchedule(e: React.FormEvent) {
+    e.preventDefault()
+    if (!editingSchedule) return
+    setIsSavingSchedule(true)
+    setErrorMessage(null)
+    try {
+      const payload = {
+        dayOfWeek: editingSchedule.dayOfWeek,
+        startTime: editingSchedule.startTime.length === 5 ? `${editingSchedule.startTime}:00` : editingSchedule.startTime,
+        endTime: editingSchedule.endTime.length === 5 ? `${editingSchedule.endTime}:00` : editingSchedule.endTime,
+        sessionDate: editingSchedule.sessionDate ? new Date(editingSchedule.sessionDate).toISOString().split('T')[0] : null,
+        sessionStatus: editingSchedule.sessionStatus,
+        note: editingSchedule.note || "",
+      }
+      if (editingSchedule.id) {
+        await updateClassSchedule(classItem.id, editingSchedule.id, payload)
+      } else {
+        await createClassSchedule(classItem.id, payload)
+      }
+      setEditingSchedule(null)
+      await refreshSchedules()
+    } catch (err: any) {
+      setErrorMessage(err.message || "Đã xảy ra lỗi khi lưu lịch học.")
+    } finally {
+      setIsSavingSchedule(false)
+    }
+  }
+
+  async function handleDeleteSchedule(scheduleId: string) {
+    if (!confirm("Bạn có chắc chắn muốn xóa buổi học này không?")) return
+    setIsSavingSchedule(true)
+    setErrorMessage(null)
+    try {
+      await deleteClassSchedule(classItem.id, scheduleId)
+      setEditingSchedule(null)
+      await refreshSchedules()
+    } catch (err: any) {
+      setErrorMessage(err.message || "Đã xảy ra lỗi khi xóa lịch học.")
+    } finally {
+      setIsSavingSchedule(false)
+    }
+  }
+
+  function getStatusConfig(status?: string) {
+    switch (status) {
+      case "completed":
+        return {
+          label: "Có mặt",
+          bg: "bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100/70",
+          indicator: "bg-emerald-500",
+        }
+      case "cancelled":
+        return {
+          label: "Nghỉ học",
+          bg: "bg-rose-50 text-rose-800 border border-rose-200 hover:bg-rose-100/70",
+          indicator: "bg-rose-500",
+        }
+      case "rescheduled":
+        return {
+          label: "Học bù",
+          bg: "bg-sky-50 text-sky-800 border border-sky-200 hover:bg-sky-100/70",
+          indicator: "bg-sky-500",
+        }
+      case "scheduled":
+      default:
+        return {
+          label: "Chưa học",
+          bg: "bg-amber-50/70 text-amber-800 border border-amber-200 hover:bg-amber-100/70",
+          indicator: "bg-amber-500",
+        }
+    }
+  }
 
   const raw = classItem.raw
   const creationDate = raw?.request?.createdAt
     ? new Intl.DateTimeFormat("vi-VN").format(new Date(raw.request.createdAt))
     : "Chưa rõ"
+
+  const daysOfWeek = ["Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7", "Chủ nhật"]
+  const timeSlots = [
+    { label: "Sáng (08:00 - 10:00)", start: "08:00", end: "10:00" },
+    { label: "Sáng (10:00 - 12:00)", start: "10:00", end: "12:00" },
+    { label: "Chiều (14:00 - 16:00)", start: "14:00", end: "16:00" },
+    { label: "Chiều (16:00 - 18:00)", start: "16:00", end: "18:00" },
+    { label: "Tối (17:30 - 19:30)", start: "17:30", end: "19:30" },
+    { label: "Tối (19:00 - 21:00)", start: "19:00", end: "21:00" },
+  ]
+
+  function getSessionInSlot(day: string, slotStart: string, slotEnd: string) {
+    return schedules.find((s) => {
+      const sDay = s.dayOfWeek === "T2" ? "Thứ 2" : 
+                    s.dayOfWeek === "T3" ? "Thứ 3" :
+                    s.dayOfWeek === "T4" ? "Thứ 4" :
+                    s.dayOfWeek === "T5" ? "Thứ 5" :
+                    s.dayOfWeek === "T6" ? "Thứ 6" :
+                    s.dayOfWeek === "T7" ? "Thứ 7" :
+                    s.dayOfWeek === "CN" ? "Chủ nhật" : s.dayOfWeek
+
+      if (sDay !== day) return false
+
+      const sStart = s.startTime.slice(0, 5)
+      const sEnd = s.endTime.slice(0, 5)
+      return (sStart < slotEnd && sEnd > slotStart)
+    })
+  }
 
   return (
     <div
@@ -75,7 +205,7 @@ export function ClassDetailDialog({ classItem, onClose }: ClassDetailDialogProps
       onClick={onClose}
     >
       <div
-        className="w-full max-w-xl bg-white rounded-xl shadow-xl flex flex-col max-h-[85vh]"
+        className="w-full max-w-3xl bg-white rounded-xl shadow-xl flex flex-col max-h-[85vh]"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -140,6 +270,127 @@ export function ClassDetailDialog({ classItem, onClose }: ClassDetailDialogProps
                 <span className="font-semibold text-foreground block mt-0.5 truncate" title={classItem.location}>{classItem.location}</span>
               </div>
             </div>
+          </div>
+
+          {/* Thời khóa biểu lớp học */}
+          <div className="space-y-2.5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1.5 font-bold text-xs text-slate-400 uppercase tracking-wider">
+                <Calendar size={13} className="text-slate-400 shrink-0" />
+                <span>Thời khóa biểu lớp học</span>
+              </div>
+              <button
+                type="button"
+                className="text-[11px] font-bold text-primary hover:underline flex items-center gap-1"
+                onClick={() => {
+                  setEditingSchedule({
+                    id: undefined,
+                    dayOfWeek: "T2",
+                    startTime: "08:00",
+                    endTime: "10:00",
+                    sessionDate: new Date().toISOString().slice(0, 10),
+                    sessionStatus: "scheduled",
+                    note: "",
+                  })
+                }}
+              >
+                + Thêm buổi học mới
+              </button>
+            </div>
+            {loadingSchedules ? (
+              <div className="h-20 w-full bg-slate-50 border border-slate-100 rounded-lg animate-pulse flex items-center justify-center text-xs text-slate-400">
+                Đang tải thời khóa biểu...
+              </div>
+            ) : schedules.length > 0 ? (
+              <div className="overflow-x-auto border border-slate-150 rounded-lg">
+                <table className="w-full border-collapse text-left text-xs min-w-[600px]">
+                  <thead>
+                    <tr className="bg-slate-50 border-b border-slate-150 text-[10px] uppercase font-bold text-slate-500 tracking-wider">
+                      <th className="p-2.5 border-r border-slate-150 w-[140px]">Khung giờ</th>
+                      {daysOfWeek.map((day) => (
+                        <th key={day} className="p-2.5 text-center border-r last:border-r-0 border-slate-150">{day}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {timeSlots.map((slot) => (
+                      <tr key={slot.label} className="border-b last:border-b-0 border-slate-150 hover:bg-slate-50/30">
+                        <td className="p-2.5 font-semibold text-slate-600 bg-slate-50/50 border-r border-slate-150">
+                          {slot.label}
+                        </td>
+                        {daysOfWeek.map((day) => {
+                          const session = getSessionInSlot(day, slot.start, slot.end)
+                          const statusConf = session ? getStatusConfig(session.sessionStatus) : null
+                          return (
+                            <td 
+                              key={day} 
+                              className={`p-1.5 border-r last:border-r-0 border-slate-150 text-center transition-colors cursor-pointer ${
+                                session 
+                                  ? statusConf?.bg 
+                                  : "bg-white hover:bg-slate-50 text-slate-300"
+                              }`}
+                              onClick={() => {
+                                if (session) {
+                                  setEditingSchedule({
+                                    id: session.id,
+                                    dayOfWeek: session.dayOfWeek,
+                                    startTime: session.startTime.slice(0, 5),
+                                    endTime: session.endTime.slice(0, 5),
+                                    sessionDate: session.sessionDate ? session.sessionDate.toString().slice(0, 10) : "",
+                                    sessionStatus: session.sessionStatus,
+                                    note: session.note || "",
+                                  })
+                                } else {
+                                  const dayMap: Record<string, string> = {
+                                    "Thứ 2": "T2",
+                                    "Thứ 3": "T3",
+                                    "Thứ 4": "T4",
+                                    "Thứ 5": "T5",
+                                    "Thứ 6": "T6",
+                                    "Thứ 7": "T7",
+                                    "Chủ nhật": "CN",
+                                  }
+                                  setEditingSchedule({
+                                    id: undefined,
+                                    dayOfWeek: dayMap[day] || "T2",
+                                    startTime: slot.start,
+                                    endTime: slot.end,
+                                    sessionDate: new Date().toISOString().slice(0, 10),
+                                    sessionStatus: "scheduled",
+                                    note: "Học bù",
+                                  })
+                                }
+                              }}
+                            >
+                              {session ? (
+                                <div className="flex flex-col items-center justify-center p-1 rounded border border-slate-200/50 bg-white shadow-xs max-w-[100px] mx-auto">
+                                  <span className="font-bold text-[9px] truncate w-full" title={session.class.subject?.name}>
+                                    {session.class.subject?.name}
+                                  </span>
+                                  <span className="text-[8px] font-bold text-slate-400 mt-0.5">
+                                    {session.startTime.slice(0, 5)} - {session.endTime.slice(0, 5)}
+                                  </span>
+                                  <span className={`text-[8px] font-bold px-1 py-0.2 mt-1 rounded-sm flex items-center gap-0.5 ${statusConf?.bg}`}>
+                                    <span className={`size-1 rounded-full ${statusConf?.indicator}`} />
+                                    {statusConf?.label}
+                                  </span>
+                                </div>
+                              ) : (
+                                <span className="text-[9px] font-normal opacity-20">— Rảnh —</span>
+                              )}
+                            </td>
+                          )
+                        })}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="text-center py-5 border border-dashed border-slate-200 rounded-lg text-xs text-muted-foreground bg-slate-50/30">
+                Chưa xếp lịch học cho lớp này.
+              </div>
+            )}
           </div>
 
           {/* Tutor Info */}
@@ -236,6 +487,146 @@ export function ClassDetailDialog({ classItem, onClose }: ClassDetailDialogProps
             </div>
           )}
         </div>
+
+        {/* Overlay Modal for Add/Edit Schedule */}
+        {editingSchedule && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/45 p-4">
+            <div
+              className="w-full max-w-sm bg-white rounded-xl shadow-xl flex flex-col p-5 space-y-4"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                <h3 className="text-sm font-bold text-foreground">
+                  {editingSchedule.id ? "Chỉnh sửa buổi học" : "Thêm buổi học mới (Học bù)"}
+                </h3>
+                <button
+                  type="button"
+                  onClick={() => setEditingSchedule(null)}
+                  className="text-slate-400 hover:text-slate-600"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+
+              {errorMessage && (
+                <div className="p-2 text-xs bg-red-50 border border-red-200 text-red-700 rounded">
+                  {errorMessage}
+                </div>
+              )}
+
+              <div className="space-y-3 text-xs">
+                <div>
+                  <label className="block text-slate-500 font-semibold mb-1">Thứ trong tuần</label>
+                  <select
+                    value={editingSchedule.dayOfWeek}
+                    onChange={(e) => setEditingSchedule({ ...editingSchedule, dayOfWeek: e.target.value })}
+                    className="w-full border border-slate-200 rounded p-2 text-xs bg-white"
+                    required
+                  >
+                    <option value="T2">Thứ 2</option>
+                    <option value="T3">Thứ 3</option>
+                    <option value="T4">Thứ 4</option>
+                    <option value="T5">Thứ 5</option>
+                    <option value="T6">Thứ 6</option>
+                    <option value="T7">Thứ 7</option>
+                    <option value="CN">Chủ nhật</option>
+                  </select>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-slate-500 font-semibold mb-1">Giờ bắt đầu</label>
+                    <input
+                      type="time"
+                      value={editingSchedule.startTime}
+                      onChange={(e) => setEditingSchedule({ ...editingSchedule, startTime: e.target.value })}
+                      className="w-full border border-slate-200 rounded p-2 text-xs"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-500 font-semibold mb-1">Giờ kết thúc</label>
+                    <input
+                      type="time"
+                      value={editingSchedule.endTime}
+                      onChange={(e) => setEditingSchedule({ ...editingSchedule, endTime: e.target.value })}
+                      className="w-full border border-slate-200 rounded p-2 text-xs"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-slate-500 font-semibold mb-1">Ngày học (Tùy chọn)</label>
+                  <input
+                    type="date"
+                    value={editingSchedule.sessionDate}
+                    onChange={(e) => setEditingSchedule({ ...editingSchedule, sessionDate: e.target.value })}
+                    className="w-full border border-slate-200 rounded p-2 text-xs"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-slate-500 font-semibold mb-1">Trạng thái (Điểm danh)</label>
+                  <select
+                    value={editingSchedule.sessionStatus}
+                    onChange={(e) => setEditingSchedule({ ...editingSchedule, sessionStatus: e.target.value })}
+                    className="w-full border border-slate-200 rounded p-2 text-xs font-semibold bg-white"
+                    required
+                  >
+                    <option value="scheduled">Chưa học (Sắp tới)</option>
+                    <option value="completed">Có mặt (Đã học)</option>
+                    <option value="cancelled">Nghỉ học (Vắng / Hủy)</option>
+                    <option value="rescheduled">Học bù (Đổi lịch)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-slate-500 font-semibold mb-1">Ghi chú</label>
+                  <textarea
+                    value={editingSchedule.note}
+                    onChange={(e) => setEditingSchedule({ ...editingSchedule, note: e.target.value })}
+                    placeholder="Ghi chú buổi học..."
+                    className="w-full border border-slate-200 rounded p-2 text-xs h-16 resize-none"
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-between items-center pt-3 border-t border-slate-100">
+                {editingSchedule.id ? (
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteSchedule(editingSchedule.id)}
+                    disabled={isSavingSchedule}
+                    className="px-3 py-1.5 bg-red-100 hover:bg-red-200 text-red-700 font-bold rounded text-xs transition-colors"
+                  >
+                    Xóa buổi
+                  </button>
+                ) : (
+                  <div />
+                )}
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setEditingSchedule(null)}
+                    disabled={isSavingSchedule}
+                    className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded text-xs transition-colors"
+                  >
+                    Hủy
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSaveSchedule}
+                    disabled={isSavingSchedule}
+                    className="px-3 py-1.5 bg-primary hover:bg-primary/95 text-white font-bold rounded text-xs transition-colors"
+                  >
+                    {isSavingSchedule ? "Đang lưu..." : "Lưu"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )

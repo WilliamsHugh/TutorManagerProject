@@ -7,12 +7,15 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Class, ClassStatus } from './entities/class.entity';
 import { ClassRequest, RequestStatus } from './entities/class-request.entity';
+import { Schedule } from './entities/schedule.entity';
 import { Tutor } from '../users/entities/tutor.entity';
 import { Student } from '../users/entities/student.entity';
 import { Review } from './entities/review.entity';
 import { User } from '../users/entities/user.entity';
 import { CreateClassDto } from './dto/create-class.dto';
 import { CreateReviewDto } from './dto/create-review.dto';
+import { CreateScheduleDto } from './dto/create-schedule.dto';
+import { UpdateScheduleDto } from './dto/update-schedule.dto';
 
 type ClassesQuery = {
   status?: ClassStatus;
@@ -31,13 +34,15 @@ export class ClassesService {
     private readonly studentsRepository: Repository<Student>,
     @InjectRepository(Review)
     private readonly reviewsRepository: Repository<Review>,
+    @InjectRepository(Schedule)
+    private readonly scheduleRepository: Repository<Schedule>,
   ) {}
 
   async create(dto: CreateClassDto, createdBy?: User) {
     const request = await this.classRequestsRepository.findOne({
       where: { id: dto.requestId },
       relations: {
-        student: true,
+        student: { user: true },
         subject: true,
       },
     });
@@ -56,6 +61,68 @@ export class ClassesService {
       relations: { user: true },
     });
     if (!tutor) throw new NotFoundException('Không tìm thấy gia sư');
+
+    // --- CHECK CONFLICTING SCHEDULES ---
+    const scheduleStr = request.preferredSchedule;
+    if (scheduleStr && scheduleStr !== 'Linh hoạt') {
+      try {
+        // Parse preferredSchedule e.g. "Tối Thứ 2, Thứ 4 · 19:00 - 21:00"
+        const parts = scheduleStr.split('·');
+        if (parts.length === 2) {
+          const daysPart = parts[0].trim();
+          const timePart = parts[1].trim();
+
+          // Extract days e.g. ['Thứ 2', 'Thứ 4']
+          const days: string[] = [];
+          const allDayNames = ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'Chủ nhật'];
+          allDayNames.forEach((d) => {
+            if (daysPart.includes(d)) {
+              days.push(d);
+            }
+          });
+
+          // Extract times e.g. "19:00 - 21:00"
+          const timeParts = timePart.split('-');
+          if (timeParts.length === 2 && days.length > 0) {
+            const startTimeStr = timeParts[0].trim() + ':00';
+            const endTimeStr = timeParts[1].trim() + ':00';
+
+            // Query existing schedules for the tutor and student
+            const conflictingSchedules = await this.scheduleRepository
+              .createQueryBuilder('schedule')
+              .leftJoinAndSelect('schedule.class', 'class')
+              .leftJoinAndSelect('class.tutor', 'tutor')
+              .leftJoinAndSelect('class.student', 'student')
+              .leftJoinAndSelect('tutor.user', 'tutorUser')
+              .leftJoinAndSelect('student.user', 'studentUser')
+              .where('class.status = :status', { status: ClassStatus.ACTIVE })
+              .andWhere('schedule.dayOfWeek IN (:...days)', { days })
+              .andWhere(
+                '((schedule.startTime < :endTime AND schedule.endTime > :startTime))',
+                { startTime: startTimeStr, endTime: endTimeStr },
+              )
+              .getMany();
+
+            for (const s of conflictingSchedules) {
+              const classCode = `CLASS-${s.class.id.replace(/-/g, '').slice(0, 6).toUpperCase()}`;
+              if (s.class.tutor?.id === tutor.id) {
+                throw new ConflictException(
+                  `Gia sư ${tutor.user?.fullName} đã bị trùng lịch dạy vào ${s.dayOfWeek} từ ${s.startTime.slice(0, 5)} - ${s.endTime.slice(0, 5)} ở lớp ${classCode}.`,
+                );
+              }
+              if (s.class.student?.id === request.student?.id) {
+                throw new ConflictException(
+                  `Học viên ${request.student?.user?.fullName} đã bị trùng lịch học vào ${s.dayOfWeek} từ ${s.startTime.slice(0, 5)} - ${s.endTime.slice(0, 5)} ở lớp ${classCode}.`,
+                );
+              }
+            }
+          }
+        }
+      } catch (err) {
+        if (err instanceof ConflictException) throw err;
+        // Ignore parsing errors and proceed with creation
+      }
+    }
 
     const classEntity = this.classesRepository.create({
       request,
@@ -224,5 +291,94 @@ export class ClassesService {
         createdAt: 'DESC',
       },
     });
+  }
+
+  async getTutorSchedules(tutorId: string) {
+    return this.scheduleRepository.find({
+      where: {
+        class: { tutor: { id: tutorId }, status: ClassStatus.ACTIVE }
+      },
+      relations: ['class', 'class.subject', 'class.student', 'class.student.user'],
+      order: {
+        dayOfWeek: 'ASC',
+        startTime: 'ASC'
+      }
+    });
+  }
+
+  async getStudentSchedules(studentId: string) {
+    return this.scheduleRepository.find({
+      where: {
+        class: { student: { id: studentId }, status: ClassStatus.ACTIVE }
+      },
+      relations: ['class', 'class.subject', 'class.tutor', 'class.tutor.user'],
+      order: {
+        dayOfWeek: 'ASC',
+        startTime: 'ASC'
+      }
+    });
+  }
+
+  async getClassSchedules(classId: string) {
+    return this.scheduleRepository.find({
+      where: {
+        class: { id: classId }
+      },
+      relations: [
+        'class',
+        'class.subject',
+        'class.tutor',
+        'class.tutor.user',
+        'class.student',
+        'class.student.user',
+      ],
+      order: {
+        dayOfWeek: 'ASC',
+        startTime: 'ASC',
+      },
+    });
+  }
+
+  async createSchedule(classId: string, dto: CreateScheduleDto) {
+    const classEntity = await this.classesRepository.findOne({ where: { id: classId } });
+    if (!classEntity) throw new NotFoundException('Không tìm thấy lớp học');
+
+    const schedule = this.scheduleRepository.create({
+      class: classEntity,
+      dayOfWeek: dto.dayOfWeek,
+      startTime: dto.startTime,
+      endTime: dto.endTime,
+      sessionDate: dto.sessionDate ? new Date(dto.sessionDate) : undefined,
+      sessionStatus: dto.sessionStatus,
+      note: dto.note,
+    });
+
+    return this.scheduleRepository.save(schedule);
+  }
+
+  async updateSchedule(classId: string, scheduleId: string, dto: UpdateScheduleDto) {
+    const schedule = await this.scheduleRepository.findOne({
+      where: { id: scheduleId, class: { id: classId } },
+    });
+    if (!schedule) throw new NotFoundException('Không tìm thấy buổi học tương ứng trong lớp này');
+
+    if (dto.dayOfWeek !== undefined) schedule.dayOfWeek = dto.dayOfWeek;
+    if (dto.startTime !== undefined) schedule.startTime = dto.startTime;
+    if (dto.endTime !== undefined) schedule.endTime = dto.endTime;
+    if (dto.sessionDate !== undefined) schedule.sessionDate = dto.sessionDate ? new Date(dto.sessionDate) : null as any;
+    if (dto.sessionStatus !== undefined) schedule.sessionStatus = dto.sessionStatus;
+    if (dto.note !== undefined) schedule.note = dto.note;
+
+    return this.scheduleRepository.save(schedule);
+  }
+
+  async deleteSchedule(classId: string, scheduleId: string) {
+    const schedule = await this.scheduleRepository.findOne({
+      where: { id: scheduleId, class: { id: classId } },
+    });
+    if (!schedule) throw new NotFoundException('Không tìm thấy buổi học tương ứng trong lớp này');
+
+    await this.scheduleRepository.remove(schedule);
+    return { success: true };
   }
 }

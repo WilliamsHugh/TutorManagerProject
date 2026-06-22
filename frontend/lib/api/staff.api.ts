@@ -93,3 +93,35 @@ export function getStaffTutors() {
 export function getStaffStudents() {
   return request<any[]>('/admin/students');
 }
+
+export function getTutorScheduleForStaff(tutorId: string) {
+  return request<any[]>(`/classes/tutor/${tutorId}/schedule`);
+}
+
+export function getStudentScheduleForStaff(studentId: string) {
+  return request<any[]>(`/classes/student/${studentId}/schedule`);
+}
+
+export function getClassScheduleForStaff(classId: string) {
+  return request<any[]>(`/classes/${classId}/schedule`);
+}
+
+export function createClassSchedule(classId: string, data: any) {
+  return request<any>(`/classes/${classId}/schedules`, {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export function updateClassSchedule(classId: string, scheduleId: string, data: any) {
+  return request<any>(`/classes/${classId}/schedules/${scheduleId}`, {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  });
+}
+
+export function deleteClassSchedule(classId: string, scheduleId: string) {
+  return request<any>(`/classes/${classId}/schedules/${scheduleId}`, {
+    method: 'DELETE',
+  });
+}

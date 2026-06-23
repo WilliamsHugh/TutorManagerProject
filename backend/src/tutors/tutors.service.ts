@@ -730,9 +730,10 @@ export class TutorsService implements OnModuleInit {
       });
     } catch (err) {
       // Nếu không tìm thấy hồ sơ gia sư (ví dụ: Staff/Admin gọi),
-      // trả về toàn bộ báo cáo của lớp học đó.
+      // trả về toàn bộ báo cáo của lớp học đó (kèm thông tin gia sư).
       return this.learningReportRepository.find({
         where: { class: { id: classId } },
+        relations: ['tutor', 'tutor.user'],
         order: { reportDate: 'DESC' }
       });
     }

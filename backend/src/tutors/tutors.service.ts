@@ -15,7 +15,7 @@ import { Role } from '../users/entities/role.entity';
 import { Notification } from '../notifications/notification.entity';
 import { TutorSubject } from './tutor-subject.entity';
 import { Review } from '../classes/entities/review.entity';
-import { CreateLearningReportDto } from '../reports/dto/create-report.dto';
+import { CreateLearningReportDto } from '../classes/dto/create-learning-report.dto';
 
 @Injectable()
 export class TutorsService implements OnModuleInit {

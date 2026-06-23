@@ -13,7 +13,7 @@ import {
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard'; // Bảo mật bằng JWT
 import { TutorsService } from './tutors.service';
-import { CreateLearningReportDto } from '../reports/dto/create-report.dto';
+import { CreateLearningReportDto } from '../classes/dto/create-learning-report.dto';
 
 @Controller('tutor')
 @UseGuards(JwtAuthGuard) // Kích hoạt lại bảo mật JWT

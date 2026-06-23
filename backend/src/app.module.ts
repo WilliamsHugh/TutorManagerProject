@@ -5,7 +5,7 @@ import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { ClassesModule } from './classes/classes.module';
 import { TutorsModule } from './tutors/tutors.module';
-import { ReportsModule } from './reports/reports.module';
+
 import { SubjectsModule } from './subjects/subjects.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { UploadModule } from './upload/upload.module';
@@ -74,7 +74,6 @@ import { Setting } from './settings/setting.entity';
     UsersModule,
     ClassesModule,
     TutorsModule,
-    ReportsModule,
     SubjectsModule,
     NotificationsModule,
     UploadModule,

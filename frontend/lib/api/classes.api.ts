@@ -97,6 +97,19 @@ export async function deleteLearningReport(id: string) {
   return res.json();
 }
 
+// Lấy lịch học của học viên (cho student calendar view)
+export async function getStudentMySchedule() {
+  const token = getToken();
+  const res = await fetch(`${API_URL}/classes/my-schedule`, {
+    headers: { 'Authorization': `Bearer ${token}` },
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || 'Không thể tải lịch học');
+  }
+  return res.json();
+}
+
 // Lấy danh sách lớp học của Học viên
 export async function getStudentClasses() {
   const token = getToken();

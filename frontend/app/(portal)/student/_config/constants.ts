@@ -12,4 +12,5 @@ export const subjects = [
 export const navItems: NavItem[] = [
   { label: "Đăng ký tìm gia sư", href: "/student" },
   { label: "Lớp học của tôi", href: "/student/classes" },
+  { label: "Lịch học", href: "/student/calendar" },
 ];

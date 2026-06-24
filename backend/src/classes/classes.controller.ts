@@ -44,6 +44,13 @@ export class ClassesController {
     return this.classesService.findStudentClasses(userId);
   }
 
+  @Get('my-schedule')
+  @Roles(RoleType.STUDENT)
+  findMySchedule(@Request() req) {
+    const userId = req.user.id || req.user.sub;
+    return this.classesService.findStudentSchedule(userId);
+  }
+
   @Get(':id')
   @Roles(RoleType.STAFF, RoleType.ADMIN)
   findOne(@Param('id') id: string) {

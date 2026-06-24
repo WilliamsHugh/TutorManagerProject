@@ -704,7 +704,7 @@ async function seed() {
   // 9. SCHEDULES (~240: 4 sessions per class for all classes)
   // ===================================================================
   console.log('\n--- 9. Seeding Schedules ---');
-  const dayNames = ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
+  const dayNames = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
   const timeSlots = [
     { start: '08:00:00', end: '10:00:00' },
     { start: '14:00:00', end: '16:00:00' },
@@ -714,37 +714,58 @@ async function seed() {
 
   let scheduleCount = 0;
   for (const cls of seededClasses) {
-    // Generate 3-5 schedules per class
-    const numSessions = 3 + Math.floor(Math.random() * 3);
-    const usedDays = new Set<string>();
+    const total = cls.totalSessions || 10;
+    const startDate = cls.startDate || new Date('2026-05-04');
 
-    for (let s = 0; s < numSessions; s++) {
-      let day: string;
-      // Make sure each schedule has a different day
-      do {
-        day = pickRandom(dayNames);
-      } while (usedDays.has(day) && usedDays.size < dayNames.length);
-      usedDays.add(day);
+    // Pick 2 recurring days per class (e.g., T2 + T5, or T3 + T6)
+    const shuffledDays = [...dayNames].sort(() => Math.random() - 0.5);
+    const classDays = shuffledDays.slice(0, 2).sort((a, b) => dayNames.indexOf(a) - dayNames.indexOf(b));
 
-      const timeSlot = pickRandom(timeSlots);
-      const sessionDate = new Date('2026-05-04');
-      sessionDate.setDate(sessionDate.getDate() + dayNames.indexOf(day) + s * 7);
+    // Pick a consistent time slot for this class
+    const timeSlot = pickRandom(timeSlots);
 
-      const existing = await scheduleRepo.findOneBy({
-        class: { id: cls.id },
-        sessionDate,
-      });
-      if (!existing) {
-        await scheduleRepo.save(scheduleRepo.create({
-          class: cls,
+    // Find the first weekday (sessionDate) on or after startDate matching each classDay
+    const getNthWeekday = (baseDate: Date, targetDay: string, nth: number): Date => {
+      const result = new Date(baseDate);
+      const targetIdx = dayNames.indexOf(targetDay); // 0=T2 → Monday
+      // JS getDay(): 0=Sun, 1=Mon, ..., 6=Sat
+      // Map: T2=0 → Mon=1, T3=1 → Tue=2, ..., T7=6 → Sat=7, CN excluded
+      const jsDay = targetIdx + 1; // T2=0→1(Mon), T3=1→2(Tue)...
+      const currentDay = result.getDay(); // 0=Sun..6=Sat
+      let diff = jsDay - currentDay;
+      if (diff < 0) diff += 7;
+      result.setDate(result.getDate() + diff + (nth - 1) * 7);
+      return result;
+    };
+
+    // Distribute total sessions across the 2 recurring days
+    let remaining = total;
+
+    for (let d = 0; d < classDays.length; d++) {
+      const day = classDays[d];
+      const count = Math.ceil(remaining / (classDays.length - d));
+      remaining -= count;
+      for (let s = 0; s < count; s++) {
+        const sessionDate = getNthWeekday(startDate, day, s + 1);
+
+        // Check if schedule already exists for this class + date
+        const existing = await scheduleRepo.findOneBy({
+          class: { id: cls.id },
           sessionDate,
-          dayOfWeek: day,
           startTime: timeSlot.start,
-          endTime: timeSlot.end,
-          sessionStatus: cls.status === ClassStatus.COMPLETED ? SessionStatus.COMPLETED : SessionStatus.SCHEDULED,
-          note: pickRandom(SCHEDULE_NOTES),
-        }));
-        scheduleCount++;
+        });
+        if (!existing) {
+          await scheduleRepo.save(scheduleRepo.create({
+            class: cls,
+            sessionDate,
+            dayOfWeek: day,
+            startTime: timeSlot.start,
+            endTime: timeSlot.end,
+            sessionStatus: cls.status === ClassStatus.COMPLETED ? SessionStatus.COMPLETED : SessionStatus.SCHEDULED,
+            note: pickRandom(SCHEDULE_NOTES),
+          }));
+          scheduleCount++;
+        }
       }
     }
   }
@@ -756,19 +777,22 @@ async function seed() {
   console.log('\n--- 10. Seeding Reviews ---');
   let reviewCount = 0;
   for (const cls of seededClasses) {
+    // Only create reviews for COMPLETED classes (active classes shouldn't have reviews yet)
+    if (cls.status !== ClassStatus.COMPLETED) continue;
+
     // Check if review already exists
     const existingReview = await reviewRepo.findOneBy({
       class: { id: cls.id },
       student: { id: cls.student.id },
     });
-    if (existingReview || Math.random() > 0.8) continue; // ~80% of classes get reviews
+    if (existingReview) continue;
 
     const { rating, comment } = getRandomReviewComment();
 
     await reviewRepo.save(reviewRepo.create({
       class: cls,
-      student: cls.student,
       tutor: cls.tutor,
+      student: cls.student,
       rating,
       comment,
     }));

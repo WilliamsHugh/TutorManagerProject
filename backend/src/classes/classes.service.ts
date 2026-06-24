@@ -4,7 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, In } from 'typeorm';
 import { Class, ClassStatus } from './entities/class.entity';
 import { ClassRequest, RequestStatus } from './entities/class-request.entity';
 import { Schedule } from './entities/schedule.entity';
@@ -185,6 +185,33 @@ export class ClassesService {
     const classEntity = await this.findOne(id);
     classEntity.status = status;
     return this.classesRepository.save(classEntity);
+  }
+
+  async findStudentSchedule(userId: string) {
+    const student = await this.studentsRepository.findOne({
+      where: { user: { id: userId } },
+    });
+    if (!student) {
+      throw new NotFoundException('Không tìm thấy học viên tương ứng với tài khoản này');
+    }
+
+    const schedules = await this.scheduleRepository.find({
+      where: {
+        class: { student: { id: student.id }, status: In([ClassStatus.ACTIVE, ClassStatus.COMPLETED]) }
+      },
+      relations: [
+        'class',
+        'class.subject',
+        'class.tutor',
+        'class.tutor.user',
+      ],
+      order: {
+        dayOfWeek: 'ASC',
+        startTime: 'ASC',
+      },
+    });
+
+    return schedules;
   }
 
   async findStudentClasses(userId: string) {

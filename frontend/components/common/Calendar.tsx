@@ -200,8 +200,8 @@ export default function Calendar({
       // If in tutor API shape: flat fields like time, subject, student, status
       const timeParts = ev.time?.split(' - ') || [];
       return {
-        id: ev.id || ev._id || '',
-        dayOfWeek: ev.dayOfWeek,
+        id: ev.id || '',
+        dayOfWeek: ev.dayOfWeek || deriveDayOfWeek(ev.date || ev.sessionDate),
         startTime: ev.startTime || timeParts[0] || '',
         endTime: ev.endTime || timeParts[1] || '',
         sessionStatus: ev.sessionStatus || ev.status || 'scheduled',
@@ -289,29 +289,60 @@ export default function Calendar({
     return { weekStart, timeSlots, dayCols };
   }, [currentDate]);
 
+  /** Check if an event's sessionDate falls within a date range [start, end] */
+  function isEventInRange(event: CalendarEvent, start: Date, end: Date): boolean {
+    if (!event.sessionDate) {
+      // No date — fall back to dayOfWeek matching for recurring events
+      return true;
+    }
+    const d = typeof event.sessionDate === 'string' ? new Date(event.sessionDate) : event.sessionDate;
+    if (isNaN(d.getTime())) return true; // can't determine, show it
+    return d >= start && d <= end;
+  }
+
+  /** Get the current week's Monday 00:00 and Sunday 23:59:59 */
+  function getWeekRange(date: Date) {
+    const start = getStartOfWeek(date); // Monday 00:00
+    const end = new Date(start);
+    end.setDate(start.getDate() + 6);
+    end.setHours(23, 59, 59, 999);
+    return { start, end };
+  }
+
+  /** Get today's date range (00:00 - 23:59:59) */
+  function getDayRange(date: Date) {
+    const start = new Date(date);
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(date);
+    end.setHours(23, 59, 59, 999);
+    return { start, end };
+  }
+
   // ── Week events positioned ──
   const weekEvents = useMemo(() => {
     if (!schedules.length) return [];
-    return schedules.filter((s: any) => s.dayOfWeek).map((s: any) => {
-      const dayIdx = getDayLabelIndex(s.dayOfWeek);
-      if (dayIdx === -1) return null;
-      const startH = parseTime(s.startTime);
-      const endH = parseTime(s.endTime);
-      return {
-        event: s,
-        dayIdx,
-        top: (startH - START_HOUR) * HOUR_HEIGHT,
-        height: Math.max((endH - startH) * HOUR_HEIGHT, 28),
-      };
-    }).filter(Boolean);
+    const { start: weekStart, end: weekEnd } = getWeekRange(currentDate);
+    return schedules
+      .filter((s: any) => isEventInRange(s, weekStart, weekEnd) && s.dayOfWeek)
+      .map((s: any) => {
+        const dayIdx = getDayLabelIndex(s.dayOfWeek);
+        if (dayIdx === -1) return null;
+        const startH = parseTime(s.startTime);
+        const endH = parseTime(s.endTime);
+        return {
+          event: s,
+          dayIdx,
+          top: (startH - START_HOUR) * HOUR_HEIGHT,
+          height: Math.max((endH - startH) * HOUR_HEIGHT, 28),
+        };
+      }).filter(Boolean);
   }, [schedules, currentDate]);
 
   // ── Day events ──
   const dayEvents = useMemo(() => {
     if (!schedules.length) return [];
-    const dayIdx = (currentDate.getDay() || 7) - 1;
-    const label = DAY_LABELS[dayIdx];
-    return schedules.filter((s: any) => s.dayOfWeek === label);
+    const { start, end } = getDayRange(currentDate);
+    return schedules.filter((s: any) => isEventInRange(s, start, end) && s.dayOfWeek);
   }, [schedules, currentDate]);
 
   const isLoading = loading || externalLoading;
@@ -425,7 +456,7 @@ export default function Calendar({
                       <div className="w-16 shrink-0 text-right pt-0">
                         <span className="text-[11px] font-medium text-[#94a3b8]">{hourLabel}</span>
                       </div>
-                      <div className="flex-1 border-t border-[#f1f5f9] relative min-h-[60px] pb-1">
+                      <div className="flex-1 border-t border-[#f1f5f9] relative min-h-15 pb-1">
                         {eventsAtHour.map((ev: any, idx: number) => (
                           <div key={idx} className="mt-1">
                             <EventBadge event={ev} onClick={onEventClick} />
@@ -462,12 +493,22 @@ export default function Calendar({
               {monthDays.map((item, i) => {
                 const dayIdx = i % 7;
                 const label = DAY_LABELS[dayIdx];
-                const daySchedules = schedules.filter((s: any) => s.dayOfWeek === label);
+                // Filter by exact date match: events whose sessionDate === item.date
+                const daySchedules = schedules.filter((s: any) => {
+                  if (s.sessionDate) {
+                    const d = typeof s.sessionDate === 'string' ? new Date(s.sessionDate) : s.sessionDate;
+                    if (!isNaN(d.getTime())) {
+                      return d.toDateString() === item.date.toDateString();
+                    }
+                  }
+                  // Fallback: no date — match by dayOfWeek column
+                  return s.dayOfWeek === label;
+                });
                 const isToday = item.date.toDateString() === new Date().toDateString();
                 return (
                   <div
                     key={i}
-                    className={`min-h-[100px] border-r border-b border-[#f1f5f9] p-1.5 ${item.currentMonth ? 'bg-white' : 'bg-[#fafbfc]'} ${(i + 1) % 7 === 0 ? 'border-r-0' : ''}`}
+                    className={`min-h-25 border-r border-b border-[#f1f5f9] p-1.5 ${item.currentMonth ? 'bg-white' : 'bg-[#fafbfc]'} ${(i + 1) % 7 === 0 ? 'border-r-0' : ''}`}
                   >
                     <div className={`text-xs font-bold text-right mb-1 w-7 h-7 flex items-center justify-center ml-auto rounded-full ${isToday ? 'bg-[#2563eb] text-white' : item.currentMonth ? 'text-[#64748b]' : 'text-[#cbd5e1]'}`}>
                       {item.date.getDate()}

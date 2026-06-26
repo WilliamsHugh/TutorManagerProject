@@ -8,6 +8,10 @@ export class CreateClassRequestDto {
   subjectId!: string;
 
   @IsOptional()
+  @IsUUID()
+  preferredTutorId?: string;
+
+  @IsOptional()
   @IsString()
   preferredArea?: string;
 

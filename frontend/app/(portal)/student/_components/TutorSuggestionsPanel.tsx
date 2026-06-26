@@ -13,6 +13,7 @@ type TutorSuggestionsPanelProps = {
   tutors: TutorSuggestion[];
   onSearchChange: (value: string) => void;
   loading?: boolean;
+  onRecommendTutor?: (tutor: TutorSuggestion) => void;
 };
 
 export function TutorSuggestionsPanel({
@@ -21,6 +22,7 @@ export function TutorSuggestionsPanel({
   tutors,
   onSearchChange,
   loading = false,
+  onRecommendTutor,
 }: TutorSuggestionsPanelProps) {
   const [selectedTutor, setSelectedTutor] = useState<TutorSuggestion | null>(
     null
@@ -83,6 +85,7 @@ export function TutorSuggestionsPanel({
               key={tutor.id}
               tutor={tutor}
               onViewDetails={setSelectedTutor}
+              onRecommend={onRecommendTutor}
             />
           ))
         )}
@@ -97,6 +100,7 @@ export function TutorSuggestionsPanel({
       <TutorDetailModal
         tutor={selectedTutor}
         onClose={() => setSelectedTutor(null)}
+        onRecommend={onRecommendTutor}
       />
     </section>
   );

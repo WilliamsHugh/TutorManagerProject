@@ -5,11 +5,13 @@ import type { TutorSuggestion } from "../types";
 type TutorSuggestionCardProps = {
   tutor: TutorSuggestion;
   onViewDetails: (tutor: TutorSuggestion) => void;
+  onRecommend?: (tutor: TutorSuggestion) => void;
 };
 
 export function TutorSuggestionCard({
   tutor,
   onViewDetails,
+  onRecommend,
 }: TutorSuggestionCardProps) {
   return (
     <article className="flex flex-col gap-4 rounded-lg border border-[#e2e8f0] bg-white p-4 sm:flex-row sm:items-start">
@@ -54,8 +56,9 @@ export function TutorSuggestionCard({
           Xem chi tiết
         </button>
         <button
-          className="h-9 rounded-md bg-[#0b5fff] px-3 text-[13px] font-medium text-white transition-opacity hover:opacity-90"
+          className="h-9 rounded-md bg-[#0b5fff] px-3 text-[13px] font-medium text-white transition-opacity hover:opacity-90 active:scale-95"
           type="button"
+          onClick={() => onRecommend?.(tutor)}
         >
           Đề xuất gia sư
         </button>

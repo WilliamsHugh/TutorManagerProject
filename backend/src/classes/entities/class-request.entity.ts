@@ -10,6 +10,7 @@ import {
 import { Student } from '../../users/entities/student.entity';
 import { Subject } from '../../subjects/subject.entity';
 import { User } from '../../users/entities/user.entity';
+import { Tutor } from '../../users/entities/tutor.entity';
 
 export enum RequestStatus {
   PENDING = 'pending',
@@ -30,6 +31,10 @@ export class ClassRequest {
   @ManyToOne(() => Subject)
   @JoinColumn({ name: 'subject_id' })
   subject!: Subject;
+
+  @ManyToOne(() => Tutor, { nullable: true })
+  @JoinColumn({ name: 'preferred_tutor_id' })
+  preferredTutor?: Tutor;
 
   @ManyToOne(() => User, { nullable: true })
   @JoinColumn({ name: 'handled_by' })

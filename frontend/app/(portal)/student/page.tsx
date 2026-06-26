@@ -30,6 +30,7 @@ export default function StudentDashboardPage() {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitSuccess, setSubmitSuccess] = useState(false);
+  const [recommendSuccess, setRecommendSuccess] = useState<string | null>(null);
 
   // Auth protection
   useEffect(() => {
@@ -156,6 +157,55 @@ export default function StudentDashboardPage() {
     }
   }, [subject, subjectMap, studentId, area, schedule, level, school, note]);
 
+  const handleRecommendTutor = useCallback(async (tutor: TutorSuggestion) => {
+    setRecommendSuccess(null);
+    setSubmitError(null);
+
+    if (!subject) {
+      setSubmitError('Vui lòng chọn môn học trước khi đề xuất gia sư.');
+      return;
+    }
+
+    const subjectId = subjectMap[subject];
+    if (!subjectId) {
+      setSubmitError('Môn học không hợp lệ. Vui lòng chọn lại.');
+      return;
+    }
+
+    if (!studentId) {
+      setSubmitError('Không tìm thấy thông tin học viên. Vui lòng đăng nhập lại.');
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const tutorId = typeof tutor.id === 'string' ? tutor.id : String(tutor.id);
+      const payload = {
+        studentId,
+        subjectId,
+        preferredTutorId: tutorId,
+        preferredArea: area || undefined,
+        preferredSchedule: schedule || undefined,
+        requirements: [
+          level ? `Cấp học: ${level}` : '',
+          school ? `Trường: ${school}` : '',
+          note ? `Yêu cầu: ${note}` : '',
+          `Đề xuất gia sư: ${tutor.name}`,
+        ]
+          .filter(Boolean)
+          .join('\n') || undefined,
+      };
+
+      await createClassRequest(payload);
+      setRecommendSuccess(`Đã gửi yêu cầu và đề xuất gia sư ${tutor.name} thành công!`);
+      setTimeout(() => setRecommendSuccess(null), 5000);
+    } catch (err: any) {
+      setSubmitError(err?.message || 'Có lỗi xảy ra khi đề xuất gia sư. Vui lòng thử lại.');
+    } finally {
+      setSubmitting(false);
+    }
+  }, [subject, subjectMap, studentId, area, schedule, level, school, note]);
+
   return (
     <div
       className="min-h-screen bg-[#f8fafc] text-[#0f172a]"
@@ -165,10 +215,17 @@ export default function StudentDashboardPage() {
       <main className="mx-auto w-full max-w-332 px-4 py-6 sm:px-6 lg:px-8">
         <TutorRequestPageHeader />
 
-        {/* Success banner */}
+        {/* Success banner - submit */}
         {submitSuccess && (
           <div className="mb-6 rounded-lg border border-[#bbf7d0] bg-[#dcfce7] px-4 py-3 text-sm font-medium text-[#166534]">
             ✅ Yêu cầu tìm gia sư đã được gửi thành công! Nhân viên trung tâm sẽ liên hệ với bạn sớm nhất.
+          </div>
+        )}
+
+        {/* Success banner - recommend */}
+        {recommendSuccess && (
+          <div className="mb-6 rounded-lg border border-[#bbf7d0] bg-[#f0fdf4] px-4 py-3 text-sm font-medium text-[#166534]">
+            ✅ {recommendSuccess}
           </div>
         )}
 
@@ -203,6 +260,7 @@ export default function StudentDashboardPage() {
             tutors={filteredTutors}
             onSearchChange={setSearch}
             loading={loading}
+            onRecommendTutor={handleRecommendTutor}
           />
         </div>
 

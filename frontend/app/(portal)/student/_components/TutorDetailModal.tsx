@@ -15,9 +15,10 @@ import type { TutorSuggestion } from "../types";
 type TutorDetailModalProps = {
   tutor: TutorSuggestion | null;
   onClose: () => void;
+  onRecommend?: (tutor: TutorSuggestion) => void;
 };
 
-export function TutorDetailModal({ tutor, onClose }: TutorDetailModalProps) {
+export function TutorDetailModal({ tutor, onClose, onRecommend }: TutorDetailModalProps) {
   if (!tutor) return null;
 
   return (
@@ -139,8 +140,12 @@ export function TutorDetailModal({ tutor, onClose }: TutorDetailModalProps) {
             Đóng
           </button>
           <button
-            className="h-10 rounded-md bg-[#0b5fff] px-4 text-sm font-medium text-white transition-opacity hover:opacity-90"
+            className="h-10 rounded-md bg-[#0b5fff] px-4 text-sm font-medium text-white transition-opacity hover:opacity-90 active:scale-95"
             type="button"
+            onClick={() => {
+              onRecommend?.(tutor);
+              onClose();
+            }}
           >
             Đề xuất gia sư này
           </button>

@@ -66,7 +66,16 @@ export default function TutorsPage() {
       .map((k) => k.replace("subject:", ""))
       .join(",");
 
-    getPublicTutors({ search: debouncedSearch, subject, page: currentPage })
+    // Khi có search hoặc filter, luôn về trang 1 để tránh lỗi
+    // API trả về page rỗng nếu currentPage > 1 và kết quả tìm kiếm ít
+    const hasFilters = debouncedSearch !== "" || subject !== "";
+    const page = hasFilters ? 1 : currentPage;
+
+    if (hasFilters && currentPage !== 1) {
+      setCurrentPage(1);
+    }
+
+    getPublicTutors({ search: debouncedSearch, subject, page })
       .then((res) => {
         setItems(res.data ?? []);
         setTotalItems(res.meta?.total ?? 0);

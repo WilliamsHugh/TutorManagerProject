@@ -1,4 +1,4 @@
-import { DataSource } from 'typeorm';
+import { DataSource, Between } from 'typeorm';
 import { User } from './users/entities/user.entity';
 import { Role } from './users/entities/role.entity';
 import { Student } from './users/entities/student.entity';
@@ -801,48 +801,61 @@ async function seed() {
   console.log(`   + Total reviews: ${reviewCount}`);
 
   // ===================================================================
-  // 11. LEARNING REPORTS (~40) — Liên kết với lịch học cụ thể
+  // 11. LEARNING REPORTS (~240) — 1 báo cáo cho mỗi buổi học để demo đầy đủ
   // ===================================================================
   console.log('\n--- 11. Seeding Learning Reports ---');
   const progressRatings = [ProgressRating.POOR, ProgressRating.FAIR, ProgressRating.GOOD, ProgressRating.EXCELLENT];
   let reportCount = 0;
+  
+  // Danh sách email học viên hardcoded (có thể đăng nhập và xem calendar)
+  const hardcodedStudentEmails = hardcodedStudents.map(s => s.email);
 
-  // Lấy schedules đã tạo để gán report cho từng buổi học cụ thể
+  // Lấy tất cả schedules + class + tutor
   const allSchedules = await scheduleRepo.find({
-    relations: ['class', 'class.tutor'],
+    relations: ['class', 'class.tutor', 'class.student', 'class.student.user'],
     order: { sessionDate: 'ASC' },
   });
 
-  // Tạo reports cho khoảng 40 schedules (chọn schedules đã COMPLETED hoặc 1 số SCHEDULED)
-  const reportableSchedules = allSchedules.filter(s => 
-    s.sessionStatus === SessionStatus.COMPLETED || Math.random() > 0.5
-  ).slice(0, 40);
-
-  for (const schedule of reportableSchedules) {
+  for (const schedule of allSchedules) {
     const cls = schedule.class;
-    if (!cls) continue;
-
-    // Check if report already exists for this class + date
-    const existingReport = await reportRepo.findOneBy({
-      class: { id: cls.id },
-      reportDate: schedule.sessionDate instanceof Date 
-        ? schedule.sessionDate 
-        : new Date(schedule.sessionDate),
-    });
-    if (existingReport) continue;
+    if (!cls || !cls.tutor) continue;
 
     const sessionDate = schedule.sessionDate instanceof Date
       ? schedule.sessionDate
       : new Date(schedule.sessionDate);
 
+    // Normalize sessionDate to start of day for consistent matching
+    const normDate = new Date(sessionDate);
+    normDate.setHours(0, 0, 0, 0);
+
+    // Check if report already exists for this class + date (using Between to avoid precision issues)
+    const dayStart = new Date(normDate);
+    const dayEnd = new Date(normDate);
+    dayEnd.setHours(23, 59, 59, 999);
+
+    const existingReport = await reportRepo.findOne({
+      where: {
+        class: { id: cls.id },
+        reportDate: Between(dayStart, dayEnd),
+      },
+    });
+    if (existingReport) continue;
+
+    // Ưu tiên tạo report cho tất cả schedules của hardcoded students (100%)
+    // và ~70% schedules của các student khác
+    const isHardcodedStudent = cls.student?.user?.email 
+      && hardcodedStudentEmails.includes(cls.student.user.email);
+    
+    if (!isHardcodedStudent && Math.random() > 0.7) continue;
+
     await reportRepo.save(reportRepo.create({
       class: cls,
       tutor: cls.tutor,
-      reportDate: sessionDate,
+      reportDate: normDate,
       content: pickRandom(REPORT_CONTENTS),
       homework: pickRandom(HOMEWORK_LIST),
       progressRating: pickRandom(progressRatings),
-      attendanceStatus: Math.random() > 0.15,
+      attendanceStatus: Math.random() > 0.1, // 90% attendance
     }));
     reportCount++;
   }

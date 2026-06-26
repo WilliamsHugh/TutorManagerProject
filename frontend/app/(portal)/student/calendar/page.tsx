@@ -18,27 +18,49 @@ export default function StudentCalendarPage() {
   } | null>(null);
 
   const handleEventClick = useCallback(async (event: CalendarEvent) => {
-    const classId = event.class?.id;
-    const sessionDate = event.sessionDate;
+    // Log event data for debugging
+    console.log('[Calendar] Event clicked:', { id: event.id, classId: event.class?.id, sessionDate: event.sessionDate });
 
-    if (!classId || !sessionDate) {
-      // If no class ID or date, can't fetch report
+    // Extract classId from various possible locations in the event data
+    const classId = event.class?.id || event.classId || (event as any).class_id;
+    let sessionDate = event.sessionDate || (event as any).date;
+    const subjectName = event.class?.subject?.name || event.subject || 'Môn học';
+    const tutorName = event.class?.tutor?.user?.fullName || (event as any).tutorName || '';
+
+    if (!classId) {
+      console.error('[Calendar] Missing classId in event:', event);
+      setReportError('Không thể xác định lớp học cho buổi này.');
+      setReportData([]);
+      setSelectedSession({ classId: '', sessionDate: '', title: subjectName });
+      setReportOpen(true);
+      setReportLoading(false);
       return;
     }
 
-    const dateStr = typeof sessionDate === 'string' ? sessionDate.split('T')[0] : new Date(sessionDate).toISOString().split('T')[0];
-    const subjectName = event.class?.subject?.name || 'Môn học';
-    const tutorName = event.class?.tutor?.user?.fullName || '';
+    const dateStr = !sessionDate
+      ? ''
+      : typeof sessionDate === 'string'
+        ? sessionDate.split('T')[0]
+        : new Date(sessionDate).toISOString().split('T')[0];
 
     setSelectedSession({ classId, sessionDate: dateStr, title: `${subjectName}${tutorName ? ` - ${tutorName}` : ''}` });
     setReportOpen(true);
     setReportLoading(true);
     setReportError(null);
 
+    if (!dateStr) {
+      console.error('[Calendar] Missing sessionDate in event:', event);
+      setReportError('Không thể xác định ngày học cho buổi này.');
+      setReportData([]);
+      setReportLoading(false);
+      return;
+    }
+
     try {
       const data = await getStudentScheduleReport(classId, dateStr);
       setReportData(data);
     } catch (err: any) {
+      console.error('[Calendar] Failed to fetch report:', err);
       setReportError(err.message || 'Không thể tải báo cáo buổi học');
       setReportData([]);
     } finally {

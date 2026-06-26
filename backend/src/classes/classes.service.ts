@@ -4,13 +4,14 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In } from 'typeorm';
+import { Repository, In, Between } from 'typeorm';
 import { Class, ClassStatus } from './entities/class.entity';
 import { ClassRequest, RequestStatus } from './entities/class-request.entity';
 import { Schedule } from './entities/schedule.entity';
 import { Tutor } from '../users/entities/tutor.entity';
 import { Student } from '../users/entities/student.entity';
 import { Review } from './entities/review.entity';
+import { LearningReport } from './entities/learning-report.entity';
 import { User } from '../users/entities/user.entity';
 import { CreateClassDto } from './dto/create-class.dto';
 import { CreateReviewDto } from './dto/create-review.dto';
@@ -407,5 +408,61 @@ export class ClassesService {
 
     await this.scheduleRepository.remove(schedule);
     return { success: true };
+  }
+
+  async getStudentClassReports(userId: string, classId: string) {
+    const student = await this.studentsRepository.findOne({
+      where: { user: { id: userId } },
+    });
+    if (!student) {
+      throw new NotFoundException('Không tìm thấy học viên tương ứng với tài khoản này');
+    }
+
+    const classEntity = await this.classesRepository.findOne({
+      where: { id: classId, student: { id: student.id } },
+    });
+    if (!classEntity) {
+      throw new NotFoundException('Không tìm thấy lớp học hoặc bạn không thuộc lớp này');
+    }
+
+    const reportRepo = this.classesRepository.manager.getRepository(LearningReport);
+    return reportRepo.find({
+      where: { class: { id: classId } },
+      relations: ['tutor', 'tutor.user'],
+      order: { reportDate: 'DESC' },
+    });
+  }
+
+  async getStudentScheduleReport(userId: string, classId: string, sessionDate: string) {
+    const student = await this.studentsRepository.findOne({
+      where: { user: { id: userId } },
+    });
+    if (!student) {
+      throw new NotFoundException('Không tìm thấy học viên tương ứng với tài khoản này');
+    }
+
+    const classEntity = await this.classesRepository.findOne({
+      where: { id: classId, student: { id: student.id } },
+    });
+    if (!classEntity) {
+      throw new NotFoundException('Không tìm thấy lớp học hoặc bạn không thuộc lớp này');
+    }
+
+    const reportRepo = this.classesRepository.manager.getRepository(LearningReport);
+    const startOfDay = new Date(sessionDate);
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date(sessionDate);
+    endOfDay.setHours(23, 59, 59, 999);
+
+    const reports = await reportRepo.find({
+      where: {
+        class: { id: classId },
+        reportDate: Between(startOfDay, endOfDay),
+      },
+      relations: ['tutor', 'tutor.user'],
+      order: { reportDate: 'DESC' },
+    });
+
+    return reports;
   }
 }

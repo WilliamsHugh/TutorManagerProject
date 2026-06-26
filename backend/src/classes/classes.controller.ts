@@ -51,6 +51,24 @@ export class ClassesController {
     return this.classesService.findStudentSchedule(userId);
   }
 
+  @Get('student/reports/:classId')
+  @Roles(RoleType.STUDENT)
+  findMyClassReports(@Param('classId') classId: string, @Request() req) {
+    const userId = req.user.id || req.user.sub;
+    return this.classesService.getStudentClassReports(userId, classId);
+  }
+
+  @Get('student/schedule-report/:classId/:sessionDate')
+  @Roles(RoleType.STUDENT)
+  findScheduleReport(
+    @Param('classId') classId: string,
+    @Param('sessionDate') sessionDate: string,
+    @Request() req,
+  ) {
+    const userId = req.user.id || req.user.sub;
+    return this.classesService.getStudentScheduleReport(userId, classId, sessionDate);
+  }
+
   @Get(':id')
   @Roles(RoleType.STAFF, RoleType.ADMIN)
   findOne(@Param('id') id: string) {

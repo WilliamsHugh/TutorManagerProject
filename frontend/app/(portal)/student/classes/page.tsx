@@ -3,8 +3,9 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { isLoggedIn, getUserRole } from "@/lib/auth";
-import { getStudentClasses, submitReview, getClassReview } from "@/lib/api/classes.api";
-import { Star, Calendar, MapPin, Clock, Award, MessageSquare, BookOpen, User, CheckCircle2, AlertCircle, RefreshCw, Loader2, X } from "lucide-react";
+import { getStudentClasses, submitReview, getClassReview, getStudentClassReports } from "@/lib/api/classes.api";
+import { Star, Calendar, MapPin, Clock, Award, MessageSquare, BookOpen, User, CheckCircle2, AlertCircle, RefreshCw, Loader2, X, FileText } from "lucide-react";
+import LearningReportPopup, { LearningReport } from "@/components/common/LearningReportPopup";
 
 interface ClassItem {
   id: string;
@@ -45,7 +46,7 @@ export default function StudentClassesPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Modal State
+  // Modal State (Review)
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedClass, setSelectedClass] = useState<ClassItem | null>(null);
   const [rating, setRating] = useState(5);
@@ -53,6 +54,13 @@ export default function StudentClassesPage() {
   const [comment, setComment] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+
+  // Reports State
+  const [reportsData, setReportsData] = useState<LearningReport[]>([]);
+  const [selectedClassForReports, setSelectedClassForReports] = useState<ClassItem | null>(null);
+  const [isReportsOpen, setIsReportsOpen] = useState(false);
+  const [isReportsLoading, setIsReportsLoading] = useState(false);
+  const [reportsError, setReportsError] = useState<string | null>(null);
 
   // Auth protection
   useEffect(() => {
@@ -105,6 +113,29 @@ export default function StudentClassesPage() {
   const handleCloseReviewModal = () => {
     setIsModalOpen(false);
     setSelectedClass(null);
+  };
+
+  const handleOpenReports = async (cls: ClassItem) => {
+    setSelectedClassForReports(cls);
+    setIsReportsOpen(true);
+    setIsReportsLoading(true);
+    setReportsError(null);
+    try {
+      const data = await getStudentClassReports(cls.id);
+      setReportsData(data);
+    } catch (err: any) {
+      setReportsError(err.message || "Không thể tải báo cáo học tập");
+      setReportsData([]);
+    } finally {
+      setIsReportsLoading(false);
+    }
+  };
+
+  const handleCloseReports = () => {
+    setIsReportsOpen(false);
+    setSelectedClassForReports(null);
+    setReportsData([]);
+    setReportsError(null);
   };
 
   const handleSubmitReview = async (e: React.FormEvent) => {
@@ -299,7 +330,16 @@ export default function StudentClassesPage() {
                   </div>
 
                   {/* Actions Section */}
-                  <div className="mt-6 pt-4 border-t border-slate-100">
+                  <div className="mt-6 pt-4 border-t border-slate-100 space-y-3">
+                    {/* View Reports Button */}
+                    <button
+                      onClick={() => handleOpenReports(cls)}
+                      className="w-full inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-[#e2e8f0] bg-white px-4 py-2 text-sm font-semibold text-[#475569] hover:bg-slate-50 active:scale-95 transition-all cursor-pointer"
+                    >
+                      <FileText size={15} className="text-[#0b5fff]" />
+                      Xem báo cáo học tập
+                    </button>
+
                     {review ? (
                       // Display Submitted Review
                       <div className="rounded-xl border border-[#bbf7d0] bg-[#f0fdf4] p-3 text-xs">
@@ -441,6 +481,18 @@ export default function StudentClassesPage() {
             </form>
           </div>
         </div>
+      )}
+
+      {/* Reports Popup */}
+      {isReportsOpen && selectedClassForReports && (
+        <LearningReportPopup
+          reports={reportsData}
+          isLoading={isReportsLoading}
+          error={reportsError}
+          title={`Báo cáo học tập`}
+          subtitle={`Lớp: ${selectedClassForReports.subject.name} - ${selectedClassForReports.tutor.user.fullName}`}
+          onClose={handleCloseReports}
+        />
       )}
     </div>
   );

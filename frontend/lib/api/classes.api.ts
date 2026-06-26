@@ -177,3 +177,30 @@ export async function getClassReview(classId: string) {
   if (!res.ok) throw new Error('Không thể tải đánh giá lớp học');
   return res.json();
 }
+
+// Lấy báo cáo học tập của một lớp (dành cho student)
+export async function getStudentClassReports(classId: string) {
+  const token = getToken();
+  const res = await fetch(`${API_URL}/classes/student/reports/${classId}`, {
+    headers: { 'Authorization': `Bearer ${token}` },
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || 'Không thể tải báo cáo học tập');
+  }
+  return res.json();
+}
+
+// Lấy báo cáo cho một buổi học cụ thể (dành cho student, theo sessionDate)
+export async function getStudentScheduleReport(classId: string, sessionDate: string) {
+  const token = getToken();
+  const encodedDate = encodeURIComponent(sessionDate);
+  const res = await fetch(`${API_URL}/classes/student/schedule-report/${classId}/${encodedDate}`, {
+    headers: { 'Authorization': `Bearer ${token}` },
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || 'Không thể tải báo cáo buổi học');
+  }
+  return res.json();
+}

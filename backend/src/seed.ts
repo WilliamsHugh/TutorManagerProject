@@ -801,20 +801,44 @@ async function seed() {
   console.log(`   + Total reviews: ${reviewCount}`);
 
   // ===================================================================
-  // 11. LEARNING REPORTS (~40)
+  // 11. LEARNING REPORTS (~40) — Liên kết với lịch học cụ thể
   // ===================================================================
   console.log('\n--- 11. Seeding Learning Reports ---');
   const progressRatings = [ProgressRating.POOR, ProgressRating.FAIR, ProgressRating.GOOD, ProgressRating.EXCELLENT];
   let reportCount = 0;
 
-  for (const cls of seededClasses) {
-    const existingReport = await reportRepo.findOneBy({ class: { id: cls.id } });
-    if (existingReport || Math.random() > 0.7) continue;
+  // Lấy schedules đã tạo để gán report cho từng buổi học cụ thể
+  const allSchedules = await scheduleRepo.find({
+    relations: ['class', 'class.tutor'],
+    order: { sessionDate: 'ASC' },
+  });
+
+  // Tạo reports cho khoảng 40 schedules (chọn schedules đã COMPLETED hoặc 1 số SCHEDULED)
+  const reportableSchedules = allSchedules.filter(s => 
+    s.sessionStatus === SessionStatus.COMPLETED || Math.random() > 0.5
+  ).slice(0, 40);
+
+  for (const schedule of reportableSchedules) {
+    const cls = schedule.class;
+    if (!cls) continue;
+
+    // Check if report already exists for this class + date
+    const existingReport = await reportRepo.findOneBy({
+      class: { id: cls.id },
+      reportDate: schedule.sessionDate instanceof Date 
+        ? schedule.sessionDate 
+        : new Date(schedule.sessionDate),
+    });
+    if (existingReport) continue;
+
+    const sessionDate = schedule.sessionDate instanceof Date
+      ? schedule.sessionDate
+      : new Date(schedule.sessionDate);
 
     await reportRepo.save(reportRepo.create({
       class: cls,
       tutor: cls.tutor,
-      reportDate: new Date(),
+      reportDate: sessionDate,
       content: pickRandom(REPORT_CONTENTS),
       homework: pickRandom(HOMEWORK_LIST),
       progressRating: pickRandom(progressRatings),

@@ -39,10 +39,26 @@ export default function Header({
   const router = useRouter();
   const navLinks = customLinks || defaultNavLinks;
 
+  // Đồng bộ auth state từ localStorage — chạy khi mount, khi đổi route,
+  // và khi user back/forward bằng browser (không remount Header)
   useEffect(() => {
-    setIsLoggedIn(checkLoginStatus());
-    setUser(getAuthUser());
-  }, []);
+    const checkAuth = () => {
+      setIsLoggedIn(checkLoginStatus());
+      setUser(getAuthUser());
+    };
+
+    checkAuth();
+
+    // pageshow: khi trang được khôi phục từ bfcache (trình duyệt)
+    window.addEventListener('pageshow', checkAuth);
+    // popstate: khi Next.js App Router xử lý back/forward navigation
+    window.addEventListener('popstate', checkAuth);
+
+    return () => {
+      window.removeEventListener('pageshow', checkAuth);
+      window.removeEventListener('popstate', checkAuth);
+    };
+  }, [pathname]);
 
   const handleLogout = async () => {
     try {

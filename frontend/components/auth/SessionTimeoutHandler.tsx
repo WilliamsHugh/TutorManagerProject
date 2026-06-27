@@ -87,6 +87,38 @@ export default function SessionTimeoutHandler() {
     }, IDLE_TIMEOUT_MS);
   }, [clearAllTimers, handleLogout]);
 
+  // Global fetch interceptor to detect locked accounts
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const originalFetch = window.fetch;
+    window.fetch = async function (...args) {
+      const response = await originalFetch(...args);
+
+      if (response.status === 401) {
+        const clone = response.clone();
+        try {
+          const body = await clone.json();
+          if (body && typeof body.message === 'string' && body.message.includes('bị khóa')) {
+            clearAuth();
+            document.cookie = "access_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+            document.cookie = "refresh_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/api/auth/refresh;";
+            
+            sessionStorage.setItem('account_locked_msg', body.message);
+            window.location.href = '/login?locked=true';
+          }
+        } catch (e) {
+          // Ignore
+        }
+      }
+      return response;
+    };
+
+    return () => {
+      window.fetch = originalFetch;
+    };
+  }, [router]);
+
   // Token TTL check — log cảnh báo nếu token sắp hết hạn (chỉ trong dev)
   useEffect(() => {
     if (!isLoggedIn()) return;

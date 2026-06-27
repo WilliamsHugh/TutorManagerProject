@@ -26,14 +26,20 @@ import {
   NotificationType,
 } from './notifications/notification.entity';
 
+// For seeding, use session mode (port 5432) instead of transaction mode (port 6543)
+// Transaction mode doesn't support prepared statements and causes FK issues with eager loading
+const seedDbUrl = process.env.DATABASE_URL
+  ? process.env.DATABASE_URL.replace(':6543/', ':5432/')
+  : undefined;
+
 const dataSource = new DataSource({
   type: 'postgres',
-  url: process.env.DATABASE_URL,
-  host: !process.env.DATABASE_URL ? process.env.DB_HOST : undefined,
-  port: !process.env.DATABASE_URL ? Number(process.env.DB_PORT) : undefined,
-  username: !process.env.DATABASE_URL ? process.env.DB_USERNAME : undefined,
-  password: !process.env.DATABASE_URL ? process.env.DB_PASSWORD : undefined,
-  database: !process.env.DATABASE_URL ? process.env.DB_NAME : undefined,
+  url: seedDbUrl,
+  host: !seedDbUrl ? process.env.DB_HOST : undefined,
+  port: !seedDbUrl ? Number(process.env.DB_PORT) : undefined,
+  username: !seedDbUrl ? process.env.DB_USERNAME : undefined,
+  password: !seedDbUrl ? process.env.DB_PASSWORD : undefined,
+  database: !seedDbUrl ? process.env.DB_NAME : undefined,
   entities: [
     Role,
     User,
@@ -48,7 +54,7 @@ const dataSource = new DataSource({
     Review,
     Notification,
   ],
-  ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false,
+  ssl: seedDbUrl ? { rejectUnauthorized: false } : false,
 });
 
 // ============ HELPER: Loại bỏ dấu tiếng Việt ============
@@ -804,24 +810,21 @@ async function seed() {
     seededTutorsMap.set(item.email, tutor);
     tutorCount++;
 
-    // Tutor-Subject connections
+    // Tutor-Subject connections — use raw SQL to avoid eager-loading issues with connection pooler
     for (const subName of item.subjects) {
       const subject = subjectMap.get(subName);
       if (subject) {
-        const existingTs = await tutorSubjectRepo.findOneBy({
-          tutor: { id: tutor.id },
-          subject: { id: subject.id },
-        });
-        if (!existingTs) {
-          await tutorSubjectRepo.save(
-            tutorSubjectRepo.create({
-              tutor,
-              subject,
-              proficiencyLevel: Math.random() < 0.3 ? 'Nâng cao' : 'Cơ bản',
-              yearsExperience: Math.floor(1 + Math.random() * 5),
-            }),
-          );
-        }
+        await dataSource.query(
+          `INSERT INTO "tutor_subjects" ("id", "proficiency_level", "years_experience", "tutor_id", "subject_id")
+           VALUES (gen_random_uuid(), $1, $2, $3, $4)
+           ON CONFLICT DO NOTHING`,
+          [
+            Math.random() < 0.3 ? 'Nâng cao' : 'Cơ bản',
+            Math.floor(1 + Math.random() * 5),
+            tutor.id,
+            subject.id,
+          ],
+        );
       }
     }
   }

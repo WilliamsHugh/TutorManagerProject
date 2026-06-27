@@ -156,6 +156,27 @@ export class TutorController {
     return this.tutorsService.getTutorEarnings(tutorId);
   }
 
+  // Lấy danh sách đề xuất từ học sinh
+  @Get('recommendations')
+  async getRecommendations(@Request() req) {
+    const tutorId = req.user.id || req.user.sub;
+    return this.tutorsService.getTutorRecommendations(tutorId);
+  }
+
+  // Chấp nhận đề xuất từ học sinh
+  @Post('recommendations/:id/accept')
+  async acceptRecommendation(@Param('id') id: string, @Request() req) {
+    const tutorId = req.user.id || req.user.sub;
+    return this.tutorsService.acceptRecommendation(id, tutorId);
+  }
+
+  // Từ chối đề xuất từ học sinh
+  @Post('recommendations/:id/decline')
+  async declineRecommendation(@Param('id') id: string, @Request() req) {
+    const tutorId = req.user.id || req.user.sub;
+    return this.tutorsService.declineRecommendation(id, tutorId);
+  }
+
   // API Endpoint sinh dữ liệu mẫu
   @Post('seed')
   async seedData() {

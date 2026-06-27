@@ -1244,6 +1244,134 @@ export class TutorsService implements OnModuleInit {
     return { message: 'Mock data seeded' };
   }
 
+  async getTutorRecommendations(userId: string) {
+    const tutorEntity = await this.tutorRepository.findOne({
+      where: { user: { id: userId } },
+    });
+    if (!tutorEntity) throw new NotFoundException('Không tìm thấy hồ sơ gia sư');
+
+    const requests = await this.classRequestRepository.find({
+      where: {
+        preferredTutor: { id: tutorEntity.id },
+        status: RequestStatus.PENDING,
+      },
+      relations: {
+        student: { user: true },
+        subject: true,
+        preferredTutor: { user: true },
+      },
+      order: { createdAt: 'DESC' },
+    });
+
+    return requests.map((req) => ({
+      id: req.id,
+      studentName: req.student?.user?.fullName || 'Ẩn danh',
+      studentEmail: req.student?.user?.email || '',
+      studentPhone: req.student?.user?.phone || '',
+      gradeLevel: req.student?.gradeLevel || '',
+      subject: req.subject?.name || 'Môn học',
+      preferredArea: req.preferredArea || 'Toàn quốc',
+      preferredSchedule: req.preferredSchedule || 'Linh hoạt',
+      requirements: req.requirements || '',
+      createdAt: req.createdAt,
+      status: req.status,
+    }));
+  }
+
+  async acceptRecommendation(requestId: string, userId: string) {
+    const request = await this.classRequestRepository.findOne({
+      where: { id: requestId },
+      relations: {
+        student: true,
+        subject: true,
+        preferredTutor: { user: true },
+      },
+    });
+
+    if (!request) {
+      throw new NotFoundException('Không tìm thấy yêu cầu');
+    }
+
+    if (request.status !== RequestStatus.PENDING) {
+      throw new BadRequestException('Yêu cầu này không còn khả dụng');
+    }
+
+    // Verify this tutor is the preferred one
+    const tutorEntity = await this.tutorRepository.findOne({
+      where: { user: { id: userId } },
+    });
+    if (!tutorEntity) throw new NotFoundException('Không tìm thấy hồ sơ gia sư');
+
+    if (!request.preferredTutor || request.preferredTutor.id !== tutorEntity.id) {
+      throw new BadRequestException('Bạn không phải là gia sư được đề xuất trong yêu cầu này');
+    }
+
+    // Update status to PROCESSING
+    request.status = RequestStatus.PROCESSING;
+    await this.classRequestRepository.save(request);
+
+    // Create a new class
+    const newClass = this.classRepository.create({
+      tutor: tutorEntity,
+      student: request.student,
+      subject: request.subject,
+      request,
+      location: request.preferredArea,
+      feePerSession: 200000,
+      status: ClassStatus.ACTIVE,
+      startDate: new Date(),
+      notes: request.requirements,
+    });
+    await this.classRepository.save(newClass);
+
+    return {
+      message: 'Bạn đã chấp nhận đề xuất từ học viên thành công!',
+      class: newClass,
+    };
+  }
+
+  async declineRecommendation(requestId: string, userId: string) {
+    const request = await this.classRequestRepository.findOne({
+      where: { id: requestId },
+      relations: {
+        preferredTutor: { user: true },
+      },
+    });
+
+    if (!request) {
+      throw new NotFoundException('Không tìm thấy yêu cầu');
+    }
+
+    if (request.status !== RequestStatus.PENDING) {
+      throw new BadRequestException('Yêu cầu này không còn khả dụng');
+    }
+
+    const tutorEntity = await this.tutorRepository.findOne({
+      where: { user: { id: userId } },
+    });
+    if (!tutorEntity) throw new NotFoundException('Không tìm thấy hồ sơ gia sư');
+
+    if (!request.preferredTutor || request.preferredTutor.id !== tutorEntity.id) {
+      throw new BadRequestException('Bạn không phải là gia sư được đề xuất trong yêu cầu này');
+    }
+
+    // Remove preferredTutor so other tutors can take the request
+    request.preferredTutor = null as any;
+    const oldTutorName = tutorEntity.user?.fullName || 'Gia sư';
+    request.requirements = [
+      request.requirements || '',
+      `[Gia sư ${oldTutorName} đã từ chối đề xuất. Yêu cầu được mở lại cho tất cả gia sư.]`,
+    ]
+      .filter(Boolean)
+      .join('\n');
+
+    await this.classRequestRepository.save(request);
+
+    return {
+      message: 'Bạn đã từ chối đề xuất từ học viên. Yêu cầu sẽ được mở lại cho tất cả gia sư.',
+    };
+  }
+
   async getPublicTutors(params: {
     search?: string;
     subject?: string;

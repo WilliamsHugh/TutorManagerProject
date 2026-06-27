@@ -157,6 +157,45 @@ export async function getTutorEarnings() {
   return res.json();
 }
 
+// Hàm lấy danh sách đề xuất từ học sinh (dành riêng cho tutor)
+// Trả về danh sách class requests có preferredTutor trùng với tutor đang đăng nhập
+export async function getMyRecommendations() {
+  const token = getToken();
+  const res = await fetch(`${API_URL}/tutor/recommendations`, {
+    headers: { 'Authorization': `Bearer ${token}` },
+  });
+  if (!res.ok) throw new Error('Không thể tải danh sách đề xuất');
+  return res.json();
+}
+
+// Chấp nhận đề xuất từ học sinh
+export async function acceptRecommendation(id: string) {
+  const token = getToken();
+  const res = await fetch(`${API_URL}/tutor/recommendations/${id}/accept`, {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${token}` },
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || 'Không thể chấp nhận đề xuất');
+  }
+  return res.json();
+}
+
+// Từ chối đề xuất từ học sinh
+export async function declineRecommendation(id: string) {
+  const token = getToken();
+  const res = await fetch(`${API_URL}/tutor/recommendations/${id}/decline`, {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${token}` },
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || 'Không thể từ chối đề xuất');
+  }
+  return res.json();
+}
+
 // Hàm hủy lịch nghỉ (khôi phục buổi học)
 export async function cancelLeaveSchedule(scheduleId: string) {
   const token = getToken();

@@ -40,6 +40,10 @@ export class User {
   @Column({ name: 'is_active', type: 'boolean', default: true })
   isActive!: boolean;
 
+  @ManyToOne(() => User, { nullable: true })
+  @JoinColumn({ name: 'locked_by_id' })
+  lockedBy?: User | null;
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt!: Date;
 

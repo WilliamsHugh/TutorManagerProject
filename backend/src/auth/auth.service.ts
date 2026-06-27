@@ -94,6 +94,14 @@ export class AuthService {
       throw new UnauthorizedException('Email hoặc mật khẩu không đúng');
     }
 
+    if (!user.isActive) {
+      const staffName = user.lockedBy?.fullName || "Quản trị viên";
+      const staffId = user.lockedBy?.id ? user.lockedBy.id.slice(0, 8) : "ADMIN";
+      throw new UnauthorizedException(
+        `Tài khoản của bạn đã bị khóa bởi nhân viên ${staffName} (ID: ${staffId}). Vui lòng liên hệ trung tâm để được hỗ trợ.`
+      );
+    }
+
     const roleName = user.role?.name ?? '';
 
     // Phân luồng đăng nhập dựa theo Portal

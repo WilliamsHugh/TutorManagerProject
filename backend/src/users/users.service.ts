@@ -21,11 +21,17 @@ export class UsersService {
   ) {}
 
   async findByEmail(email: string): Promise<User | null> {
-    return this.usersRepository.findOne({ where: { email } });
+    return this.usersRepository.findOne({
+      where: { email },
+      relations: { lockedBy: true },
+    });
   }
 
   async findById(id: string): Promise<User | null> {
-    return this.usersRepository.findOne({ where: { id } });
+    return this.usersRepository.findOne({
+      where: { id },
+      relations: { lockedBy: true },
+    });
   }
 
   async findTutorByUserId(userId: string): Promise<Tutor | null> {

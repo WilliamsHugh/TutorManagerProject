@@ -373,6 +373,17 @@ export default function StudentClassesPage() {
                         <strong>Yêu cầu / Ghi chú:</strong> {cls.notes}
                       </div>
                     )}
+
+                    {cls.status === "suspended" && (
+                      <div className="mt-4 rounded-xl bg-amber-50 p-3 text-xs text-amber-800 leading-relaxed border border-amber-200/60 flex items-start gap-2">
+                        <AlertCircle size={14} className="shrink-0 mt-0.5 text-amber-600" />
+                        <div>
+                          <strong>Lớp học tạm dừng:</strong> Lớp học này đã bị tạm dừng bởi nhân viên{" "}
+                          <span className="font-bold">{cls.suspendedBy?.fullName || "Quản trị viên"}</span> (ID:{" "}
+                          <span className="font-mono">{cls.suspendedBy?.id ? cls.suspendedBy.id.slice(0, 8) : "ADMIN"}</span>).
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   {/* Actions Section */}

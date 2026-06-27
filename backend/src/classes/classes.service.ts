@@ -176,15 +176,17 @@ export class ClassesService {
         subject: true,
         request: true,
         createdBy: true,
+        suspendedBy: true,
       },
     });
     if (!classEntity) throw new NotFoundException('Không tìm thấy lớp học');
     return classEntity;
   }
 
-  async updateStatus(id: string, status: ClassStatus) {
+  async updateStatus(id: string, status: ClassStatus, user?: any) {
     const classEntity = await this.findOne(id);
     classEntity.status = status;
+    classEntity.suspendedBy = status === ClassStatus.SUSPENDED ? user : null;
     return this.classesRepository.save(classEntity);
   }
 

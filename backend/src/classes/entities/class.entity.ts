@@ -70,4 +70,8 @@ export class Class {
 
   @Column({ type: 'text', nullable: true })
   notes!: string;
+
+  @ManyToOne(() => User, { nullable: true })
+  @JoinColumn({ name: 'suspended_by_id' })
+  suspendedBy?: User | null;
 }

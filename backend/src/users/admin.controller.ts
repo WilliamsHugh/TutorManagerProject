@@ -114,10 +114,12 @@ export class AdminController {
   async toggleUserStatus(
     @Param('id') id: string,
     @Body() body: { isActive: boolean },
+    @Request() req: any,
   ) {
     const user = await this.usersRepo.findOneBy({ id });
     if (!user) throw new NotFoundException('Không tìm thấy người dùng');
     user.isActive = body.isActive;
+    user.lockedBy = body.isActive ? null : req.user;
     return this.usersRepo.save(user);
   }
 

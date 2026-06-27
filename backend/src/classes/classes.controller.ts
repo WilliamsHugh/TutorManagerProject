@@ -83,8 +83,12 @@ export class ClassesController {
 
   @Patch(':id/status')
   @Roles(RoleType.STAFF, RoleType.ADMIN)
-  updateStatus(@Param('id') id: string, @Body() dto: UpdateClassStatusDto) {
-    return this.classesService.updateStatus(id, dto.status);
+  updateStatus(
+    @Param('id') id: string,
+    @Body() dto: UpdateClassStatusDto,
+    @Request() req: any,
+  ) {
+    return this.classesService.updateStatus(id, dto.status, req.user);
   }
 
   @Get('tutor/:id/schedule')

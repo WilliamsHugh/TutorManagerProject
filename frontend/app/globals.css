@@ -126,3 +126,10 @@ h6 {
     @apply font-sans;
   }
 }
+
+/* Skeleton shimmer animation */
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}

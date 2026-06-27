@@ -51,9 +51,10 @@ type ClassDetailDialogProps = {
   classItem: StaffClassItem
   onClose: () => void
   onRefresh?: () => void
+  showToast: (title: string, message: string, type: "success" | "error" | "warning") => void
 }
 
-export function ClassDetailDialog({ classItem, onClose, onRefresh }: ClassDetailDialogProps) {
+export function ClassDetailDialog({ classItem, onClose, onRefresh, showToast }: ClassDetailDialogProps) {
   const [reports, setReports] = useState<any[]>([])
   const [loadingReports, setLoadingReports] = useState(true)
   const [schedules, setSchedules] = useState<any[]>([])
@@ -75,11 +76,11 @@ export function ClassDetailDialog({ classItem, onClose, onRefresh }: ClassDetail
     setStatusLoading(true)
     try {
       await updateClassStatusForStaff(classItem.id, newStatus)
-      alert(`Đã cập nhật trạng thái lớp học thành "${statusLabel}"!`)
+      showToast("Thành công", `Đã cập nhật trạng thái lớp học thành "${statusLabel}"!`, "success")
       if (onRefresh) onRefresh()
       onClose()
     } catch (err: any) {
-      alert(err.message || "Không thể cập nhật trạng thái lớp.")
+      showToast("Thất bại", err.message || "Không thể cập nhật trạng thái lớp.", "error")
     } finally {
       setStatusLoading(false)
     }

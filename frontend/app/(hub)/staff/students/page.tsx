@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge"
 
 import { StaffShell } from "../_components/StaffShell"
 import { TablePagination } from "../_components/TablePagination"
+import { AlertWindow } from "../../../(portal)/student/_components/AlertWindow"
 import { getStaffStudents, getClasses, getStudentScheduleForStaff, toggleUserStatusForStaff, deleteUserForStaff } from "@/lib/api"
 
 interface StudentData {
@@ -38,6 +39,22 @@ export default function StaffStudentsPage() {
   const [currentPage, setCurrentPage] = useState(1)
   const [selectedStudent, setSelectedStudent] = useState<StudentData | null>(null)
   const pageSize = 10
+
+  const [toastAlert, setToastAlert] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    type: "success" | "error" | "warning";
+  }>({
+    isOpen: false,
+    title: "",
+    message: "",
+    type: "success",
+  })
+
+  const showToast = useCallback((title: string, message: string, type: "success" | "error" | "warning") => {
+    setToastAlert({ isOpen: true, title, message, type })
+  }, [])
 
   const loadStudents = useCallback(async () => {
     try {
@@ -267,8 +284,16 @@ export default function StaffStudentsPage() {
           student={selectedStudent}
           onClose={() => setSelectedStudent(null)}
           onRefresh={loadStudents}
+          showToast={showToast}
         />
       )}
+      <AlertWindow
+        isOpen={toastAlert.isOpen}
+        title={toastAlert.title}
+        message={toastAlert.message}
+        type={toastAlert.type}
+        onClose={() => setToastAlert({ ...toastAlert, isOpen: false })}
+      />
     </StaffShell>
   )
 }
@@ -277,9 +302,10 @@ type StudentProfileDialogProps = {
   student: StudentData
   onClose: () => void
   onRefresh: () => void
+  showToast: (title: string, message: string, type: "success" | "error" | "warning") => void
 }
 
-function StudentProfileDialog({ student, onClose, onRefresh }: StudentProfileDialogProps) {
+function StudentProfileDialog({ student, onClose, onRefresh, showToast }: StudentProfileDialogProps) {
   const [classes, setClasses] = useState<any[]>([])
   const [loadingClasses, setLoadingClasses] = useState(true)
   const [schedules, setSchedules] = useState<any[]>([])
@@ -297,11 +323,19 @@ function StudentProfileDialog({ student, onClose, onRefresh }: StudentProfileDia
     setActionLoading(true)
     try {
       await toggleUserStatusForStaff(student.user.id, !student.user.isActive)
-      alert(student.user?.isActive ? "Tạm khóa học viên thành công!" : "Mở khóa học viên thành công!")
+      showToast(
+        "Thành công",
+        student.user?.isActive ? "Đã tạm khóa tài khoản học viên." : "Đã mở khóa tài khoản học viên.",
+        "success"
+      )
       onRefresh()
       onClose()
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Thao tác thất bại.")
+      showToast(
+        "Thất bại",
+        err instanceof Error ? err.message : "Thao tác thất bại.",
+        "error"
+      )
     } finally {
       setActionLoading(false)
     }
@@ -316,11 +350,15 @@ function StudentProfileDialog({ student, onClose, onRefresh }: StudentProfileDia
     setActionLoading(true)
     try {
       await deleteUserForStaff(student.user.id)
-      alert("Xóa học viên thành công!")
+      showToast("Thành công", "Đã xóa vĩnh viễn học viên và hồ sơ liên quan.", "success")
       onRefresh()
       onClose()
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Thao tác thất bại.")
+      showToast(
+        "Thất bại",
+        err instanceof Error ? err.message : "Thao tác thất bại.",
+        "error"
+      )
     } finally {
       setActionLoading(false)
     }

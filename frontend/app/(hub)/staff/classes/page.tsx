@@ -14,6 +14,7 @@ import { mapStaffClass } from "@/types/staff"
 import { StaffShell } from "../_components/StaffShell"
 import { TablePagination } from "../_components/TablePagination"
 import { ClassDetailDialog, getStatusBadge } from "../_components/ClassDetailDialog"
+import { AlertWindow } from "../../../(portal)/student/_components/AlertWindow"
 
 export default function StaffClassesPage() {
   const [classes, setClasses] = useState<StaffClassItem[]>([])
@@ -23,6 +24,22 @@ export default function StaffClassesPage() {
   const [currentPage, setCurrentPage] = useState(1)
   const [selectedClass, setSelectedClass] = useState<StaffClassItem | null>(null)
   const pageSize = 10
+
+  const [toastAlert, setToastAlert] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    type: "success" | "error" | "warning";
+  }>({
+    isOpen: false,
+    title: "",
+    message: "",
+    type: "success",
+  })
+
+  const showToast = useCallback((title: string, message: string, type: "success" | "error" | "warning") => {
+    setToastAlert({ isOpen: true, title, message, type })
+  }, [])
 
   const loadClasses = useCallback(async () => {
     try {
@@ -271,8 +288,16 @@ export default function StaffClassesPage() {
           classItem={selectedClass}
           onClose={() => setSelectedClass(null)}
           onRefresh={loadClasses}
+          showToast={showToast}
         />
       )}
+      <AlertWindow
+        isOpen={toastAlert.isOpen}
+        title={toastAlert.title}
+        message={toastAlert.message}
+        type={toastAlert.type}
+        onClose={() => setToastAlert({ ...toastAlert, isOpen: false })}
+      />
     </StaffShell>
   )
 }

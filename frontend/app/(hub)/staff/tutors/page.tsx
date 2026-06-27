@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge"
 
 import { StaffShell } from "../_components/StaffShell"
 import { TablePagination } from "../_components/TablePagination"
+import { AlertWindow } from "../../../(portal)/student/_components/AlertWindow"
 import { getStaffTutors, getClasses, getTutorScheduleForStaff, toggleUserStatusForStaff, deleteUserForStaff } from "@/lib/api"
 
 interface TutorData {
@@ -41,6 +42,22 @@ export default function StaffTutorsPage() {
   const [selectedTutor, setSelectedTutor] = useState<TutorData | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
   const pageSize = 10
+
+  const [toastAlert, setToastAlert] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    type: "success" | "error" | "warning";
+  }>({
+    isOpen: false,
+    title: "",
+    message: "",
+    type: "success",
+  })
+
+  const showToast = useCallback((title: string, message: string, type: "success" | "error" | "warning") => {
+    setToastAlert({ isOpen: true, title, message, type })
+  }, [])
 
   const loadTutors = useCallback(async () => {
     try {
@@ -280,8 +297,16 @@ export default function StaffTutorsPage() {
           tutor={selectedTutor}
           onClose={() => setSelectedTutor(null)}
           onRefresh={loadTutors}
+          showToast={showToast}
         />
       )}
+      <AlertWindow
+        isOpen={toastAlert.isOpen}
+        title={toastAlert.title}
+        message={toastAlert.message}
+        type={toastAlert.type}
+        onClose={() => setToastAlert({ ...toastAlert, isOpen: false })}
+      />
     </StaffShell>
   )
 }
@@ -290,9 +315,10 @@ type TutorProfileDialogProps = {
   tutor: TutorData
   onClose: () => void
   onRefresh: () => void
+  showToast: (title: string, message: string, type: "success" | "error" | "warning") => void
 }
 
-function TutorProfileDialog({ tutor, onClose, onRefresh }: TutorProfileDialogProps) {
+function TutorProfileDialog({ tutor, onClose, onRefresh, showToast }: TutorProfileDialogProps) {
   const [classes, setClasses] = useState<any[]>([])
   const [loadingClasses, setLoadingClasses] = useState(true)
   const [schedules, setSchedules] = useState<any[]>([])
@@ -310,11 +336,19 @@ function TutorProfileDialog({ tutor, onClose, onRefresh }: TutorProfileDialogPro
     setActionLoading(true)
     try {
       await toggleUserStatusForStaff(tutor.user.id, !tutor.user.isActive)
-      alert(tutor.user?.isActive ? "Tạm khóa giảng viên thành công!" : "Mở khóa giảng viên thành công!")
+      showToast(
+        "Thành công",
+        tutor.user?.isActive ? "Đã tạm khóa tài khoản giảng viên." : "Đã mở khóa tài khoản giảng viên.",
+        "success"
+      )
       onRefresh()
       onClose()
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Thao tác thất bại.")
+      showToast(
+        "Thất bại",
+        err instanceof Error ? err.message : "Thao tác thất bại.",
+        "error"
+      )
     } finally {
       setActionLoading(false)
     }
@@ -329,11 +363,15 @@ function TutorProfileDialog({ tutor, onClose, onRefresh }: TutorProfileDialogPro
     setActionLoading(true)
     try {
       await deleteUserForStaff(tutor.user.id)
-      alert("Xóa giảng viên thành công!")
+      showToast("Thành công", "Đã xóa vĩnh viễn giảng viên và hồ sơ liên quan.", "success")
       onRefresh()
       onClose()
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Thao tác thất bại.")
+      showToast(
+        "Thất bại",
+        err instanceof Error ? err.message : "Thao tác thất bại.",
+        "error"
+      )
     } finally {
       setActionLoading(false)
     }

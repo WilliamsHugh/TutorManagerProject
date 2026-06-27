@@ -44,19 +44,20 @@ export default function Header({ title, showSearch = false, userProfile }: Heade
   const unreadCount = Array.isArray(notifications) ? notifications.filter(n => !n.isRead).length : 0;
 
   const handleLogout = async () => {
-    try {
-      // Gọi API Logout ở Backend để xóa Cookie HttpOnly bảo mật
-      await fetch('/api/auth/logout', {
-        method: 'POST',
-        credentials: 'include',
-      });
-    } catch (error) {
-      console.error("Lỗi đăng xuất ở backend:", error);
-    }
-    clearAuth(); // Xóa localStorage
-    // Xóa cookie ở Client-side phòng hờ
+    clearAuth();
     document.cookie = "access_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-    router.push('/login');
+    
+    // PHẢI await để trình duyệt nhận Set-Cookie xóa httpOnly cookie TRƯỚC KHI chuyển trang
+    try {
+      await Promise.race([
+        fetch('/api/logout', { method: 'POST' }),
+        new Promise((_, reject) => setTimeout(() => reject(new Error("timeout")), 2000)),
+      ]);
+    } catch (err) {
+      console.error(err);
+    }
+    
+    window.location.href = '/';
   };
 
   return (

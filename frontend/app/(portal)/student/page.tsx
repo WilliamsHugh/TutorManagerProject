@@ -20,13 +20,15 @@ import type { TutorSuggestion } from "./types";
 import { TutorRequestForm } from "./_components/TutorRequestForm";
 import { TutorRequestPageHeader } from "./_components/TutorRequestPageHeader";
 import { TutorSuggestionsPanel } from "./_components/TutorSuggestionsPanel";
+import { AlertWindow } from "./_components/AlertWindow";
 
 export default function StudentDashboardPage() {
   const router = useRouter();
   const [subject, setSubject] = useState("");
   const [level, setLevel] = useState("");
   const [school, setSchool] = useState("");
-  const [area, setArea] = useState("");
+  const [province, setProvince] = useState("");
+  const [district, setDistrict] = useState("");
   const [schedule, setSchedule] = useState("");
   const [note, setNote] = useState("");
   const [search, setSearch] = useState("");
@@ -36,11 +38,38 @@ export default function StudentDashboardPage() {
 
   // Student info for API calls
   const [studentId, setStudentId] = useState<string | null>(null);
+  const [dbSubjects, setDbSubjects] = useState<{ id: string; name: string }[]>([]);
+  const [vnProvinces, setVnProvinces] = useState<any[]>([]);
   const [subjectMap, setSubjectMap] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState<string | null>(null);
-  const [submitSuccess, setSubmitSuccess] = useState(false);
-  const [recommendSuccess, setRecommendSuccess] = useState<string | null>(null);
+  const [recommendedTutorIds, setRecommendedTutorIds] = useState<string[]>([]);
+  const [alertConfig, setAlertConfig] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    type: "success" | "error" | "warning";
+  }>({
+    isOpen: false,
+    title: "",
+    message: "",
+    type: "warning",
+  });
+
+  const triggerAlert = useCallback((message: string, type: "success" | "error" | "warning" = "warning") => {
+    let title = "Thông báo";
+    if (type === "success") title = "Thành công";
+    if (type === "error") title = "Lỗi xảy ra";
+    if (type === "warning") title = "Cảnh báo";
+    
+    const cleanMsg = message.replace(/^[⚠️✅❌]\s*/, "");
+    
+    setAlertConfig({
+      isOpen: true,
+      title,
+      message: cleanMsg,
+      type,
+    });
+  }, []);
 
   // Proposals state (đề xuất từ gia sư chờ xác nhận)
   const [proposals, setProposals] = useState<any[]>([]);
@@ -56,18 +85,24 @@ export default function StudentDashboardPage() {
   const [activeTab, setActiveTab] = useState<"request" | "proposals">("request");
 
   // Auth protection
-  useEffect(() => {
-    if (!isLoggedIn() || getUserRole() !== "student") {
-      router.replace("/login");
-    }
-  }, [router]);
+  const loggedIn = isLoggedIn();
+  const userRole = getUserRole();
 
-  // Fetch student profile (for studentId) and subjects (for name→id mapping)
   useEffect(() => {
+    if (!loggedIn || userRole !== "student") {
+      clearAuth();
+      window.location.replace("/login");
+    }
+  }, [loggedIn, userRole]);
+
+  // Fetch student profile, subjects, and Vietnam provinces list
+  useEffect(() => {
+    if (!isLoggedIn() || getUserRole() !== "student") return;
     async function init() {
       try {
         // Fetch subjects to build name→id map
         const subjects = await getAllSubjects();
+        setDbSubjects(subjects);
         const map: Record<string, string> = {};
         for (const s of subjects) {
           map[s.name] = s.id;
@@ -75,6 +110,16 @@ export default function StudentDashboardPage() {
         setSubjectMap(map);
       } catch (err) {
         console.error("Failed to load subjects:", err);
+      }
+
+      try {
+        const res = await fetch("https://provinces.open-api.vn/api/?depth=2");
+        if (res.ok) {
+          const data = await res.json();
+          setVnProvinces(data);
+        }
+      } catch (err) {
+        console.error("Failed to load Vietnam provinces:", err);
       }
 
       try {
@@ -89,13 +134,38 @@ export default function StudentDashboardPage() {
     init();
   }, []);
 
-  // Fetch tutors from API
+  // Restore recommended tutors from localStorage
   useEffect(() => {
+    if (!isLoggedIn() || getUserRole() !== "student") return;
+    if (studentId) {
+      const saved = localStorage.getItem(`recommended_tutors_${studentId}`);
+      if (saved) {
+        try {
+          setRecommendedTutorIds(JSON.parse(saved));
+        } catch (e) {
+          console.error(e);
+        }
+      }
+    }
+  }, [studentId]);
+
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const LIMIT = 5;
+
+  // Fetch tutors from API when page or search changes
+  useEffect(() => {
+    if (!isLoggedIn() || getUserRole() !== "student") return;
     async function fetchTutors() {
       try {
         setLoading(true);
-        const result = await getStudentTutors({ limit: 20 });
+        const result = await getStudentTutors({
+          page,
+          limit: LIMIT,
+          search: search.trim() || undefined
+        });
         setTutors(result.data);
+        setTotalPages(result.meta?.totalPages || Math.ceil((result.meta?.total || 0) / LIMIT) || 1);
       } catch (err) {
         console.error("Failed to fetch tutors:", err);
       } finally {
@@ -119,50 +189,39 @@ export default function StudentDashboardPage() {
     fetchProposals();
   }, []);
 
-  const filteredTutors = useMemo(() => {
-    const keyword = search.trim().toLowerCase();
+  const handleSearchChange = (val: string) => {
+    setSearch(val);
+    setPage(1); // reset to page 1 on new search
+  };
 
-    if (!keyword) return tutors;
-
-    return tutors.filter((tutor) => {
-      const searchable = [
-        tutor.name,
-        tutor.experience,
-        tutor.education,
-        ...tutor.tags,
-      ]
-        .join(" ")
-        .toLowerCase();
-
-      return searchable.includes(keyword);
-    });
-  }, [search, tutors]);
+  const combinedArea = useMemo(() => {
+    return district && province ? `${district}, ${province}` : "";
+  }, [district, province]);
 
   const selectedTags = [
     subject || "Toán học",
     level || "Lớp 10",
-    area || "Quận 1",
+    combinedArea || "Quận 1, TP. Hồ Chí Minh",
     schedule || "Học tối",
   ];
 
   const handleSubmit = useCallback(async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setSubmitError(null);
-    setSubmitSuccess(false);
 
-    if (!subject) {
+    if (!subject || !level || !province || !district || !schedule) {
       setSubmitted(true);
+      triggerAlert("Vui lòng điền đầy đủ các thông tin bắt buộc.", "warning");
       return;
     }
 
     const subjectId = subjectMap[subject];
     if (!subjectId) {
-      setSubmitError("Môn học không hợp lệ. Vui lòng chọn lại.");
+      triggerAlert("Môn học không hợp lệ. Vui lòng chọn lại.", "warning");
       return;
     }
 
     if (!studentId) {
-      setSubmitError("Không tìm thấy thông tin học viên. Vui lòng đăng nhập lại.");
+      triggerAlert("Không tìm thấy thông tin học viên. Vui lòng đăng nhập lại.", "error");
       return;
     }
 
@@ -173,7 +232,7 @@ export default function StudentDashboardPage() {
       const payload = {
         studentId,
         subjectId,
-        preferredArea: area || undefined,
+        preferredArea: combinedArea || undefined,
         preferredSchedule: schedule || undefined,
         requirements: [
           level ? `Cấp học: ${level}` : "",
@@ -185,32 +244,43 @@ export default function StudentDashboardPage() {
       };
 
       await createClassRequest(payload);
-      setSubmitSuccess(true);
+      triggerAlert("Yêu cầu tìm gia sư đã được gửi thành công! Nhân viên trung tâm sẽ liên hệ với bạn sớm nhất.", "success");
+      
+      // Clear form states on success
+      setSubject("");
+      setLevel("");
+      setSchool("");
+      setProvince("");
+      setDistrict("");
+      setSchedule("");
+      setNote("");
+      setSubmitted(false);
     } catch (err: any) {
-      setSubmitError(err?.message || "Có lỗi xảy ra khi gửi yêu cầu. Vui lòng thử lại.");
+      triggerAlert(err?.message || "Có lỗi xảy ra khi gửi yêu cầu. Vui lòng thử lại.", "error");
       console.error("Submit request error:", err);
     } finally {
       setSubmitting(false);
     }
-  }, [subject, subjectMap, studentId, area, schedule, level, school, note]);
+  }, [subject, level, province, district, schedule, subjectMap, studentId, combinedArea, school, note, triggerAlert]);
 
   const handleRecommendTutor = useCallback(async (tutor: TutorSuggestion) => {
-    setRecommendSuccess(null);
-    setSubmitError(null);
-
-    if (!subject) {
-      setSubmitError('Vui lòng chọn môn học trước khi đề xuất gia sư.');
+    if (!subject || !level || !province || !district || !schedule) {
+      setSubmitted(true);
+      
+      // Alert and scroll to form area
+      triggerAlert("Vui lòng điền đầy đủ các thông tin bắt buộc (Môn học, Cấp học, Khu vực, Lịch học) ở Form đăng ký bên trái trước khi đề xuất gia sư.", "warning");
+      window.scrollTo({ top: 0, behavior: "smooth" });
       return;
     }
 
     const subjectId = subjectMap[subject];
     if (!subjectId) {
-      setSubmitError('Môn học không hợp lệ. Vui lòng chọn lại.');
+      triggerAlert("Môn học không hợp lệ. Vui lòng chọn lại.", "warning");
       return;
     }
 
     if (!studentId) {
-      setSubmitError('Không tìm thấy thông tin học viên. Vui lòng đăng nhập lại.');
+      triggerAlert("Không tìm thấy thông tin học viên. Vui lòng đăng nhập lại.", "error");
       return;
     }
 
@@ -221,7 +291,7 @@ export default function StudentDashboardPage() {
         studentId,
         subjectId,
         preferredTutorId: tutorId,
-        preferredArea: area || undefined,
+        preferredArea: combinedArea || undefined,
         preferredSchedule: schedule || undefined,
         requirements: [
           level ? `Cấp học: ${level}` : '',
@@ -234,14 +304,32 @@ export default function StudentDashboardPage() {
       };
 
       await createClassRequest(payload);
-      setRecommendSuccess(`Đã gửi yêu cầu và đề xuất gia sư ${tutor.name} thành công!`);
-      setTimeout(() => setRecommendSuccess(null), 5000);
+      triggerAlert(`Đã gửi yêu cầu và đề xuất gia sư ${tutor.name} thành công!`, "success");
+      setRecommendedTutorIds((prev) => {
+        const next = [...prev, tutorId];
+        localStorage.setItem(`recommended_tutors_${studentId}`, JSON.stringify(next));
+        return next;
+      });
+      
+      // Clear form states on success
+      setSubject("");
+      setLevel("");
+      setSchool("");
+      setProvince("");
+      setDistrict("");
+      setSchedule("");
+      setNote("");
+      setSubmitted(false);
     } catch (err: any) {
-      setSubmitError(err?.message || 'Có lỗi xảy ra khi đề xuất gia sư. Vui lòng thử lại.');
+      triggerAlert(err?.message || "Có lỗi xảy ra khi đề xuất gia sư. Vui lòng thử lại.", "error");
     } finally {
       setSubmitting(false);
     }
-  }, [subject, subjectMap, studentId, area, schedule, level, school, note]);
+  }, [subject, level, province, district, schedule, subjectMap, studentId, combinedArea, school, note, triggerAlert]);
+
+  if (!isLoggedIn() || getUserRole() !== "student") {
+    return null;
+  }
 
   const handleDeclineProposal = async (requestId: string) => {
     setDecliningId(requestId);
@@ -379,12 +467,6 @@ export default function StudentDashboardPage() {
           </div>
         )}
 
-        {/* Error banner */}
-        {submitError && (
-          <div className="mb-6 rounded-lg border border-[#fecaca] bg-[#fef2f2] px-4 py-3 text-sm font-medium text-[#991b1b]">
-            ❌ {submitError}
-          </div>
-        )}
 
         {activeTab === "request" ? (
           <div className="grid grid-cols-1 items-start gap-6 xl:grid-cols-12">
@@ -621,6 +703,14 @@ export default function StudentDashboardPage() {
             </div>
           </div>
         )}
+
+        <AlertWindow
+          isOpen={alertConfig.isOpen}
+          title={alertConfig.title}
+          message={alertConfig.message}
+          type={alertConfig.type}
+          onClose={() => setAlertConfig((prev) => ({ ...prev, isOpen: false }))}
+        />
       </main>
     </div>
   );

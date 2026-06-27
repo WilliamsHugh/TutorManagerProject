@@ -76,7 +76,15 @@ export class ClassesService {
 
           // Extract days e.g. ['Thứ 2', 'Thứ 4']
           const days: string[] = [];
-          const allDayNames = ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'Chủ nhật'];
+          const allDayNames = [
+            'Thứ 2',
+            'Thứ 3',
+            'Thứ 4',
+            'Thứ 5',
+            'Thứ 6',
+            'Thứ 7',
+            'Chủ nhật',
+          ];
           allDayNames.forEach((d) => {
             if (daysPart.includes(d)) {
               days.push(d);
@@ -177,15 +185,17 @@ export class ClassesService {
         subject: true,
         request: true,
         createdBy: true,
+        suspendedBy: true,
       },
     });
     if (!classEntity) throw new NotFoundException('Không tìm thấy lớp học');
     return classEntity;
   }
 
-  async updateStatus(id: string, status: ClassStatus) {
+  async updateStatus(id: string, status: ClassStatus, user?: any) {
     const classEntity = await this.findOne(id);
     classEntity.status = status;
+    classEntity.suspendedBy = status === ClassStatus.SUSPENDED ? user : null;
     return this.classesRepository.save(classEntity);
   }
 
@@ -194,19 +204,19 @@ export class ClassesService {
       where: { user: { id: userId } },
     });
     if (!student) {
-      throw new NotFoundException('Không tìm thấy học viên tương ứng với tài khoản này');
+      throw new NotFoundException(
+        'Không tìm thấy học viên tương ứng với tài khoản này',
+      );
     }
 
     const schedules = await this.scheduleRepository.find({
       where: {
-        class: { student: { id: student.id }, status: In([ClassStatus.ACTIVE, ClassStatus.COMPLETED]) }
+        class: {
+          student: { id: student.id },
+          status: In([ClassStatus.ACTIVE, ClassStatus.COMPLETED]),
+        },
       },
-      relations: [
-        'class',
-        'class.subject',
-        'class.tutor',
-        'class.tutor.user',
-      ],
+      relations: ['class', 'class.subject', 'class.tutor', 'class.tutor.user'],
       order: {
         dayOfWeek: 'ASC',
         startTime: 'ASC',
@@ -221,10 +231,12 @@ export class ClassesService {
       where: { user: { id: userId } },
     });
     if (!student) {
-      throw new NotFoundException('Không tìm thấy học viên tương ứng với tài khoản này');
+      throw new NotFoundException(
+        'Không tìm thấy học viên tương ứng với tài khoản này',
+      );
     }
 
-    return this.classesRepository.find({
+    const classes = await this.classesRepository.find({
       where: { student: { id: student.id } },
       relations: {
         tutor: { user: true },
@@ -234,6 +246,56 @@ export class ClassesService {
         startDate: 'DESC',
       },
     });
+
+    const requests = await this.classRequestsRepository.find({
+      where: {
+        student: { id: student.id },
+        status: In([RequestStatus.PENDING, RequestStatus.PROCESSING]),
+      },
+      relations: {
+        preferredTutor: { user: true },
+        subject: true,
+      },
+      order: {
+        createdAt: 'DESC',
+      },
+    });
+
+    // Map class requests to look like classes for the UI
+    const requestItems = requests.map((req) => ({
+      id: req.id,
+      isRequest: true,
+      location: req.preferredArea || 'Chưa xác định',
+      feePerSession: 0,
+      totalSessions: 0,
+      status: req.status, // 'pending' or 'processing'
+      startDate: req.createdAt
+        ? req.createdAt.toISOString()
+        : new Date().toISOString(),
+      endDate: req.createdAt
+        ? req.createdAt.toISOString()
+        : new Date().toISOString(),
+      notes: req.requirements || '',
+      subject: req.subject,
+      tutor: req.preferredTutor
+        ? {
+            id: req.preferredTutor.id,
+            educationLevel: req.preferredTutor.educationLevel || '',
+            major: req.preferredTutor.major || '',
+            experience: req.preferredTutor.experience || '',
+            bio: req.preferredTutor.bio || '',
+            availableAreas: req.preferredTutor.availableAreas || '',
+            university: req.preferredTutor.university || '',
+            user: {
+              fullName: req.preferredTutor.user?.fullName || '',
+              email: req.preferredTutor.user?.email || '',
+              phone: req.preferredTutor.user?.phone || '',
+            },
+          }
+        : null,
+    }));
+
+    return [...requestItems, ...classes];
   }
 
   async createReview(userId: string, dto: CreateReviewDto) {
@@ -241,7 +303,9 @@ export class ClassesService {
       where: { user: { id: userId } },
     });
     if (!student) {
-      throw new NotFoundException('Không tìm thấy học viên tương ứng với tài khoản này');
+      throw new NotFoundException(
+        'Không tìm thấy học viên tương ứng với tài khoản này',
+      );
     }
 
     const classEntity = await this.classesRepository.findOne({
@@ -256,7 +320,9 @@ export class ClassesService {
     }
 
     if (classEntity.student.id !== student.id) {
-      throw new ConflictException('Bạn không thuộc lớp học này để thực hiện đánh giá');
+      throw new ConflictException(
+        'Bạn không thuộc lớp học này để thực hiện đánh giá',
+      );
     }
 
     const existingReview = await this.reviewsRepository.findOne({
@@ -325,33 +391,38 @@ export class ClassesService {
   async getTutorSchedules(tutorId: string) {
     return this.scheduleRepository.find({
       where: {
-        class: { tutor: { id: tutorId }, status: ClassStatus.ACTIVE }
+        class: { tutor: { id: tutorId }, status: ClassStatus.ACTIVE },
       },
-      relations: ['class', 'class.subject', 'class.student', 'class.student.user'],
+      relations: [
+        'class',
+        'class.subject',
+        'class.student',
+        'class.student.user',
+      ],
       order: {
         dayOfWeek: 'ASC',
-        startTime: 'ASC'
-      }
+        startTime: 'ASC',
+      },
     });
   }
 
   async getStudentSchedules(studentId: string) {
     return this.scheduleRepository.find({
       where: {
-        class: { student: { id: studentId }, status: ClassStatus.ACTIVE }
+        class: { student: { id: studentId }, status: ClassStatus.ACTIVE },
       },
       relations: ['class', 'class.subject', 'class.tutor', 'class.tutor.user'],
       order: {
         dayOfWeek: 'ASC',
-        startTime: 'ASC'
-      }
+        startTime: 'ASC',
+      },
     });
   }
 
   async getClassSchedules(classId: string) {
     return this.scheduleRepository.find({
       where: {
-        class: { id: classId }
+        class: { id: classId },
       },
       relations: [
         'class',
@@ -369,7 +440,9 @@ export class ClassesService {
   }
 
   async createSchedule(classId: string, dto: CreateScheduleDto) {
-    const classEntity = await this.classesRepository.findOne({ where: { id: classId } });
+    const classEntity = await this.classesRepository.findOne({
+      where: { id: classId },
+    });
     if (!classEntity) throw new NotFoundException('Không tìm thấy lớp học');
 
     const schedule = this.scheduleRepository.create({
@@ -385,17 +458,28 @@ export class ClassesService {
     return this.scheduleRepository.save(schedule);
   }
 
-  async updateSchedule(classId: string, scheduleId: string, dto: UpdateScheduleDto) {
+  async updateSchedule(
+    classId: string,
+    scheduleId: string,
+    dto: UpdateScheduleDto,
+  ) {
     const schedule = await this.scheduleRepository.findOne({
       where: { id: scheduleId, class: { id: classId } },
     });
-    if (!schedule) throw new NotFoundException('Không tìm thấy buổi học tương ứng trong lớp này');
+    if (!schedule)
+      throw new NotFoundException(
+        'Không tìm thấy buổi học tương ứng trong lớp này',
+      );
 
     if (dto.dayOfWeek !== undefined) schedule.dayOfWeek = dto.dayOfWeek;
     if (dto.startTime !== undefined) schedule.startTime = dto.startTime;
     if (dto.endTime !== undefined) schedule.endTime = dto.endTime;
-    if (dto.sessionDate !== undefined) schedule.sessionDate = dto.sessionDate ? new Date(dto.sessionDate) : null as any;
-    if (dto.sessionStatus !== undefined) schedule.sessionStatus = dto.sessionStatus;
+    if (dto.sessionDate !== undefined)
+      schedule.sessionDate = dto.sessionDate
+        ? new Date(dto.sessionDate)
+        : (null as any);
+    if (dto.sessionStatus !== undefined)
+      schedule.sessionStatus = dto.sessionStatus;
     if (dto.note !== undefined) schedule.note = dto.note;
 
     return this.scheduleRepository.save(schedule);
@@ -405,7 +489,10 @@ export class ClassesService {
     const schedule = await this.scheduleRepository.findOne({
       where: { id: scheduleId, class: { id: classId } },
     });
-    if (!schedule) throw new NotFoundException('Không tìm thấy buổi học tương ứng trong lớp này');
+    if (!schedule)
+      throw new NotFoundException(
+        'Không tìm thấy buổi học tương ứng trong lớp này',
+      );
 
     await this.scheduleRepository.remove(schedule);
     return { success: true };
@@ -416,17 +503,22 @@ export class ClassesService {
       where: { user: { id: userId } },
     });
     if (!student) {
-      throw new NotFoundException('Không tìm thấy học viên tương ứng với tài khoản này');
+      throw new NotFoundException(
+        'Không tìm thấy học viên tương ứng với tài khoản này',
+      );
     }
 
     const classEntity = await this.classesRepository.findOne({
       where: { id: classId, student: { id: student.id } },
     });
     if (!classEntity) {
-      throw new NotFoundException('Không tìm thấy lớp học hoặc bạn không thuộc lớp này');
+      throw new NotFoundException(
+        'Không tìm thấy lớp học hoặc bạn không thuộc lớp này',
+      );
     }
 
-    const reportRepo = this.classesRepository.manager.getRepository(LearningReport);
+    const reportRepo =
+      this.classesRepository.manager.getRepository(LearningReport);
     return reportRepo.find({
       where: { class: { id: classId } },
       relations: ['tutor', 'tutor.user'],
@@ -776,17 +868,22 @@ export class ClassesService {
       where: { user: { id: userId } },
     });
     if (!student) {
-      throw new NotFoundException('Không tìm thấy học viên tương ứng với tài khoản này');
+      throw new NotFoundException(
+        'Không tìm thấy học viên tương ứng với tài khoản này',
+      );
     }
 
     const classEntity = await this.classesRepository.findOne({
       where: { id: classId, student: { id: student.id } },
     });
     if (!classEntity) {
-      throw new NotFoundException('Không tìm thấy lớp học hoặc bạn không thuộc lớp này');
+      throw new NotFoundException(
+        'Không tìm thấy lớp học hoặc bạn không thuộc lớp này',
+      );
     }
 
-    const reportRepo = this.classesRepository.manager.getRepository(LearningReport);
+    const reportRepo =
+      this.classesRepository.manager.getRepository(LearningReport);
     const startOfDay = new Date(sessionDate);
     startOfDay.setHours(0, 0, 0, 0);
     const endOfDay = new Date(sessionDate);

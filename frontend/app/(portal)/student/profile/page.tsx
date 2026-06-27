@@ -2,7 +2,8 @@
 
 import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { isLoggedIn, getUserRole } from "@/lib/auth";
+import { isLoggedIn, getUserRole, clearAuth } from "@/lib/auth";
+import { ProfileSkeleton } from "../_components/StudentSkeletons";
 import { getStudentProfile } from "@/lib/api/classes.api";
 import {
   User,
@@ -53,14 +54,18 @@ export default function StudentProfilePage() {
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
 
+  const loggedIn = isLoggedIn();
+  const userRole = getUserRole();
+
   useEffect(() => {
-    if (!isLoggedIn() || getUserRole() !== "student") {
-      router.replace("/login");
+    if (!loggedIn || userRole !== "student") {
+      clearAuth();
+      window.location.replace("/login");
       return;
     }
 
     loadProfile();
-  }, [router]);
+  }, [loggedIn, userRole, router]);
 
   const loadProfile = async () => {
     setIsLoading(true);
@@ -177,12 +182,7 @@ export default function StudentProfilePage() {
   return (
     <div className="min-h-screen bg-[#f8fafc] text-[#0f172a]">
       {isLoading ? (
-        <div className="flex items-center justify-center min-h-[60vh]">
-          <div className="text-center">
-            <Loader2 size={40} className="text-[#0b5fff] animate-spin mx-auto mb-4" />
-            <p className="text-sm font-medium text-[#64748b]">Đang tải thông tin hồ sơ...</p>
-          </div>
-        </div>
+        <ProfileSkeleton />
       ) : error ? (
         <div className="flex items-center justify-center min-h-[60vh]">
           <div className="text-center max-w-sm">

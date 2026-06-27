@@ -50,6 +50,8 @@ export interface CalendarEvent {
     tutor?: { user?: { fullName?: string } };
     student?: { user?: { fullName?: string } };
     location?: string;
+    startDate?: string | Date;
+    endDate?: string | Date;
   };
   [key: string]: any;
 }
@@ -291,13 +293,30 @@ export default function Calendar({
 
   /** Check if an event's sessionDate falls within a date range [start, end] */
   function isEventInRange(event: CalendarEvent, start: Date, end: Date): boolean {
-    if (!event.sessionDate) {
-      // No date — fall back to dayOfWeek matching for recurring events
-      return true;
+    // 1. If has sessionDate, check bounds directly
+    if (event.sessionDate) {
+      const d = typeof event.sessionDate === 'string' ? new Date(event.sessionDate) : event.sessionDate;
+      if (!isNaN(d.getTime())) {
+        return d >= start && d <= end;
+      }
     }
-    const d = typeof event.sessionDate === 'string' ? new Date(event.sessionDate) : event.sessionDate;
-    if (isNaN(d.getTime())) return true; // can't determine, show it
-    return d >= start && d <= end;
+
+    // 2. If it is a recurring schedule (class-linked), make sure the week/day overlaps with the class's start & end dates
+    if (event.class) {
+      const clsStart = event.class.startDate ? new Date(event.class.startDate) : null;
+      const clsEnd = event.class.endDate ? new Date(event.class.endDate) : null;
+
+      if (clsStart) {
+        clsStart.setHours(0, 0, 0, 0);
+        if (end < clsStart) return false;
+      }
+      if (clsEnd) {
+        clsEnd.setHours(23, 59, 59, 999);
+        if (start > clsEnd) return false;
+      }
+    }
+
+    return true;
   }
 
   /** Get the current week's Monday 00:00 and Sunday 23:59:59 */

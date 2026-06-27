@@ -108,6 +108,18 @@ export function mapClassRequest(request: ApiClassRequest): RequestItem {
     note: request.requirements ?? "Không có yêu cầu đặc biệt",
     status: requestStatusLabels[request.status],
     studentId: request.student?.id,
+    preferredTutor: request.preferredTutor ? {
+      id: request.preferredTutor.id,
+      name: request.preferredTutor.user?.fullName || "Gia sư",
+      educationLevel: request.preferredTutor.educationLevel || "Chưa cập nhật",
+      major: request.preferredTutor.major || "Chưa cập nhật",
+      experience: request.preferredTutor.experience || "Chưa cập nhật",
+      availableAreas: request.preferredTutor.availableAreas || "Chưa cập nhật",
+      bio: request.preferredTutor.bio || "",
+      university: request.preferredTutor.university || "Chưa cập nhật",
+      phone: request.preferredTutor.user?.phone || "Chưa cập nhật",
+      email: request.preferredTutor.user?.email || "Chưa cập nhật",
+    } : null,
   }
 }
 

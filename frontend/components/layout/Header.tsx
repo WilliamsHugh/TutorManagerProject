@@ -66,22 +66,24 @@ export default function Header({
   }, [pathname]);
 
   const handleLogout = async () => {
-    try {
-      await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:3001/api"}/auth/logout`, {
-        method: "POST",
-        credentials: "include",
-      });
-    } catch (error) {
-      console.error("Logout error:", error);
-    }
     clearAuth();
     setIsLoggedIn(false);
     setUser(null);
-    if (pathname.startsWith("/hub") || pathname.startsWith("/staff")) {
-      router.push("/hub/login");
-    } else {
-      router.push("/login");
+
+    const targetUrl = (pathname.startsWith("/hub") || pathname.startsWith("/staff")) ? "/hub/login" : "/";
+
+    // PHẢI await để trình duyệt nhận Set-Cookie xóa httpOnly cookie TRƯỚC KHI chuyển trang
+    // Nếu không await, cookie httpOnly vẫn còn → middleware redirect về dashboard thay vì /login
+    try {
+      await Promise.race([
+        fetch("/api/logout", { method: "POST" }),
+        new Promise((_, reject) => setTimeout(() => reject(new Error("timeout")), 2000)),
+      ]);
+    } catch (err) {
+      console.error("Logout error:", err);
     }
+
+    window.location.href = targetUrl;
   };
 
   return (

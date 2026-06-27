@@ -61,7 +61,12 @@ export class Tutor {
   @Column({ type: 'varchar', length: 255, nullable: true })
   university!: string;
 
-  @Column({ name: 'graduation_year', type: 'varchar', length: 50, nullable: true })
+  @Column({
+    name: 'graduation_year',
+    type: 'varchar',
+    length: 50,
+    nullable: true,
+  })
   graduationYear!: string;
 
   @Column({

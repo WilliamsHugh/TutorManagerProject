@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useState, useCallback } from "react"
 import { BookOpen, CalendarDays, MapPin, Search, Clock, Mail, Phone, GraduationCap, X, Download } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
@@ -14,6 +14,7 @@ import { mapStaffClass } from "@/types/staff"
 import { StaffShell } from "../_components/StaffShell"
 import { TablePagination } from "../_components/TablePagination"
 import { ClassDetailDialog, getStatusBadge } from "../_components/ClassDetailDialog"
+import { AlertWindow } from "../../../(portal)/student/_components/AlertWindow"
 
 export default function StaffClassesPage() {
   const [classes, setClasses] = useState<StaffClassItem[]>([])
@@ -24,20 +25,36 @@ export default function StaffClassesPage() {
   const [selectedClass, setSelectedClass] = useState<StaffClassItem | null>(null)
   const pageSize = 10
 
-  useEffect(() => {
-    async function loadClasses() {
-      try {
-        const data = await getClasses()
-        setClasses(data.map(mapStaffClass))
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Không thể tải danh sách lớp học.")
-      } finally {
-        setLoading(false)
-      }
-    }
+  const [toastAlert, setToastAlert] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    type: "success" | "error" | "warning";
+  }>({
+    isOpen: false,
+    title: "",
+    message: "",
+    type: "success",
+  })
 
-    loadClasses()
+  const showToast = useCallback((title: string, message: string, type: "success" | "error" | "warning") => {
+    setToastAlert({ isOpen: true, title, message, type })
   }, [])
+
+  const loadClasses = useCallback(async () => {
+    try {
+      const data = await getClasses()
+      setClasses(data.map(mapStaffClass))
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Không thể tải danh sách lớp học.")
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    loadClasses()
+  }, [loadClasses])
 
   const filteredClasses = useMemo(() => {
     const query = search.trim().toLowerCase()
@@ -270,8 +287,17 @@ export default function StaffClassesPage() {
         <ClassDetailDialog
           classItem={selectedClass}
           onClose={() => setSelectedClass(null)}
+          onRefresh={loadClasses}
+          showToast={showToast}
         />
       )}
+      <AlertWindow
+        isOpen={toastAlert.isOpen}
+        title={toastAlert.title}
+        message={toastAlert.message}
+        type={toastAlert.type}
+        onClose={() => setToastAlert({ ...toastAlert, isOpen: false })}
+      />
     </StaffShell>
   )
 }

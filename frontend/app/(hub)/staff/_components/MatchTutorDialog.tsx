@@ -10,6 +10,7 @@ import { RequestDetailCard } from "./RequestDetailCard"
 import { TutorRecommendationCard } from "./TutorRecommendationCard"
 import { getTutorScheduleForStaff, getStudentScheduleForStaff } from "@/lib/api"
 import type { RequestItem, RequestStatus, TutorRecommendation } from "@/types/class_request"
+import { TutorDetailModal } from "../../../(portal)/student/_components/TutorDetailModal"
 
 const statusOptions: RequestStatus[] = ["Chờ xử lý", "Đang xử lý", "Đã ghép", "Đã hủy"]
 
@@ -35,6 +36,49 @@ export function MatchTutorDialog({
 
   // Schedule View Modal State
   const [activeScheduleModal, setActiveScheduleModal] = useState<{ id: string; name: string; role: "tutor" | "student" } | null>(null)
+
+  // Tutor Detail Modal State
+  const [selectedTutorForDetail, setSelectedTutorForDetail] = useState<any | null>(null)
+
+  const handleOpenTutorDetail = (tutor: TutorRecommendation) => {
+    const mapped: any = {
+      id: tutor.id,
+      name: tutor.name,
+      avatar: "https://randomuser.me/api/portraits/women/1.jpg",
+      match: parseInt(tutor.match) || 95,
+      experience: tutor.meta.split(" · ")[0] || "Chưa cập nhật",
+      education: tutor.meta.split(" · ")[1] || "Chưa cập nhật",
+      location: tutor.tags[2] || "Toàn quốc",
+      price: "Thỏa thuận",
+      rating: 5,
+      reviews: 0,
+      teachingMode: "Linh hoạt",
+      availableTime: "Linh hoạt",
+      phone: tutor.phone || "",
+      email: tutor.email || "",
+      bio: "Đang tải giới thiệu chi tiết...",
+      tags: tutor.tags,
+    }
+    
+    setSelectedTutorForDetail(mapped)
+
+    // Fetch actual details to populate extra fields like bio and avatar
+    fetch(`/api/tutors?search=${encodeURIComponent(tutor.name)}`)
+      .then(res => res.json())
+      .then(json => {
+        const found = json.data?.find((t: any) => t.fullName === tutor.name)
+        if (found) {
+          setSelectedTutorForDetail({
+            ...mapped,
+            avatar: found.avatarUrl || mapped.avatar,
+            bio: found.bio || "Chưa cập nhật giới thiệu.",
+            price: found.price ? `${found.price.toLocaleString('vi-VN')}đ/giờ` : "Thỏa thuận",
+            experience: found.experience || mapped.experience,
+          })
+        }
+      })
+      .catch(err => console.error("Error fetching tutor profile details:", err))
+  }
 
   // Filtering States
   const [approvedOnly, setApprovedOnly] = useState(true)
@@ -96,6 +140,26 @@ export function MatchTutorDialog({
   function tutorStatusLabel(status: string) {
     return status === "Hồ sơ đã duyệt" ? "Hồ sơ đã duyệt" : "Cần kiểm tra hồ sơ"
   }
+
+  // Convert the student's proposed tutor to standard TutorRecommendation format
+  const preferredTutorRec: TutorRecommendation | null = useMemo(() => {
+    if (!request.preferredTutor) return null
+    const pt = request.preferredTutor
+    const initials = pt.name.split(" ").map(p => p[0]).join("").slice(-2).toUpperCase()
+    return {
+      id: pt.id,
+      rawTutorId: pt.id,
+      name: pt.name,
+      meta: `${pt.educationLevel} · ${pt.major} (${pt.university})`,
+      match: "100% Đề xuất",
+      avatar: initials,
+      tags: [request.subject || "Đúng môn", "Đã duyệt", pt.availableAreas],
+      status: "Hồ sơ đã duyệt",
+      highlight: "bg-amber-500",
+      phone: pt.phone,
+      email: pt.email,
+    }
+  }, [request.preferredTutor, request.subject])
 
   // Filter and Sort Tutors
   const filteredTutors = useMemo(() => {
@@ -378,8 +442,32 @@ export function MatchTutorDialog({
                     </div>
                   ))}
                 </>
-              ) : filteredTutors.length ? (
-                filteredTutors.map((tutor) => {
+              ) : (filteredTutors.length || preferredTutorRec) ? (
+                <>
+                  {preferredTutorRec && (
+                    <div className="col-span-full border-2 border-amber-300 rounded-lg p-3 bg-amber-50/20 relative overflow-hidden flex flex-col gap-2">
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="text-[10px] font-bold text-amber-800 bg-amber-200/60 px-2.5 py-0.5 rounded-md uppercase tracking-wider">
+                          ⭐ Gia sư được học viên đề xuất
+                        </span>
+                      </div>
+                      <TutorRecommendationCard
+                        actionLabel={status === "Đã ghép" ? "Đã ghép" : status === "Đã hủy" ? "Bị hủy" : "Ghép lớp"}
+                        href={(status === "Đã ghép" || status === "Đã hủy")
+                          ? undefined
+                          : `/staff/request-management/create-class?requestId=${encodeURIComponent(
+                              request.rawId
+                            )}&tutorId=${encodeURIComponent(preferredTutorRec.rawTutorId)}&tutorName=${encodeURIComponent(
+                              preferredTutorRec.name
+                            )}`}
+                        tutor={preferredTutorRec}
+                        onViewSchedule={() => setActiveScheduleModal({ id: preferredTutorRec.rawTutorId, name: preferredTutorRec.name, role: "tutor" })}
+                        onViewDetail={() => handleOpenTutorDetail(preferredTutorRec)}
+                      />
+                    </div>
+                  )}
+
+                  {filteredTutors.map((tutor) => {
                   const isMatched = status === "Đã ghép"
                   const isCancelled = status === "Đã hủy"
                   const actionLabel = isMatched ? "Đã ghép" : isCancelled ? "Bị hủy" : "Ghép lớp"
@@ -397,9 +485,11 @@ export function MatchTutorDialog({
                       href={href}
                       tutor={tutor}
                       onViewSchedule={() => setActiveScheduleModal({ id: tutor.rawTutorId, name: tutor.name, role: "tutor" })}
+                      onViewDetail={() => handleOpenTutorDetail(tutor)}
                     />
                   )
-                })
+                })}
+                </>
               ) : (
                 <div className="col-span-full rounded border border-dashed border-border p-4 text-xs text-muted-foreground">
                   Chưa có gia sư phù hợp theo dữ liệu hiện tại.
@@ -420,6 +510,14 @@ export function MatchTutorDialog({
           request={request}
         />
       )}
+
+      {/* Sub-modal: Tutor Detail View */}
+      {selectedTutorForDetail && (
+        <TutorDetailModal
+          tutor={selectedTutorForDetail}
+          onClose={() => setSelectedTutorForDetail(null)}
+        />
+      )}
     </div>
   )
 }
@@ -436,6 +534,58 @@ function ScheduleViewDialog({ id, name, role, onClose, request }: ScheduleViewDi
   const [tutorSchedules, setTutorSchedules] = useState<any[]>([])
   const [studentSchedules, setStudentSchedules] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+
+  // Local state for week navigation (start of week)
+  const [currentWeekStart, setCurrentWeekStart] = useState(() => {
+    const d = new Date()
+    const day = d.getDay()
+    const diff = d.getDate() - day + (day === 0 ? -6 : 1) // adjust when day is sunday
+    const monday = new Date(d.setDate(diff))
+    monday.setHours(0, 0, 0, 0)
+    return monday
+  })
+
+  // Format week range text
+  const weekRangeText = useMemo(() => {
+    const end = new Date(currentWeekStart)
+    end.setDate(end.getDate() + 6)
+    const fmt = (date: Date) => {
+      const dd = String(date.getDate()).padStart(2, '0')
+      const mm = String(date.getMonth() + 1).padStart(2, '0')
+      const yyyy = date.getFullYear()
+      return `${dd}/${mm}/${yyyy}`
+    }
+    return `Tuần từ ${fmt(currentWeekStart)} đến ${fmt(end)}`
+  }, [currentWeekStart])
+
+  // Get specific date strings for headers
+  const headerDays = useMemo(() => {
+    const days = []
+    const dayNames = ["Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7", "Chủ nhật"]
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(currentWeekStart)
+      d.setDate(d.getDate() + i)
+      const dd = String(d.getDate()).padStart(2, '0')
+      const mm = String(d.getMonth() + 1).padStart(2, '0')
+      days.push({
+        name: dayNames[i],
+        dateStr: `${dd}/${mm}`
+      })
+    }
+    return days
+  }, [currentWeekStart])
+
+  const handlePrevWeek = () => {
+    const prev = new Date(currentWeekStart)
+    prev.setDate(prev.getDate() - 7)
+    setCurrentWeekStart(prev)
+  }
+
+  const handleNextWeek = () => {
+    const next = new Date(currentWeekStart)
+    next.setDate(next.getDate() + 7)
+    setCurrentWeekStart(next)
+  }
 
   useEffect(() => {
     async function loadSchedule() {
@@ -460,14 +610,13 @@ function ScheduleViewDialog({ id, name, role, onClose, request }: ScheduleViewDi
     loadSchedule()
   }, [id, role, request.studentId])
 
-  const daysOfWeek = ["Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7", "Chủ nhật"]
   const timeSlots = [
-    { label: "Sáng (08:00 - 10:00)", start: "08:00", end: "10:00" },
-    { label: "Sáng (10:00 - 12:00)", start: "10:00", end: "12:00" },
-    { label: "Chiều (14:00 - 16:00)", start: "14:00", end: "16:00" },
-    { label: "Chiều (16:00 - 18:00)", start: "16:00", end: "18:00" },
-    { label: "Tối (17:30 - 19:30)", start: "17:30", end: "19:30" },
-    { label: "Tối (19:00 - 21:00)", start: "19:00", end: "21:00" },
+    { label: "08:00 - 10:00", start: "08:00", end: "10:00" },
+    { label: "10:00 - 12:00", start: "10:00", end: "12:00" },
+    { label: "14:00 - 16:00", start: "14:00", end: "16:00" },
+    { label: "16:00 - 18:00", start: "16:00", end: "18:00" },
+    { label: "17:30 - 19:30", start: "17:30", end: "19:30" },
+    { label: "19:00 - 21:00", start: "19:00", end: "21:00" },
   ]
 
   // Parsing requested schedule
@@ -510,10 +659,44 @@ function ScheduleViewDialog({ id, name, role, onClose, request }: ScheduleViewDi
                     s.dayOfWeek === "T7" ? "Thứ 7" :
                     s.dayOfWeek === "CN" ? "Chủ nhật" : s.dayOfWeek
 
-      if (sDay !== day) return false
       const sStart = s.startTime.slice(0, 5)
       const sEnd = s.endTime.slice(0, 5)
-      return (sStart < slotEnd && sEnd > slotStart)
+      const timeMatch = (sStart < slotEnd && sEnd > slotStart)
+      if (!timeMatch) return false
+
+      const dayNames = ["Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7", "Chủ nhật"]
+      const dayIndex = dayNames.indexOf(day)
+      if (dayIndex === -1) return false
+
+      const slotDate = new Date(currentWeekStart)
+      slotDate.setDate(slotDate.getDate() + dayIndex)
+      slotDate.setHours(12, 0, 0, 0) // avoid timezone shifts
+
+      if (s.sessionDate) {
+        const sDate = new Date(s.sessionDate)
+        return (
+          sDate.getFullYear() === slotDate.getFullYear() &&
+          sDate.getMonth() === slotDate.getMonth() &&
+          sDate.getDate() === slotDate.getDate()
+        )
+      } else {
+        if (sDay !== day) return false
+        if (s.class) {
+          const clsStart = s.class.startDate ? new Date(s.class.startDate) : null
+          const clsEnd = s.class.endDate ? new Date(s.class.endDate) : null
+
+          if (clsStart) {
+            clsStart.setHours(0, 0, 0, 0)
+            if (slotDate < clsStart) return false
+          }
+          if (clsEnd) {
+            clsEnd.setHours(23, 59, 59, 999)
+            if (slotDate > clsEnd) return false
+          }
+        }
+      }
+
+      return true
     })
   }
 
@@ -527,10 +710,44 @@ function ScheduleViewDialog({ id, name, role, onClose, request }: ScheduleViewDi
                     s.dayOfWeek === "T7" ? "Thứ 7" :
                     s.dayOfWeek === "CN" ? "Chủ nhật" : s.dayOfWeek
 
-      if (sDay !== day) return false
       const sStart = s.startTime.slice(0, 5)
       const sEnd = s.endTime.slice(0, 5)
-      return (sStart < slotEnd && sEnd > slotStart)
+      const timeMatch = (sStart < slotEnd && sEnd > slotStart)
+      if (!timeMatch) return false
+
+      const dayNames = ["Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7", "Chủ nhật"]
+      const dayIndex = dayNames.indexOf(day)
+      if (dayIndex === -1) return false
+
+      const slotDate = new Date(currentWeekStart)
+      slotDate.setDate(slotDate.getDate() + dayIndex)
+      slotDate.setHours(12, 0, 0, 0) // avoid timezone shifts
+
+      if (s.sessionDate) {
+        const sDate = new Date(s.sessionDate)
+        return (
+          sDate.getFullYear() === slotDate.getFullYear() &&
+          sDate.getMonth() === slotDate.getMonth() &&
+          sDate.getDate() === slotDate.getDate()
+        )
+      } else {
+        if (sDay !== day) return false
+        if (s.class) {
+          const clsStart = s.class.startDate ? new Date(s.class.startDate) : null
+          const clsEnd = s.class.endDate ? new Date(s.class.endDate) : null
+
+          if (clsStart) {
+            clsStart.setHours(0, 0, 0, 0)
+            if (slotDate < clsStart) return false
+          }
+          if (clsEnd) {
+            clsEnd.setHours(23, 59, 59, 999)
+            if (slotDate > clsEnd) return false
+          }
+        }
+      }
+
+      return true
     })
   }
 
@@ -574,6 +791,22 @@ function ScheduleViewDialog({ id, name, role, onClose, request }: ScheduleViewDi
 
         {/* Content Table */}
         <div className="overflow-y-auto p-5 flex-1 min-h-0">
+          <div className="flex items-center justify-between gap-3 mb-4 text-xs font-semibold bg-slate-50 p-2.5 rounded-lg border border-slate-200">
+            <button
+              onClick={handlePrevWeek}
+              className="px-2.5 py-1 rounded bg-white border border-slate-300 hover:bg-slate-50 transition-colors shadow-xs"
+            >
+              &larr; Tuần trước
+            </button>
+            <span className="text-slate-700 font-bold">{weekRangeText}</span>
+            <button
+              onClick={handleNextWeek}
+              className="px-2.5 py-1 rounded bg-white border border-slate-300 hover:bg-slate-50 transition-colors shadow-xs"
+            >
+              Tuần sau &rarr;
+            </button>
+          </div>
+
           {loading ? (
             <div className="space-y-3 py-6">
               <div className="h-5 w-full bg-slate-100 rounded animate-pulse" />
@@ -582,37 +815,40 @@ function ScheduleViewDialog({ id, name, role, onClose, request }: ScheduleViewDi
             </div>
           ) : (
             <div className="overflow-x-auto border border-slate-150 rounded-lg">
-              <table className="w-full border-collapse text-left text-xs min-w-[750px]">
+              <table className="w-full border-collapse text-left text-xs min-w-[650px]">
                 <thead>
-                  <tr className="bg-slate-50 border-b border-slate-150 text-[10px] uppercase font-bold text-slate-500 tracking-wider">
-                    <th className="p-3 border-r border-slate-150 w-[160px]">Khung giờ</th>
-                    {daysOfWeek.map((day) => (
-                      <th key={day} className="p-3 text-center border-r last:border-r-0 border-slate-150">{day}</th>
+                  <tr className="bg-slate-50 border-b border-slate-150 text-[9px] uppercase font-bold text-slate-500 tracking-wider">
+                    <th className="p-2 border-r border-slate-150 w-[90px]">Khung giờ</th>
+                    {headerDays.map((day) => (
+                      <th key={day.name} className="p-2 text-center border-r last:border-r-0 border-slate-150">
+                        {day.name}
+                        <span className="block text-[8px] font-medium text-slate-400 mt-0.5">({day.dateStr})</span>
+                      </th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
                   {timeSlots.map((slot) => (
                     <tr key={slot.label} className="border-b last:border-b-0 border-slate-150 hover:bg-slate-50/30">
-                      <td className="p-3 font-semibold text-slate-600 bg-slate-50/50 border-r border-slate-150">
+                      <td className="p-2 font-semibold text-slate-600 bg-slate-50/50 border-r border-slate-150 text-[9px]">
                         {slot.label}
                       </td>
-                      {daysOfWeek.map((day) => {
-                        const tutorSession = role === "tutor" ? getTutorSession(day, slot.start, slot.end) : null
-                        const studentSession = getStudentSession(day, slot.start, slot.end)
-                        const requested = isSlotRequested(day, slot.start, slot.end)
+                      {headerDays.map((day) => {
+                        const tutorSession = role === "tutor" ? getTutorSession(day.name, slot.start, slot.end) : null
+                        const studentSession = getStudentSession(day.name, slot.start, slot.end)
+                        const requested = isSlotRequested(day.name, slot.start, slot.end)
 
                         let bgClass = "bg-white text-slate-300"
-                        let cellContent = <span className="text-[10px] font-medium opacity-20">— Trống —</span>
+                        let cellContent = <span className="text-[8px] font-medium opacity-20">— Trống —</span>
 
                         if (role === "tutor") {
                           if (requested) {
                             if (tutorSession || studentSession) {
                               bgClass = "bg-red-50 text-red-900 border-red-150"
                               cellContent = (
-                                <div className="flex flex-col items-center justify-center p-1 rounded border border-red-200 bg-white shadow-xs max-w-[110px] mx-auto text-[8px]">
-                                  <span className="font-bold text-red-700 text-[9px] uppercase tracking-wide">✗ Bị trùng</span>
-                                  <span className="text-[7px] text-slate-500 font-semibold mt-0.5">
+                                <div className="flex flex-col items-center justify-center p-0.5 rounded border border-red-200 bg-white shadow-xs max-w-[90px] mx-auto text-[7px]">
+                                  <span className="font-bold text-red-700 text-[8px] uppercase tracking-wide">✗ Bị trùng</span>
+                                  <span className="text-[6.5px] text-slate-500 font-semibold mt-0.5">
                                     {tutorSession && studentSession ? "Cả hai bận" : tutorSession ? "Gia sư bận" : "Học viên bận"}
                                   </span>
                                 </div>
@@ -620,9 +856,9 @@ function ScheduleViewDialog({ id, name, role, onClose, request }: ScheduleViewDi
                             } else {
                               bgClass = "bg-emerald-50 text-emerald-900 border-emerald-150 font-bold"
                               cellContent = (
-                                <div className="flex flex-col items-center justify-center p-1 rounded border border-emerald-300 bg-emerald-100/50 shadow-xs max-w-[110px] mx-auto text-[8px]">
-                                  <span className="font-bold text-emerald-800 text-[9px] uppercase tracking-wide">✓ Khuyên dùng</span>
-                                  <span className="text-[7px] text-emerald-700 font-bold mt-0.5">Trống & Khớp</span>
+                                <div className="flex flex-col items-center justify-center p-0.5 rounded border border-emerald-300 bg-emerald-100/50 shadow-xs max-w-[90px] mx-auto text-[7px]">
+                                  <span className="font-bold text-emerald-800 text-[8px] uppercase tracking-wide">✓ Khuyên dùng</span>
+                                  <span className="text-[6.5px] text-emerald-700 font-bold mt-0.5">Trống & Khớp</span>
                                 </div>
                               )
                             }
@@ -630,9 +866,9 @@ function ScheduleViewDialog({ id, name, role, onClose, request }: ScheduleViewDi
                             if (tutorSession || studentSession) {
                               bgClass = "bg-slate-50 text-slate-500"
                               cellContent = (
-                                <div className="flex flex-col items-center justify-center p-1 rounded border border-slate-200 bg-white shadow-xs max-w-[110px] mx-auto text-[8px]">
+                                <div className="flex flex-col items-center justify-center p-0.5 rounded border border-slate-200 bg-white shadow-xs max-w-[90px] mx-auto text-[7px]">
                                   <span className="font-bold text-slate-500">Bận</span>
-                                  <span className="text-[7px] text-slate-400 mt-0.5">
+                                  <span className="text-[6.5px] text-slate-400 mt-0.5">
                                     {tutorSession && studentSession ? "Cả hai bận" : tutorSession ? "Gia sư bận" : "Học viên bận"}
                                   </span>
                                 </div>
@@ -643,13 +879,17 @@ function ScheduleViewDialog({ id, name, role, onClose, request }: ScheduleViewDi
                           // Nếu chỉ xem lịch học viên bình thường
                           if (studentSession) {
                             bgClass = "bg-amber-50 text-amber-900"
+                            const timeStr = `${studentSession.startTime.slice(0, 5)} - ${studentSession.endTime.slice(0, 5)}`
                             cellContent = (
-                              <div className="flex flex-col items-center justify-center p-1 rounded border border-amber-200 bg-white shadow-xs max-w-[110px] mx-auto text-[8px]">
-                                <span className="font-bold text-amber-800 truncate w-full" title={studentSession.class.subject?.name}>
-                                  {studentSession.class.subject?.name}
+                              <div className="flex flex-col items-center justify-center p-0.5 rounded border border-amber-200 bg-white shadow-xs max-w-[90px] mx-auto text-[7px] gap-0.5">
+                                <span className="font-bold text-amber-800 truncate w-full text-[8px]" title={studentSession.class?.subject?.name || 'Môn học'}>
+                                  {studentSession.class?.subject?.name || 'Môn học'}
                                 </span>
-                                <span className="text-[7px] text-slate-500 truncate w-full mt-0.5">
-                                  GS: {studentSession.class.tutor?.user?.fullName}
+                                <span className="text-[6.5px] text-slate-500 truncate w-full font-medium">
+                                  GS: {studentSession.class?.tutor?.user?.fullName || 'Chưa phân'}
+                                </span>
+                                <span className="text-[6px] text-amber-700 bg-amber-100/60 px-1 py-0.5 rounded font-bold mt-0.5">
+                                  {timeStr}
                                 </span>
                               </div>
                             )
@@ -658,8 +898,8 @@ function ScheduleViewDialog({ id, name, role, onClose, request }: ScheduleViewDi
 
                         return (
                           <td 
-                            key={day} 
-                            className={`p-2 border-r last:border-r-0 border-slate-150 text-center transition-colors ${bgClass}`}
+                            key={day.name} 
+                            className={`p-1 border-r last:border-r-0 border-slate-150 text-center transition-colors ${bgClass}`}
                           >
                             {cellContent}
                           </td>

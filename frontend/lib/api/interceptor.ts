@@ -15,22 +15,26 @@ const BACKEND_URL =
   'http://localhost:3001/api';
 
 let isRefreshing = false;
-let refreshPromise: Promise<boolean> | null = null;
+let refreshPromise: Promise<{ ok: boolean; message?: string }> | null = null;
 
 /**
  * Gọi endpoint refresh để lấy cookie mới từ backend
  * Browser tự động gửi refresh_token cookie (path: /api/auth/refresh)
  */
-async function attemptRefresh(): Promise<boolean> {
+async function attemptRefresh(): Promise<{ ok: boolean; message?: string }> {
   try {
     const res = await fetch(`${BACKEND_URL}/auth/refresh`, {
       method: 'POST',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
     });
-    return res.ok;
+    if (!res.ok) {
+      const errBody = await res.json().catch(() => ({}));
+      return { ok: false, message: errBody.message };
+    }
+    return { ok: true };
   } catch {
-    return false;
+    return { ok: false };
   }
 }
 
@@ -66,11 +70,23 @@ export async function apiFetch<T>(
   }
 
   // === 401: Thử silent refresh ===
+  
+  // Trước hết kiểm tra xem lỗi gốc có phải do bị khóa không
+  const resClone = res.clone();
+  const errBody = await resClone.json().catch(() => ({}));
+  if (errBody && typeof errBody.message === 'string' && errBody.message.includes('bị khóa')) {
+    clearAuth();
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem('account_locked_msg', errBody.message);
+      window.location.replace('/login?locked=true');
+    }
+    throw new Error(errBody.message);
+  }
 
   // Nếu đang refresh rồi thì chờ
   if (isRefreshing && refreshPromise) {
-    const refreshed = await refreshPromise;
-    if (!refreshed) throw new Error('Phiên đăng nhập đã hết hạn');
+    const refreshResult = await refreshPromise;
+    if (!refreshResult.ok) throw new Error(refreshResult.message || 'Phiên đăng nhập đã hết hạn');
     res = await doFetch();
     if (!res.ok) throw new Error('Phiên đăng nhập đã hết hạn');
     return res.json() as Promise<T>;
@@ -80,34 +96,39 @@ export async function apiFetch<T>(
   isRefreshing = true;
   refreshPromise = attemptRefresh();
 
-  const refreshed = await refreshPromise;
+  const refreshResult = await refreshPromise;
   refreshPromise = null;
   isRefreshing = false;
 
-  if (!refreshed) {
+  if (!refreshResult.ok) {
     // Refresh thất bại → clear auth + redirect
     clearAuth();
 
     // Chỉ redirect nếu đang ở client
     if (typeof window !== 'undefined') {
-      const currentPath = window.location.pathname;
-      if (
-        !currentPath.startsWith('/login') &&
-        !currentPath.startsWith('/register') &&
-        !currentPath.startsWith('/hub/login')
-      ) {
-        // Lưu lại trang hiện tại để sau login redirect về
-        sessionStorage.setItem('redirect_after_login', currentPath);
+      if (refreshResult.message && refreshResult.message.includes('bị khóa')) {
+        sessionStorage.setItem('account_locked_msg', refreshResult.message);
+        window.location.replace('/login?locked=true');
+      } else {
+        const currentPath = window.location.pathname;
+        if (
+          !currentPath.startsWith('/login') &&
+          !currentPath.startsWith('/register') &&
+          !currentPath.startsWith('/hub/login')
+        ) {
+          // Lưu lại trang hiện tại để sau login redirect về
+          sessionStorage.setItem('redirect_after_login', currentPath);
 
-        if (currentPath.startsWith('/hub') || currentPath.startsWith('/staff')) {
-          window.location.href = '/hub/login';
-        } else {
-          window.location.href = '/login';
+          if (currentPath.startsWith('/hub') || currentPath.startsWith('/staff')) {
+            window.location.href = '/hub/login';
+          } else {
+            window.location.href = '/login';
+          }
         }
       }
     }
 
-    throw new Error('Phiên đăng nhập đã hết hạn');
+    throw new Error(refreshResult.message || 'Phiên đăng nhập đã hết hạn');
   }
 
   // Refresh thành công → retry request gốc

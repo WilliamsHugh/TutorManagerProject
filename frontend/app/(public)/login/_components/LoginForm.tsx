@@ -2,20 +2,34 @@
 
 import { Eye, EyeOff, ArrowRight, Loader2 } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { saveAuth } from "@/lib/auth";
+import { LockedAccountModal } from "@/components/auth/LockedAccountModal";
 
 export default function LoginForm() {
     const router = useRouter();
     const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
+    const [lockedMsg, setLockedMsg] = useState<string | null>(null);
     const [formData, setFormData] = useState({
         email: "",
         password: "",
         remember: false,
     });
+
+    useEffect(() => {
+        if (typeof window !== "undefined") {
+            const urlParams = new URLSearchParams(window.location.search);
+            const isLocked = urlParams.get("locked") === "true";
+            const msg = sessionStorage.getItem("account_locked_msg");
+            if (isLocked && msg) {
+                setLockedMsg(msg);
+                sessionStorage.removeItem("account_locked_msg");
+            }
+        }
+    }, []);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value, type, checked } = e.target;
@@ -329,6 +343,13 @@ export default function LoginForm() {
                     </p>
                 </form>
             </div>
+
+            {lockedMsg && (
+                <LockedAccountModal
+                    message={lockedMsg}
+                    onClose={() => setLockedMsg(null)}
+                />
+            )}
         </main>
     );
 }

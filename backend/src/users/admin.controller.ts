@@ -4,6 +4,7 @@ import {
   Post,
   Put,
   Patch,
+  Delete,
   Body,
   Param,
   Query,
@@ -113,11 +114,26 @@ export class AdminController {
   async toggleUserStatus(
     @Param('id') id: string,
     @Body() body: { isActive: boolean },
+    @Request() req: any,
   ) {
     const user = await this.usersRepo.findOneBy({ id });
     if (!user) throw new NotFoundException('Không tìm thấy người dùng');
     user.isActive = body.isActive;
+    user.lockedBy = body.isActive ? null : req.user;
     return this.usersRepo.save(user);
+  }
+
+  @Delete('users/:id')
+  async deleteUser(@Param('id') id: string) {
+    const user = await this.usersRepo.findOneBy({ id });
+    if (!user) throw new NotFoundException('Không tìm thấy người dùng');
+
+    // Delete student or tutor records related to the user first to clear foreign constraints
+    await this.studentsRepo.delete({ user: { id } });
+    await this.tutorsRepo.delete({ user: { id } });
+
+    await this.usersRepo.delete({ id });
+    return { success: true, message: 'Xóa người dùng thành công' };
   }
 
   @Put('users/:id')
@@ -357,7 +373,7 @@ export class AdminController {
         where: { status: 'active' as any },
         relations: ['student'],
       }),
-      
+
       // Class status counts using group by
       this.classesRepo
         .createQueryBuilder('class')
@@ -390,7 +406,7 @@ export class AdminController {
           where: {
             createdAt: Between(range.startOfMonth, range.endOfMonth),
           },
-        })
+        }),
       ),
     ]);
 

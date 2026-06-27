@@ -134,7 +134,11 @@ export class ClassesController {
     @Request() req,
   ) {
     const userId = req.user.id || req.user.sub;
-    return this.classesService.getStudentScheduleReport(userId, classId, sessionDate);
+    return this.classesService.getStudentScheduleReport(
+      userId,
+      classId,
+      sessionDate,
+    );
   }
 
   @Get(':id')
@@ -151,12 +155,16 @@ export class ClassesController {
 
   @Patch(':id/status')
   @Roles(RoleType.STAFF, RoleType.ADMIN)
-  updateStatus(@Param('id') id: string, @Body() dto: UpdateClassStatusDto) {
-    return this.classesService.updateStatus(id, dto.status);
+  updateStatus(
+    @Param('id') id: string,
+    @Body() dto: UpdateClassStatusDto,
+    @Request() req: any,
+  ) {
+    return this.classesService.updateStatus(id, dto.status, req.user);
   }
 
   @Get('tutor/:id/schedule')
-  @Roles(RoleType.STAFF, RoleType.ADMIN)
+  @Roles(RoleType.STAFF, RoleType.ADMIN, RoleType.STUDENT)
   getTutorSchedule(@Param('id') id: string) {
     return this.classesService.getTutorSchedules(id);
   }

@@ -21,14 +21,19 @@ export default function Sidebar() {
   const router = useRouter();
 
   const handleLogout = async () => {
+    clearAuth();
+    
+    // PHẢI await để trình duyệt nhận Set-Cookie xóa httpOnly cookie TRƯỚC KHI chuyển trang
     try {
-      await fetch('/api/logout', { method: 'POST' });
-      clearAuth();
-    } catch (error) {
-      console.error('Logout error:', error);
-      clearAuth();
+      await Promise.race([
+        fetch('/api/logout', { method: 'POST' }),
+        new Promise((_, reject) => setTimeout(() => reject(new Error("timeout")), 2000)),
+      ]);
+    } catch (err) {
+      console.error(err);
     }
-    router.push('/');
+    
+    window.location.href = '/';
   };
 
   return (

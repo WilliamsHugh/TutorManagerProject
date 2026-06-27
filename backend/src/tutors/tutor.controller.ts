@@ -70,7 +70,14 @@ export class TutorController {
   @Post('schedule/leave')
   async createLeaveSchedule(
     @Request() req,
-    @Body() body: { startDate: string; endDate: string; startTime: string; endTime: string; note: string }
+    @Body()
+    body: {
+      startDate: string;
+      endDate: string;
+      startTime: string;
+      endTime: string;
+      note: string;
+    },
   ) {
     const tutorId = req.user.id || req.user.sub;
     return this.tutorsService.createLeaveSchedule(tutorId, body);

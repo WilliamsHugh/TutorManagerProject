@@ -1,4 +1,10 @@
-import { Injectable, NotFoundException, ForbiddenException, OnModuleInit, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+  OnModuleInit,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between, In } from 'typeorm';
 
@@ -6,7 +12,10 @@ import { Repository, Between, In } from 'typeorm';
 import { Class, ClassStatus } from '../classes/entities/class.entity';
 import { Schedule, SessionStatus } from '../classes/entities/schedule.entity';
 import { LearningReport } from '../classes/entities/learning-report.entity';
-import { ClassRequest, RequestStatus } from '../classes/entities/class-request.entity';
+import {
+  ClassRequest,
+  RequestStatus,
+} from '../classes/entities/class-request.entity';
 import { User } from '../users/entities/user.entity';
 import { Tutor, ApprovalStatus } from '../users/entities/tutor.entity';
 import { Student } from '../users/entities/student.entity';
@@ -50,16 +59,22 @@ export class TutorsService implements OnModuleInit {
     // Tự động gộp và dọn dẹp các môn học cũ (Toán -> Toán học, Lý -> Vật lí, Hóa -> Hóa học)
     const mergeSubject = async (oldName: string, newName: string) => {
       // Tìm tất cả các môn học cũ (bao gồm cả trường hợp có nhiều môn trùng tên do lỗi dữ liệu)
-      const oldSubs = await this.subjectRepository.find({ where: { name: oldName } });
+      const oldSubs = await this.subjectRepository.find({
+        where: { name: oldName },
+      });
       if (oldSubs.length === 0) return;
 
-      const newSub = await this.subjectRepository.findOne({ where: { name: newName } });
+      const newSub = await this.subjectRepository.findOne({
+        where: { name: newName },
+      });
       if (newSub) {
         for (const oldSub of oldSubs) {
           if (oldSub.id === newSub.id) continue;
 
           // 1. Gộp liên kết trong TutorSubject sang môn mới
-          const tsList = await this.tutorSubjectRepository.find({ where: { subject: { id: oldSub.id } } });
+          const tsList = await this.tutorSubjectRepository.find({
+            where: { subject: { id: oldSub.id } },
+          });
           for (const ts of tsList) {
             ts.subject = newSub;
             try {
@@ -69,16 +84,20 @@ export class TutorsService implements OnModuleInit {
               await this.tutorSubjectRepository.delete(ts.id);
             }
           }
-          
+
           // 2. Gộp liên kết trong Class sang môn mới
-          const classList = await this.classRepository.find({ where: { subject: { id: oldSub.id } } });
+          const classList = await this.classRepository.find({
+            where: { subject: { id: oldSub.id } },
+          });
           for (const cls of classList) {
             cls.subject = newSub;
             await this.classRepository.save(cls);
           }
 
           // 3. Gộp liên kết trong ClassRequest sang môn mới
-          const reqList = await this.classRequestRepository.find({ where: { subject: { id: oldSub.id } } });
+          const reqList = await this.classRequestRepository.find({
+            where: { subject: { id: oldSub.id } },
+          });
           for (const req of reqList) {
             req.subject = newSub;
             await this.classRequestRepository.save(req);
@@ -87,9 +106,14 @@ export class TutorsService implements OnModuleInit {
           // 4. Xóa môn học cũ
           try {
             await this.subjectRepository.delete(oldSub.id);
-            console.log(`Merged duplicate subject '${oldName}' into '${newName}' and deleted the old one.`);
+            console.log(
+              `Merged duplicate subject '${oldName}' into '${newName}' and deleted the old one.`,
+            );
           } catch (deleteError) {
-            console.error(`Failed to delete old subject '${oldName}':`, deleteError);
+            console.error(
+              `Failed to delete old subject '${oldName}':`,
+              deleteError,
+            );
           }
         }
       } else {
@@ -102,8 +126,10 @@ export class TutorsService implements OnModuleInit {
         if (oldSubs.length > 1) {
           for (let i = 1; i < oldSubs.length; i++) {
             const oldSub = oldSubs[i];
-            
-            const tsList = await this.tutorSubjectRepository.find({ where: { subject: { id: oldSub.id } } });
+
+            const tsList = await this.tutorSubjectRepository.find({
+              where: { subject: { id: oldSub.id } },
+            });
             for (const ts of tsList) {
               ts.subject = firstOldSub;
               try {
@@ -113,13 +139,17 @@ export class TutorsService implements OnModuleInit {
               }
             }
 
-            const classList = await this.classRepository.find({ where: { subject: { id: oldSub.id } } });
+            const classList = await this.classRepository.find({
+              where: { subject: { id: oldSub.id } },
+            });
             for (const cls of classList) {
               cls.subject = firstOldSub;
               await this.classRepository.save(cls);
             }
 
-            const reqList = await this.classRequestRepository.find({ where: { subject: { id: oldSub.id } } });
+            const reqList = await this.classRequestRepository.find({
+              where: { subject: { id: oldSub.id } },
+            });
             for (const req of reqList) {
               req.subject = firstOldSub;
               await this.classRequestRepository.save(req);
@@ -140,9 +170,13 @@ export class TutorsService implements OnModuleInit {
     await mergeSubject('Hóa Học', 'Hóa học');
 
     // Tự động seed tài khoản student@test.com và tutor@test.com nếu chưa tồn tại
-    const studentExists = await this.userRepository.findOne({ where: { email: 'student@test.com' } });
+    const studentExists = await this.userRepository.findOne({
+      where: { email: 'student@test.com' },
+    });
     if (!studentExists) {
-      console.log('--- Student user not found. Seeding mock tutor and student accounts into database... ---');
+      console.log(
+        '--- Student user not found. Seeding mock tutor and student accounts into database... ---',
+      );
       await this.seedMockData();
     }
 
@@ -154,7 +188,10 @@ export class TutorsService implements OnModuleInit {
       const groups = new Map<string, Schedule[]>();
       for (const s of allSchedules) {
         const classId = s.class?.id || 'no-class';
-        const dateObj = s.sessionDate instanceof Date ? s.sessionDate : new Date(s.sessionDate);
+        const dateObj =
+          s.sessionDate instanceof Date
+            ? s.sessionDate
+            : new Date(s.sessionDate);
         const y = dateObj.getFullYear();
         const m = String(dateObj.getMonth() + 1).padStart(2, '0');
         const d = String(dateObj.getDate()).padStart(2, '0');
@@ -179,7 +216,9 @@ export class TutorsService implements OnModuleInit {
         }
       }
       if (deletedCount > 0) {
-        console.log(`--- Cleaned up ${deletedCount} duplicate schedules from the database successfully! ---`);
+        console.log(
+          `--- Cleaned up ${deletedCount} duplicate schedules from the database successfully! ---`,
+        );
       }
     } catch (err) {
       console.error('Error during automatic duplicate schedule cleanup:', err);
@@ -191,15 +230,17 @@ export class TutorsService implements OnModuleInit {
         where: {
           class: { student: { user: { email: 'nguyen_thi_ha@tutoredu.com' } } },
           startTime: '17:00:00',
-          endTime: '19:00:00'
+          endTime: '19:00:00',
         },
-        relations: ['class', 'class.student', 'class.student.user']
+        relations: ['class', 'class.student', 'class.student.user'],
       });
 
       if (schedulesToDelete.length > 0) {
-        const ids = schedulesToDelete.map(s => s.id);
+        const ids = schedulesToDelete.map((s) => s.id);
         await this.scheduleRepository.delete(ids);
-        console.log(`--- Deleted ${schedulesToDelete.length} schedules of Nguyễn Thị Hà from 17:00-19:00 ---`);
+        console.log(
+          `--- Deleted ${schedulesToDelete.length} schedules of Nguyễn Thị Hà from 17:00-19:00 ---`,
+        );
       }
     } catch (err) {
       console.error('Error deleting Nguyễn Thị Hà schedules:', err);
@@ -211,30 +252,42 @@ export class TutorsService implements OnModuleInit {
 
   // Hàm dùng chung để lấy thông tin profile cho Header các trang
   async getTutorProfileData(userId: string) {
-    const tutorEntity = await this.tutorRepository.findOne({ 
+    const tutorEntity = await this.tutorRepository.findOne({
       where: { user: { id: userId } },
-      relations: ['user', 'user.role']
+      relations: ['user', 'user.role'],
     });
-    
-    if (!tutorEntity) throw new NotFoundException('Không tìm thấy hồ sơ gia sư');
+
+    if (!tutorEntity)
+      throw new NotFoundException('Không tìm thấy hồ sơ gia sư');
 
     // Lấy danh sách môn học của gia sư
     const tutorSubjects = await this.tutorSubjectRepository.find({
       where: { tutor: { id: tutorEntity.id } },
-      relations: ['subject']
+      relations: ['subject'],
     });
-    const subjects = tutorSubjects.map(ts => ts.subject?.name).filter(Boolean);
+    const subjects = tutorSubjects
+      .map((ts) => ts.subject?.name)
+      .filter(Boolean);
 
     return {
       id: tutorEntity.id,
       fullName: tutorEntity.user?.fullName || 'Gia sư',
-      roleName: tutorEntity.user?.role?.name === 'tutor' ? 'Gia sư hệ thống' : tutorEntity.user?.role?.name || 'Người dùng',
-      avatar: tutorEntity.user?.avatarUrl || "https://randomuser.me/api/portraits/women/1.jpg", 
-      avatarUrl: tutorEntity.user?.avatarUrl || "https://randomuser.me/api/portraits/women/1.jpg", 
+      roleName:
+        tutorEntity.user?.role?.name === 'tutor'
+          ? 'Gia sư hệ thống'
+          : tutorEntity.user?.role?.name || 'Người dùng',
+      avatar:
+        tutorEntity.user?.avatarUrl ||
+        'https://randomuser.me/api/portraits/women/1.jpg',
+      avatarUrl:
+        tutorEntity.user?.avatarUrl ||
+        'https://randomuser.me/api/portraits/women/1.jpg',
       email: tutorEntity.user?.email,
       phone: tutorEntity.user?.phone,
       address: tutorEntity.user?.address,
-      dob: tutorEntity.dateOfBirth ? new Date(tutorEntity.dateOfBirth).toISOString().split('T')[0] : '',
+      dob: tutorEntity.dateOfBirth
+        ? new Date(tutorEntity.dateOfBirth).toISOString().split('T')[0]
+        : '',
       educationLevel: tutorEntity.educationLevel || '',
       major: tutorEntity.major || '',
       experience: tutorEntity.experience || '',
@@ -242,7 +295,7 @@ export class TutorsService implements OnModuleInit {
       bio: tutorEntity.bio || '',
       university: tutorEntity.university || '',
       graduationYear: tutorEntity.graduationYear || '',
-      subjects
+      subjects,
     };
   }
 
@@ -255,7 +308,7 @@ export class TutorsService implements OnModuleInit {
     // ==========================================
     // Lấy tất cả lịch dạy của tuần này để tính giờ và thu nhập
     const baseDate = targetDate ? new Date(targetDate) : new Date();
-    const currentDay = baseDate.getDay(); 
+    const currentDay = baseDate.getDay();
     const distanceToMonday = currentDay === 0 ? -6 : 1 - currentDay;
     const monday = new Date(baseDate);
     monday.setDate(baseDate.getDate() + distanceToMonday);
@@ -265,8 +318,11 @@ export class TutorsService implements OnModuleInit {
     sunday.setHours(23, 59, 59, 999);
 
     const weeklySchedules = await this.scheduleRepository.find({
-      where: { class: { tutor: { id: tutorId } }, sessionDate: Between(monday, sunday) },
-      relations: ['class']
+      where: {
+        class: { tutor: { id: tutorId } },
+        sessionDate: Between(monday, sunday),
+      },
+      relations: ['class'],
     });
 
     const activeClasses = await this.classRepository.count({
@@ -275,7 +331,7 @@ export class TutorsService implements OnModuleInit {
 
     const totalHours = weeklySchedules.length * 2; // Giả sử mỗi buổi 2h
     const weeklyIncome = weeklySchedules
-      .filter(s => s.sessionStatus === SessionStatus.COMPLETED)
+      .filter((s) => s.sessionStatus === SessionStatus.COMPLETED)
       .reduce((acc, curr) => acc + Number(curr.class?.feePerSession || 0), 0);
 
     // Tính tổng thu nhập tất cả các thời kỳ
@@ -293,15 +349,34 @@ export class TutorsService implements OnModuleInit {
     const totalCompletedSessions = allCompletedSchedules.length;
 
     const stats = [
-      { label: 'Lớp đang phụ trách', value: activeClasses.toString(), icon: 'lucide:book-open', color: 'blue' },
-      { label: 'Giờ dạy tuần này', value: `${totalHours}h`, icon: 'lucide:clock', color: 'green' },
-      { label: 'Đánh giá trung bình', value: '5.0', sub: '/5.0', icon: 'lucide:star', color: 'orange' },
-      { 
-        label: 'Tổng thu nhập', 
-        value: `${totalEarnings.toLocaleString('vi-VN')}đ`, 
-        sub: weeklyIncome > 0 ? `Tuần này: ${weeklyIncome.toLocaleString('vi-VN')}đ` : `${totalCompletedSessions} buổi đã dạy`,
-        icon: 'lucide:wallet', 
-        color: 'purple' 
+      {
+        label: 'Lớp đang phụ trách',
+        value: activeClasses.toString(),
+        icon: 'lucide:book-open',
+        color: 'blue',
+      },
+      {
+        label: 'Giờ dạy tuần này',
+        value: `${totalHours}h`,
+        icon: 'lucide:clock',
+        color: 'green',
+      },
+      {
+        label: 'Đánh giá trung bình',
+        value: '5.0',
+        sub: '/5.0',
+        icon: 'lucide:star',
+        color: 'orange',
+      },
+      {
+        label: 'Tổng thu nhập',
+        value: `${totalEarnings.toLocaleString('vi-VN')}đ`,
+        sub:
+          weeklyIncome > 0
+            ? `Tuần này: ${weeklyIncome.toLocaleString('vi-VN')}đ`
+            : `${totalCompletedSessions} buổi đã dạy`,
+        icon: 'lucide:wallet',
+        color: 'purple',
       },
     ];
 
@@ -312,21 +387,29 @@ export class TutorsService implements OnModuleInit {
       take: 4,
     });
 
-    const suggestedClasses = requests.map(req => ({
+    const suggestedClasses = requests.map((req) => ({
       id: req.id,
       subject: req.subject?.name || 'Môn học mới',
       location: req.preferredArea || 'Toàn quốc',
       schedule: req.preferredSchedule || 'Linh hoạt',
       price: 'Thỏa thuận',
-      isNew: true
+      isNew: true,
     }));
 
     // ==========================================
     // 2. LẤY DỮ LIỆU LỊCH DẠY TUẦN NÀY
     // ==========================================
     const fullWeeklySchedules = await this.scheduleRepository.find({
-      where: { class: { tutor: { id: tutorId } }, sessionDate: Between(monday, sunday) },
-      relations: ['class', 'class.student', 'class.student.user', 'class.subject'],
+      where: {
+        class: { tutor: { id: tutorId } },
+        sessionDate: Between(monday, sunday),
+      },
+      relations: [
+        'class',
+        'class.student',
+        'class.student.user',
+        'class.subject',
+      ],
     });
 
     const daysOfWeek = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
@@ -334,22 +417,29 @@ export class TutorsService implements OnModuleInit {
       const dateOfThisDay = new Date(monday);
       dateOfThisDay.setDate(monday.getDate() + index);
       const dateStr = dateOfThisDay.getDate().toString();
-      const isToday = dateOfThisDay.toDateString() === new Date().toDateString();
+      const isToday =
+        dateOfThisDay.toDateString() === new Date().toDateString();
 
       const scheduleForDay = fullWeeklySchedules.find(
-        (s) => s.sessionDate && new Date(s.sessionDate).toDateString() === dateOfThisDay.toDateString()
+        (s) =>
+          s.sessionDate &&
+          new Date(s.sessionDate).toDateString() ===
+            dateOfThisDay.toDateString(),
       );
 
       return {
         day: dayLabel,
         date: dateStr,
         isToday,
-        event: scheduleForDay ? {
-          time: `${scheduleForDay.startTime} - ${scheduleForDay.endTime}`, 
-          title: scheduleForDay.class?.subject?.name || 'Môn học',
-          student: scheduleForDay.class?.student?.user?.fullName || 'Học viên',
-          color: 'blue' 
-        } : null,
+        event: scheduleForDay
+          ? {
+              time: `${scheduleForDay.startTime} - ${scheduleForDay.endTime}`,
+              title: scheduleForDay.class?.subject?.name || 'Môn học',
+              student:
+                scheduleForDay.class?.student?.user?.fullName || 'Học viên',
+              color: 'blue',
+            }
+          : null,
       };
     });
 
@@ -362,33 +452,45 @@ export class TutorsService implements OnModuleInit {
       take: 5,
     });
 
-    const currentClasses = await Promise.all(myClasses.map(async cls => {
-      const completedCount = await this.scheduleRepository.count({
-        where: { class: { id: cls.id }, sessionStatus: SessionStatus.COMPLETED }
-      });
-      const total = cls.totalSessions || 1;
+    const currentClasses = await Promise.all(
+      myClasses.map(async (cls) => {
+        const completedCount = await this.scheduleRepository.count({
+          where: {
+            class: { id: cls.id },
+            sessionStatus: SessionStatus.COMPLETED,
+          },
+        });
+        const total = cls.totalSessions || 1;
 
-      return {
-        id: `#L${cls.id?.substring(0, 4).toUpperCase() || 'XXXX'}`,
-        rawId: String(cls.id), // Đảm bảo trả về chuỗi UUID chính xác
-        studentId: cls.student?.id || '',
-        subject: cls.subject?.name || 'Chưa cập nhật',
-        type: cls.location?.toLowerCase().includes('online') ? 'Trực tuyến' : 'Tại nhà', 
-        student: cls.student?.user?.fullName || 'Chưa có',
-        initials: cls.student?.user?.fullName?.substring(0, 2).toUpperCase() || 'NA',
-        schedule: 'Hàng tuần', 
-        progress: Math.round((completedCount / total) * 100), 
-        sessions: `${completedCount}/${total}`, 
-        completedSessions: completedCount,
-        totalSessions: total,
-        status: 'success'
-      };
-    }));
+        return {
+          id: `#L${cls.id?.substring(0, 4).toUpperCase() || 'XXXX'}`,
+          rawId: String(cls.id), // Đảm bảo trả về chuỗi UUID chính xác
+          studentId: cls.student?.id || '',
+          subject: cls.subject?.name || 'Chưa cập nhật',
+          type: cls.location?.toLowerCase().includes('online')
+            ? 'Trực tuyến'
+            : 'Tại nhà',
+          student: cls.student?.user?.fullName || 'Chưa có',
+          initials:
+            cls.student?.user?.fullName?.substring(0, 2).toUpperCase() || 'NA',
+          schedule: 'Hàng tuần',
+          progress: Math.round((completedCount / total) * 100),
+          sessions: `${completedCount}/${total}`,
+          completedSessions: completedCount,
+          totalSessions: total,
+          status: 'success',
+        };
+      }),
+    );
 
     return { stats, calendar, currentClasses, suggestedClasses, profile };
   }
 
-  async findScheduleByTutor(userId: string, targetDate?: string, view: string = 'week'): Promise<any> {
+  async findScheduleByTutor(
+    userId: string,
+    targetDate?: string,
+    view: string = 'week',
+  ): Promise<any> {
     const profile = await this.getTutorProfileData(userId);
     const tutorId = profile.id;
 
@@ -398,7 +500,14 @@ export class TutorsService implements OnModuleInit {
 
     if (view === 'month') {
       start = new Date(baseDate.getFullYear(), baseDate.getMonth(), 1);
-      end = new Date(baseDate.getFullYear(), baseDate.getMonth() + 1, 0, 23, 59, 59);
+      end = new Date(
+        baseDate.getFullYear(),
+        baseDate.getMonth() + 1,
+        0,
+        23,
+        59,
+        59,
+      );
     } else if (view === 'day') {
       start = new Date(baseDate);
       start.setHours(0, 0, 0, 0);
@@ -416,9 +525,17 @@ export class TutorsService implements OnModuleInit {
     }
 
     const schedules = await this.scheduleRepository.find({
-      where: { class: { tutor: { id: tutorId } }, sessionDate: Between(start, end) },
-      relations: ['class', 'class.student', 'class.student.user', 'class.subject'],
-      order: { startTime: 'ASC' }
+      where: {
+        class: { tutor: { id: tutorId } },
+        sessionDate: Between(start, end),
+      },
+      relations: [
+        'class',
+        'class.student',
+        'class.student.user',
+        'class.subject',
+      ],
+      order: { startTime: 'ASC' },
     });
 
     const mapEvent = (s: Schedule) => ({
@@ -429,26 +546,36 @@ export class TutorsService implements OnModuleInit {
       student: s.class?.student?.user?.fullName || 'Học viên',
       location: s.class?.location || 'Online',
       status: s.sessionStatus,
-      note: s.note || null
+      note: s.note || null,
     });
 
     if (view === 'month' || view === 'day') {
       return { events: schedules.map(mapEvent), profile };
     }
 
-    const daysOfWeek = ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'Chủ nhật'];
+    const daysOfWeek = [
+      'Thứ 2',
+      'Thứ 3',
+      'Thứ 4',
+      'Thứ 5',
+      'Thứ 6',
+      'Thứ 7',
+      'Chủ nhật',
+    ];
     const calendar = daysOfWeek.map((dayLabel, index) => {
       const date = new Date(start);
       date.setDate(start.getDate() + index);
-      const daySchedules = schedules.filter(s => 
-        s.sessionDate && new Date(s.sessionDate).toDateString() === date.toDateString()
+      const daySchedules = schedules.filter(
+        (s) =>
+          s.sessionDate &&
+          new Date(s.sessionDate).toDateString() === date.toDateString(),
       );
 
       return {
         day: dayLabel,
         date: date.getDate().toString(),
         isToday: date.toDateString() === new Date().toDateString(),
-        events: daySchedules.map(mapEvent)
+        events: daySchedules.map(mapEvent),
       };
     });
 
@@ -467,18 +594,21 @@ export class TutorsService implements OnModuleInit {
 
     // Lọc trùng học viên vì một học viên có thể học nhiều môn với cùng 1 gia sư
     const studentMap = new Map();
-    classes.forEach(cls => {
+    classes.forEach((cls) => {
       if (cls.student && !studentMap.has(cls.student.id)) {
         studentMap.set(cls.student.id, {
           id: cls.student.id,
           fullName: cls.student.user?.fullName || 'Học viên',
           gradeLevel: cls.student.gradeLevel || 'Chưa cập nhật',
-          avatar: cls.student.user?.avatarUrl || "https://randomuser.me/api/portraits/men/1.jpg", 
+          avatar:
+            cls.student.user?.avatarUrl ||
+            'https://randomuser.me/api/portraits/men/1.jpg',
           email: cls.student.user?.email,
           phone: cls.student.user?.phone,
-          status: cls.status === ClassStatus.ACTIVE ? 'Đang học' : 'Đã kết thúc',
+          status:
+            cls.status === ClassStatus.ACTIVE ? 'Đang học' : 'Đã kết thúc',
           lastSubject: cls.subject?.name,
-          createdAt: cls.student.user?.createdAt || new Date()
+          createdAt: cls.student.user?.createdAt || new Date(),
         });
       }
     });
@@ -494,18 +624,20 @@ export class TutorsService implements OnModuleInit {
       order: { createdAt: 'DESC' },
     });
 
-    const classes = requests.map(req => ({
+    const classes = requests.map((req) => ({
       id: req.id,
       code: `#LH${req.id.substring(0, 4).toUpperCase()}`,
       title: `Tìm gia sư ${req.subject?.name || 'môn học'}`,
-      mode: req.preferredArea?.toLowerCase().includes('online') ? 'Online' : 'Offline',
+      mode: req.preferredArea?.toLowerCase().includes('online')
+        ? 'Online'
+        : 'Offline',
       levelTag: req.student?.gradeLevel || 'Mọi cấp độ',
       location: req.preferredArea || 'Toàn quốc',
       schedule: req.preferredSchedule || 'Linh hoạt',
       studentInfo: `${req.student?.gradeLevel || 'Cấp độ học viên'} · ${req.student?.user?.fullName || 'Ẩn danh'}`,
       salary: 'Thỏa thuận',
       status: 'MỚI',
-      postedAt: 'Vừa xong'
+      postedAt: 'Vừa xong',
     }));
 
     return { classes, profile };
@@ -530,7 +662,10 @@ export class TutorsService implements OnModuleInit {
     });
 
     if (!request) throw new NotFoundException('Không tìm thấy yêu cầu lớp học');
-    if (request.status !== RequestStatus.PENDING) throw new ForbiddenException('Lớp học này đã có người nhận hoặc không còn khả dụng');
+    if (request.status !== RequestStatus.PENDING)
+      throw new ForbiddenException(
+        'Lớp học này đã có người nhận hoặc không còn khả dụng',
+      );
 
     // 1. Cập nhật trạng thái yêu cầu
     request.status = RequestStatus.MATCHED;
@@ -543,7 +678,7 @@ export class TutorsService implements OnModuleInit {
       subject: request.subject,
       request: request,
       location: request.preferredArea,
-      feePerSession: 200000, 
+      feePerSession: 200000,
       status: ClassStatus.ACTIVE,
       startDate: new Date(),
       notes: request.requirements,
@@ -554,35 +689,50 @@ export class TutorsService implements OnModuleInit {
 
   async getNotifications(userId: string) {
     return this.notificationRepository.find({
-      where: { user: { id: userId } }, 
+      where: { user: { id: userId } },
       order: { createdAt: 'DESC' },
-      take: 10, 
+      take: 10,
     });
   }
 
   async updateTutorProfile(userId: string, updateData: any) {
-    const tutorEntity = await this.tutorRepository.findOne({ 
-      where: { user: { id: userId } }, 
-      relations: ['user'] 
+    const tutorEntity = await this.tutorRepository.findOne({
+      where: { user: { id: userId } },
+      relations: ['user'],
     });
-    
+
     if (!tutorEntity) throw new NotFoundException('Không tìm thấy gia sư');
 
-    if (updateData.fullName !== undefined) tutorEntity.user.fullName = updateData.fullName;
-    if (updateData.phone !== undefined) tutorEntity.user.phone = updateData.phone;
-    if (updateData.address !== undefined) tutorEntity.user.address = updateData.address;
-    if (updateData.avatarUrl !== undefined) tutorEntity.user.avatarUrl = updateData.avatarUrl;
+    if (updateData.fullName !== undefined)
+      tutorEntity.user.fullName = updateData.fullName;
+    if (updateData.phone !== undefined)
+      tutorEntity.user.phone = updateData.phone;
+    if (updateData.address !== undefined)
+      tutorEntity.user.address = updateData.address;
+    if (updateData.avatarUrl !== undefined)
+      tutorEntity.user.avatarUrl = updateData.avatarUrl;
     await this.userRepository.save(tutorEntity.user);
 
-    if (updateData.experience !== undefined) tutorEntity.experience = updateData.experience;
-    if (updateData.dob !== undefined) tutorEntity.dateOfBirth = updateData.dob ? new Date(updateData.dob) : null as any;
-    if (updateData.dateOfBirth !== undefined) tutorEntity.dateOfBirth = updateData.dateOfBirth ? new Date(updateData.dateOfBirth) : null as any;
-    if (updateData.educationLevel !== undefined) tutorEntity.educationLevel = updateData.educationLevel;
+    if (updateData.experience !== undefined)
+      tutorEntity.experience = updateData.experience;
+    if (updateData.dob !== undefined)
+      tutorEntity.dateOfBirth = updateData.dob
+        ? new Date(updateData.dob)
+        : (null as any);
+    if (updateData.dateOfBirth !== undefined)
+      tutorEntity.dateOfBirth = updateData.dateOfBirth
+        ? new Date(updateData.dateOfBirth)
+        : (null as any);
+    if (updateData.educationLevel !== undefined)
+      tutorEntity.educationLevel = updateData.educationLevel;
     if (updateData.major !== undefined) tutorEntity.major = updateData.major;
-    if (updateData.availableAreas !== undefined) tutorEntity.availableAreas = updateData.availableAreas;
+    if (updateData.availableAreas !== undefined)
+      tutorEntity.availableAreas = updateData.availableAreas;
     if (updateData.bio !== undefined) tutorEntity.bio = updateData.bio;
-    if (updateData.university !== undefined) tutorEntity.university = updateData.university;
-    if (updateData.graduationYear !== undefined) tutorEntity.graduationYear = updateData.graduationYear;
+    if (updateData.university !== undefined)
+      tutorEntity.university = updateData.university;
+    if (updateData.graduationYear !== undefined)
+      tutorEntity.graduationYear = updateData.graduationYear;
 
     await this.tutorRepository.save(tutorEntity);
 
@@ -591,29 +741,29 @@ export class TutorsService implements OnModuleInit {
       await this.updateTutorSubjects(userId, updateData.subjects);
     }
 
-    return { 
-      message: 'Cập nhật hồ sơ thành công', 
-      profile: await this.getTutorProfileData(userId) 
+    return {
+      message: 'Cập nhật hồ sơ thành công',
+      profile: await this.getTutorProfileData(userId),
     };
   }
 
   async getTutorSubjects(userId: string) {
-    const tutorEntity = await this.tutorRepository.findOne({ 
-      where: { user: { id: userId } } 
+    const tutorEntity = await this.tutorRepository.findOne({
+      where: { user: { id: userId } },
     });
     if (!tutorEntity) throw new NotFoundException('Không tìm thấy gia sư');
 
     const tutorSubjects = await this.tutorSubjectRepository.find({
       where: { tutor: { id: tutorEntity.id } },
-      relations: ['subject']
+      relations: ['subject'],
     });
 
-    return tutorSubjects.map(ts => ts.subject);
+    return tutorSubjects.map((ts) => ts.subject);
   }
 
   async updateTutorSubjects(userId: string, subjectNames: string[]) {
-    const tutorEntity = await this.tutorRepository.findOne({ 
-      where: { user: { id: userId } } 
+    const tutorEntity = await this.tutorRepository.findOne({
+      where: { user: { id: userId } },
     });
     if (!tutorEntity) throw new NotFoundException('Không tìm thấy gia sư');
 
@@ -629,25 +779,40 @@ export class TutorsService implements OnModuleInit {
           tutor: tutorEntity,
           subject,
           proficiencyLevel: 'Co ban',
-          yearsExperience: 2
+          yearsExperience: 2,
         });
         await this.tutorSubjectRepository.save(ts);
       }
     }
   }
 
-  async createLeaveSchedule(userId: string, body: { startDate: string; endDate: string; startTime: string; endTime: string; note: string }) {
+  async createLeaveSchedule(
+    userId: string,
+    body: {
+      startDate: string;
+      endDate: string;
+      startTime: string;
+      endTime: string;
+      note: string;
+    },
+  ) {
     const profile = await this.getTutorProfileData(userId);
     const tutorId = profile.id;
 
     // Parse the start and end of the holiday into UTC dates to avoid timezone shifts
-    const [startYear, startMonth, startDay] = body.startDate.split('-').map(Number);
+    const [startYear, startMonth, startDay] = body.startDate
+      .split('-')
+      .map(Number);
     const [startH, startM] = body.startTime.split(':').map(Number);
-    const leaveStart = new Date(Date.UTC(startYear, startMonth - 1, startDay, startH, startM, 0, 0));
+    const leaveStart = new Date(
+      Date.UTC(startYear, startMonth - 1, startDay, startH, startM, 0, 0),
+    );
 
     const [endYear, endMonth, endDay] = body.endDate.split('-').map(Number);
     const [endH, endM] = body.endTime.split(':').map(Number);
-    const leaveEnd = new Date(Date.UTC(endYear, endMonth - 1, endDay, endH, endM, 0, 0));
+    const leaveEnd = new Date(
+      Date.UTC(endYear, endMonth - 1, endDay, endH, endM, 0, 0),
+    );
 
     // Fetch schedules spanning the entire date range
     const startRange = new Date(body.startDate);
@@ -659,14 +824,17 @@ export class TutorsService implements OnModuleInit {
       where: {
         class: { tutor: { id: tutorId } },
         sessionDate: Between(startRange, endRange),
-        sessionStatus: SessionStatus.SCHEDULED
+        sessionStatus: SessionStatus.SCHEDULED,
       },
     });
 
     let cancelledCount = 0;
     for (const schedule of schedules) {
       // Get the correct date components for sessionDate without local timezone shifting
-      const sDateObj = schedule.sessionDate instanceof Date ? schedule.sessionDate : new Date(schedule.sessionDate);
+      const sDateObj =
+        schedule.sessionDate instanceof Date
+          ? schedule.sessionDate
+          : new Date(schedule.sessionDate);
       const dateStr = sDateObj.toISOString().split('T')[0];
       const [year, month, day] = dateStr.split('-').map(Number);
 
@@ -685,11 +853,12 @@ export class TutorsService implements OnModuleInit {
       }
     }
 
-    return { 
-      message: cancelledCount > 0 
-        ? `Đã hủy ${cancelledCount} buổi học thành công` 
-        : 'Đăng ký nghỉ thành công (không có buổi học nào trong khung giờ này)',
-      cancelledCount
+    return {
+      message:
+        cancelledCount > 0
+          ? `Đã hủy ${cancelledCount} buổi học thành công`
+          : 'Đăng ký nghỉ thành công (không có buổi học nào trong khung giờ này)',
+      cancelledCount,
     };
   }
 
@@ -702,11 +871,15 @@ export class TutorsService implements OnModuleInit {
     });
 
     if (!schedule) {
-      throw new NotFoundException('Không tìm thấy buổi học hoặc buổi học không thuộc quản lý của bạn.');
+      throw new NotFoundException(
+        'Không tìm thấy buổi học hoặc buổi học không thuộc quản lý của bạn.',
+      );
     }
 
     if (schedule.sessionStatus !== SessionStatus.CANCELLED) {
-      throw new BadRequestException('Buổi học này không ở trạng thái nghỉ học.');
+      throw new BadRequestException(
+        'Buổi học này không ở trạng thái nghỉ học.',
+      );
     }
 
     schedule.sessionStatus = SessionStatus.SCHEDULED;
@@ -715,7 +888,7 @@ export class TutorsService implements OnModuleInit {
 
     return {
       message: 'Đã hủy lịch nghỉ và khôi phục buổi học thành công.',
-      schedule
+      schedule,
     };
   }
 
@@ -726,7 +899,7 @@ export class TutorsService implements OnModuleInit {
 
       return this.learningReportRepository.find({
         where: { class: { id: classId }, tutor: { id: tutorId } },
-        order: { reportDate: 'DESC' }
+        order: { reportDate: 'DESC' },
       });
     } catch (err) {
       // Nếu không tìm thấy hồ sơ gia sư (ví dụ: Staff/Admin gọi),
@@ -734,22 +907,26 @@ export class TutorsService implements OnModuleInit {
       return this.learningReportRepository.find({
         where: { class: { id: classId } },
         relations: ['tutor', 'tutor.user'],
-        order: { reportDate: 'DESC' }
+        order: { reportDate: 'DESC' },
       });
     }
   }
 
   async createReport(userId: string, dto: CreateLearningReportDto) {
     const profile = await this.getTutorProfileData(userId);
-    const tutorId = profile.id; 
+    const tutorId = profile.id;
 
     const classInstance = await this.classRepository.findOne({
       where: { id: dto.classId },
       relations: ['tutor'],
     });
 
-    if (!classInstance) throw new NotFoundException(`Không tìm thấy lớp học với ID ${dto.classId}`);
-    if (classInstance.tutor.id !== tutorId) throw new ForbiddenException('Bạn không có quyền nộp báo cáo.');
+    if (!classInstance)
+      throw new NotFoundException(
+        `Không tìm thấy lớp học với ID ${dto.classId}`,
+      );
+    if (classInstance.tutor.id !== tutorId)
+      throw new ForbiddenException('Bạn không có quyền nộp báo cáo.');
 
     const { classId, ...reportData } = dto;
 
@@ -772,8 +949,8 @@ export class TutorsService implements OnModuleInit {
         where: {
           class: { id: classId },
           sessionDate: today,
-          sessionStatus: SessionStatus.SCHEDULED
-        }
+          sessionStatus: SessionStatus.SCHEDULED,
+        },
       });
 
       // If not, find the oldest scheduled session
@@ -781,9 +958,9 @@ export class TutorsService implements OnModuleInit {
         schedule = await this.scheduleRepository.findOne({
           where: {
             class: { id: classId },
-            sessionStatus: SessionStatus.SCHEDULED
+            sessionStatus: SessionStatus.SCHEDULED,
           },
-          order: { sessionDate: 'ASC', startTime: 'ASC' }
+          order: { sessionDate: 'ASC', startTime: 'ASC' },
         });
       }
 
@@ -798,15 +975,19 @@ export class TutorsService implements OnModuleInit {
     return savedReport;
   }
 
-  async updateReport(reportId: string, userId: string, dto: Partial<CreateLearningReportDto>) {
+  async updateReport(
+    reportId: string,
+    userId: string,
+    dto: Partial<CreateLearningReportDto>,
+  ) {
     const profile = await this.getTutorProfileData(userId);
     const tutorId = profile.id;
 
     const report = await this.learningReportRepository.findOne({
-      where: { id: reportId, tutor: { id: tutorId } }
+      where: { id: reportId, tutor: { id: tutorId } },
     });
     if (!report) throw new NotFoundException('Không tìm thấy báo cáo');
-    
+
     Object.assign(report, dto);
     return this.learningReportRepository.save(report);
   }
@@ -817,7 +998,7 @@ export class TutorsService implements OnModuleInit {
 
     const report = await this.learningReportRepository.findOne({
       where: { id: reportId, tutor: { id: tutorId } },
-      relations: ['class']
+      relations: ['class'],
     });
 
     if (!report) throw new NotFoundException('Không tìm thấy báo cáo để xóa');
@@ -832,9 +1013,9 @@ export class TutorsService implements OnModuleInit {
         const schedule = await this.scheduleRepository.findOne({
           where: {
             class: { id: classId },
-            sessionStatus: SessionStatus.COMPLETED
+            sessionStatus: SessionStatus.COMPLETED,
           },
-          order: { sessionDate: 'DESC', startTime: 'DESC' }
+          order: { sessionDate: 'DESC', startTime: 'DESC' },
         });
 
         if (schedule) {
@@ -857,11 +1038,15 @@ export class TutorsService implements OnModuleInit {
         where: { sessionStatus: SessionStatus.COMPLETED },
       });
       if (existingCompleted > 0) {
-        console.log('--- Completed schedules already exist. Skipping earnings seed. ---');
+        console.log(
+          '--- Completed schedules already exist. Skipping earnings seed. ---',
+        );
         return;
       }
 
-      console.log('--- Seeding completed schedules for earnings testing... ---');
+      console.log(
+        '--- Seeding completed schedules for earnings testing... ---',
+      );
       const scheduleRepo = this.scheduleRepository;
       const now = new Date();
       const mathSubject = await this.subjectRepository.findOne({
@@ -891,7 +1076,9 @@ export class TutorsService implements OnModuleInit {
           scheduleRepo.create({
             class: classEntity,
             sessionDate: date,
-            dayOfWeek: ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'][date.getDay()],
+            dayOfWeek: ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'][
+              date.getDay()
+            ],
             startTime,
             endTime,
             sessionStatus: SessionStatus.COMPLETED,
@@ -916,7 +1103,10 @@ export class TutorsService implements OnModuleInit {
 
         if (studentDuyen && chemSubject) {
           let classDuyen = await this.classRepository.findOne({
-            where: { tutor: { id: tutorCam.id }, student: { id: studentDuyen.id } },
+            where: {
+              tutor: { id: tutorCam.id },
+              student: { id: studentDuyen.id },
+            },
             relations: ['subject', 'student', 'student.user'],
           });
           if (!classDuyen) {
@@ -935,9 +1125,27 @@ export class TutorsService implements OnModuleInit {
           }
 
           // 3 completed schedules cho class Duyen
-          await createCompleted(classDuyen, 14, '19:00:00', '21:00:00', 'Phản ứng oxy hóa khử');
-          await createCompleted(classDuyen, 12, '19:00:00', '21:00:00', 'Cân bằng phương trình hóa học');
-          await createCompleted(classDuyen, 7, '19:00:00', '21:00:00', 'Bài tập về nồng độ dung dịch');
+          await createCompleted(
+            classDuyen,
+            14,
+            '19:00:00',
+            '21:00:00',
+            'Phản ứng oxy hóa khử',
+          );
+          await createCompleted(
+            classDuyen,
+            12,
+            '19:00:00',
+            '21:00:00',
+            'Cân bằng phương trình hóa học',
+          );
+          await createCompleted(
+            classDuyen,
+            7,
+            '19:00:00',
+            '21:00:00',
+            'Bài tập về nồng độ dung dịch',
+          );
         }
 
         // Class 2: Ha - Toán học - 250k/buổi
@@ -947,26 +1155,41 @@ export class TutorsService implements OnModuleInit {
 
         if (studentHa && mathSubject) {
           let classHa = await this.classRepository.findOne({
-            where: { tutor: { id: tutorCam.id }, student: { id: studentHa.id } },
+            where: {
+              tutor: { id: tutorCam.id },
+              student: { id: studentHa.id },
+            },
           });
-        if (!classHa) {
-          classHa = await this.classRepository.save(
-            this.classRepository.create({
-              tutor: tutorCam,
-              student: studentHa,
-              subject: mathSubject,
-              feePerSession: 250000,
-              totalSessions: 15,
-              status: ClassStatus.ACTIVE,
-              startDate: new Date('2026-06-01'),
-              location: 'Quận 7, TP.HCM',
-            }),
-          );
-        }
+          if (!classHa) {
+            classHa = await this.classRepository.save(
+              this.classRepository.create({
+                tutor: tutorCam,
+                student: studentHa,
+                subject: mathSubject,
+                feePerSession: 250000,
+                totalSessions: 15,
+                status: ClassStatus.ACTIVE,
+                startDate: new Date('2026-06-01'),
+                location: 'Quận 7, TP.HCM',
+              }),
+            );
+          }
 
           // 2 completed schedules cho class Ha
-          await createCompleted(classHa, 10, '17:00:00', '19:00:00', 'Ôn tập chương 1 - Hàm số');
-          await createCompleted(classHa, 8, '17:00:00', '19:00:00', 'Giải bài tập chương 1');
+          await createCompleted(
+            classHa,
+            10,
+            '17:00:00',
+            '19:00:00',
+            'Ôn tập chương 1 - Hàm số',
+          );
+          await createCompleted(
+            classHa,
+            8,
+            '17:00:00',
+            '19:00:00',
+            'Giải bài tập chương 1',
+          );
         }
       }
 
@@ -981,7 +1204,10 @@ export class TutorsService implements OnModuleInit {
 
       if (tutorBinh && studentTan && mathSubject) {
         let classTan = await this.classRepository.findOne({
-          where: { tutor: { id: tutorBinh.id }, student: { id: studentTan.id } },
+          where: {
+            tutor: { id: tutorBinh.id },
+            student: { id: studentTan.id },
+          },
         });
         if (!classTan) {
           classTan = await this.classRepository.save(
@@ -1000,11 +1226,41 @@ export class TutorsService implements OnModuleInit {
         }
 
         // 5 completed schedules cho class Tan
-        await createCompleted(classTan, 30, '19:00:00', '21:00:00', 'Hàm số bậc nhất');
-        await createCompleted(classTan, 28, '19:00:00', '21:00:00', 'Hàm số bậc hai');
-        await createCompleted(classTan, 26, '19:00:00', '21:00:00', 'Phương trình & hệ phương trình');
-        await createCompleted(classTan, 24, '19:00:00', '21:00:00', 'Bất phương trình');
-        await createCompleted(classTan, 22, '19:00:00', '21:00:00', 'Ôn tập giữa kỳ');
+        await createCompleted(
+          classTan,
+          30,
+          '19:00:00',
+          '21:00:00',
+          'Hàm số bậc nhất',
+        );
+        await createCompleted(
+          classTan,
+          28,
+          '19:00:00',
+          '21:00:00',
+          'Hàm số bậc hai',
+        );
+        await createCompleted(
+          classTan,
+          26,
+          '19:00:00',
+          '21:00:00',
+          'Phương trình & hệ phương trình',
+        );
+        await createCompleted(
+          classTan,
+          24,
+          '19:00:00',
+          '21:00:00',
+          'Bất phương trình',
+        );
+        await createCompleted(
+          classTan,
+          22,
+          '19:00:00',
+          '21:00:00',
+          'Ôn tập giữa kỳ',
+        );
       }
 
       // ========== TUTOR TEST (tutor@test.com - 123456) ==========
@@ -1040,7 +1296,9 @@ export class TutorsService implements OnModuleInit {
               scheduleRepo.create({
                 class: testClass,
                 sessionDate: yesterday,
-                dayOfWeek: ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'][yesterday.getDay()],
+                dayOfWeek: ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'][
+                  yesterday.getDay()
+                ],
                 startTime: '19:00:00',
                 endTime: '21:00:00',
                 sessionStatus: SessionStatus.COMPLETED,
@@ -1064,7 +1322,8 @@ export class TutorsService implements OnModuleInit {
     const tutorEntity = await this.tutorRepository.findOne({
       where: { user: { id: userId } },
     });
-    if (!tutorEntity) throw new NotFoundException('Không tìm thấy hồ sơ gia sư');
+    if (!tutorEntity)
+      throw new NotFoundException('Không tìm thấy hồ sơ gia sư');
     const tutorId = tutorEntity.id;
 
     // Lấy completed schedules + class với relations đơn giản hơn (student.user có eager loading)
@@ -1079,14 +1338,17 @@ export class TutorsService implements OnModuleInit {
 
     // Tính tổng thu nhập
     let totalEarnings = 0;
-    const classEarningsMap = new Map<string, {
-      classId: string;
-      subject: string;
-      studentName: string;
-      feePerSession: number;
-      sessions: number;
-      totalEarnings: number;
-    }>();
+    const classEarningsMap = new Map<
+      string,
+      {
+        classId: string;
+        subject: string;
+        studentName: string;
+        feePerSession: number;
+        sessions: number;
+        totalEarnings: number;
+      }
+    >();
 
     for (const s of completedSchedules) {
       const fee = Number(s.class?.feePerSession || 0);
@@ -1111,7 +1373,8 @@ export class TutorsService implements OnModuleInit {
     // Tính thu nhập theo tháng
     const monthlyMap = new Map<string, number>();
     for (const s of completedSchedules) {
-      const date = s.sessionDate instanceof Date ? s.sessionDate : new Date(s.sessionDate);
+      const date =
+        s.sessionDate instanceof Date ? s.sessionDate : new Date(s.sessionDate);
       const monthKey = `${date.getMonth() + 1}/${date.getFullYear()}`;
       const fee = Number(s.class?.feePerSession || 0);
       monthlyMap.set(monthKey, (monthlyMap.get(monthKey) || 0) + fee);
@@ -1137,8 +1400,11 @@ export class TutorsService implements OnModuleInit {
       totalEarnings,
       totalSessions,
       currentMonthEarnings,
-      averagePerSession: totalSessions > 0 ? Math.round(totalEarnings / totalSessions) : 0,
-      byClass: Array.from(classEarningsMap.values()).sort((a, b) => b.totalEarnings - a.totalEarnings),
+      averagePerSession:
+        totalSessions > 0 ? Math.round(totalEarnings / totalSessions) : 0,
+      byClass: Array.from(classEarningsMap.values()).sort(
+        (a, b) => b.totalEarnings - a.totalEarnings,
+      ),
       monthly: monthlyEarnings,
     };
   }
@@ -1147,80 +1413,134 @@ export class TutorsService implements OnModuleInit {
     const TEST_TUTOR_ID = '00000000-0000-0000-0003-000000000001';
 
     // 1. Tạo hoặc lấy Role mẫu
-    let tutorRole = await this.roleRepository.findOne({ where: { name: 'tutor' } });
+    let tutorRole = await this.roleRepository.findOne({
+      where: { name: 'tutor' },
+    });
     if (!tutorRole) {
-      tutorRole = await this.roleRepository.save(this.roleRepository.create({ name: 'tutor' }));
+      tutorRole = await this.roleRepository.save(
+        this.roleRepository.create({ name: 'tutor' }),
+      );
     }
 
-    let studentRole = await this.roleRepository.findOne({ where: { name: 'student' } });
+    let studentRole = await this.roleRepository.findOne({
+      where: { name: 'student' },
+    });
     if (!studentRole) {
-      studentRole = await this.roleRepository.save(this.roleRepository.create({ name: 'student' }));
+      studentRole = await this.roleRepository.save(
+        this.roleRepository.create({ name: 'student' }),
+      );
     }
 
     // 2. Tạo hoặc lấy User & Tutor/Student mẫu
-    let tutorUser = await this.userRepository.findOne({ where: { email: 'tutor@test.com' } });
+    let tutorUser = await this.userRepository.findOne({
+      where: { email: 'tutor@test.com' },
+    });
     if (!tutorUser) {
-      tutorUser = await this.userRepository.save(this.userRepository.create({
-        id: TEST_TUTOR_ID,
-        fullName: 'Gia sư Mẫu',
-        email: 'tutor@test.com',
-        passwordHash: '123456',
-        role: tutorRole
-      }));
+      tutorUser = await this.userRepository.save(
+        this.userRepository.create({
+          id: TEST_TUTOR_ID,
+          fullName: 'Gia sư Mẫu',
+          email: 'tutor@test.com',
+          passwordHash: '123456',
+          role: tutorRole,
+        }),
+      );
     }
-    let tutor = await this.tutorRepository.findOne({ where: { user: { id: tutorUser.id } } });
+    let tutor = await this.tutorRepository.findOne({
+      where: { user: { id: tutorUser.id } },
+    });
     if (!tutor) {
-      tutor = await this.tutorRepository.save(this.tutorRepository.create({ user: tutorUser }));
+      tutor = await this.tutorRepository.save(
+        this.tutorRepository.create({ user: tutorUser }),
+      );
     }
 
-    let studentUser = await this.userRepository.findOne({ where: { email: 'student@test.com' } });
+    let studentUser = await this.userRepository.findOne({
+      where: { email: 'student@test.com' },
+    });
     if (!studentUser) {
-      studentUser = await this.userRepository.save(this.userRepository.create({
-        fullName: 'Học viên Mẫu',
-        email: 'student@test.com',
-        passwordHash: '123456',
-        role: studentRole
-      }));
+      studentUser = await this.userRepository.save(
+        this.userRepository.create({
+          fullName: 'Học viên Mẫu',
+          email: 'student@test.com',
+          passwordHash: '123456',
+          role: studentRole,
+        }),
+      );
     }
-    let student = await this.studentRepository.findOne({ where: { user: { id: studentUser.id } } });
+    let student = await this.studentRepository.findOne({
+      where: { user: { id: studentUser.id } },
+    });
     if (!student) {
-      student = await this.studentRepository.save(this.studentRepository.create({ user: studentUser, gradeLevel: 'Lớp 12' }));
+      student = await this.studentRepository.save(
+        this.studentRepository.create({
+          user: studentUser,
+          gradeLevel: 'Lớp 12',
+        }),
+      );
     }
 
     // 3. Tạo hoặc lấy Subject
-    let math = await this.subjectRepository.findOne({ where: { name: 'Toán học' } });
+    let math = await this.subjectRepository.findOne({
+      where: { name: 'Toán học' },
+    });
     if (!math) {
-      math = await this.subjectRepository.save(this.subjectRepository.create({ name: 'Toán học' }));
+      math = await this.subjectRepository.save(
+        this.subjectRepository.create({ name: 'Toán học' }),
+      );
     }
 
-    let english = await this.subjectRepository.findOne({ where: { name: 'Tiếng Anh' } });
+    let english = await this.subjectRepository.findOne({
+      where: { name: 'Tiếng Anh' },
+    });
     if (!english) {
-      english = await this.subjectRepository.save(this.subjectRepository.create({ name: 'Tiếng Anh' }));
+      english = await this.subjectRepository.save(
+        this.subjectRepository.create({ name: 'Tiếng Anh' }),
+      );
     }
 
     // 4. Tạo Class & Schedule
-    const existingClass = await this.classRepository.count({ where: { tutor: { id: tutor.id } } });
+    const existingClass = await this.classRepository.count({
+      where: { tutor: { id: tutor.id } },
+    });
     if (existingClass === 0) {
-      const cls = await this.classRepository.save(this.classRepository.create({
-        tutor, student, subject: math, status: ClassStatus.ACTIVE, feePerSession: 200000, totalSessions: 20
-      }));
+      const cls = await this.classRepository.save(
+        this.classRepository.create({
+          tutor,
+          student,
+          subject: math,
+          status: ClassStatus.ACTIVE,
+          feePerSession: 200000,
+          totalSessions: 20,
+        }),
+      );
 
       const today = new Date();
-      await this.scheduleRepository.save(this.scheduleRepository.create({
-        class: cls,
-        sessionDate: today,
-        startTime: '19:00',
-        endTime: '21:00',
-        dayOfWeek: 'Today'
-      }));
+      await this.scheduleRepository.save(
+        this.scheduleRepository.create({
+          class: cls,
+          sessionDate: today,
+          startTime: '19:00',
+          endTime: '21:00',
+          dayOfWeek: 'Today',
+        }),
+      );
 
       // Tạo Class Requests (New Classes)
       await this.classRequestRepository.save([
         this.classRequestRepository.create({
-          student, subject: math, preferredArea: 'Quận 1, TP.HCM', preferredSchedule: 'Tối T2, T4', status: RequestStatus.PENDING
+          student,
+          subject: math,
+          preferredArea: 'Quận 1, TP.HCM',
+          preferredSchedule: 'Tối T2, T4',
+          status: RequestStatus.PENDING,
         }),
         this.classRequestRepository.create({
-          student, subject: english, preferredArea: 'Online', preferredSchedule: 'Sáng CN', status: RequestStatus.PENDING
+          student,
+          subject: english,
+          preferredArea: 'Online',
+          preferredSchedule: 'Sáng CN',
+          status: RequestStatus.PENDING,
         }),
         this.classRequestRepository.create({
           student,
@@ -1228,7 +1548,7 @@ export class TutorsService implements OnModuleInit {
           preferredArea: 'Quận 7, TP.HCM',
           preferredSchedule: 'Chiều T7, CN',
           requirements: 'Cần gia sư dạy nâng cao toán hình lớp 11.',
-          status: RequestStatus.PENDING
+          status: RequestStatus.PENDING,
         }),
         this.classRequestRepository.create({
           student,
@@ -1236,8 +1556,8 @@ export class TutorsService implements OnModuleInit {
           preferredArea: 'Quận Bình Thạnh, TP.HCM',
           preferredSchedule: 'Tối T3, T5',
           requirements: 'Gia sư luyện thi IELTS, mục tiêu 6.5.',
-          status: RequestStatus.PENDING
-        })
+          status: RequestStatus.PENDING,
+        }),
       ]);
     }
 
@@ -1521,13 +1841,14 @@ export class TutorsService implements OnModuleInit {
     const qb = this.tutorRepository
       .createQueryBuilder('tutor')
       .leftJoinAndSelect('tutor.user', 'user')
-      .where('tutor.approvalStatus = :status', { status: ApprovalStatus.APPROVED });
+      .where('tutor.approvalStatus = :status', {
+        status: ApprovalStatus.APPROVED,
+      });
 
     if (search) {
-      qb.andWhere(
-        '(user.fullName ILIKE :search OR user.email ILIKE :search)',
-        { search: `%${search}%` },
-      );
+      qb.andWhere('(user.fullName ILIKE :search OR user.email ILIKE :search)', {
+        search: `%${search}%`,
+      });
     }
 
     if (subject) {
@@ -1565,7 +1886,10 @@ export class TutorsService implements OnModuleInit {
     }
 
     // Lấy rating, review count và average price cho tất cả tutor trong 1 query mỗi loại
-    const reviewStatsMap = new Map<string, { avgRating: number; reviewCount: number }>();
+    const reviewStatsMap = new Map<
+      string,
+      { avgRating: number; reviewCount: number }
+    >();
     if (tutorIds.length > 0) {
       const reviewStats = await this.reviewRepository
         .createQueryBuilder('r')

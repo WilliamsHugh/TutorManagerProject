@@ -48,6 +48,9 @@ export default function HubLoginForm() {
             // Lưu token và user vào localStorage
             saveAuth(data.access_token, data.user);
 
+            // Gán cookie để Middleware có thể đọc được token (Sửa lỗi không nhảy trang)
+            document.cookie = `access_token=${data.access_token}; path=/; max-age=86400; SameSite=Lax`;
+
             // Phân luồng theo role
             const role: string = data.user?.role?.name ?? "";
             if (role === "admin") {

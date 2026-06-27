@@ -355,24 +355,15 @@ export default function LoginForm() {
                         <p className="text-sm text-slate-600 mb-6 leading-relaxed">
                             {lockedMsg}
                         </p>
-                        <div className="flex flex-col sm:flex-row gap-3 w-full">
+                        <div className="w-full">
                             <button
                                 onClick={() => {
                                     setLockedMsg(null);
                                     router.push("/");
                                 }}
-                                className="flex-1 h-11 inline-flex items-center justify-center rounded-xl bg-[#0b5fff] hover:opacity-90 text-white font-semibold text-sm transition-all shadow-md shadow-blue-100"
+                                className="w-full h-11 inline-flex items-center justify-center rounded-xl bg-[#0b5fff] hover:opacity-90 text-white font-semibold text-sm transition-all shadow-md shadow-blue-100"
                             >
                                 Về trang chủ
-                            </button>
-                            <button
-                                onClick={() => {
-                                    setLockedMsg(null);
-                                    router.replace("/login");
-                                }}
-                                className="flex-1 h-11 inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-sm transition-all"
-                            >
-                                Đóng
                             </button>
                         </div>
                     </div>

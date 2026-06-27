@@ -1244,6 +1244,43 @@ export class TutorsService implements OnModuleInit {
     return { message: 'Mock data seeded' };
   }
 
+  async getTutorPendingProposals(userId: string) {
+    const tutorEntity = await this.tutorRepository.findOne({
+      where: { user: { id: userId } },
+    });
+    if (!tutorEntity) throw new NotFoundException('Không tìm thấy hồ sơ gia sư');
+
+    const requests = await this.classRequestRepository.find({
+      where: {
+        preferredTutor: { id: tutorEntity.id },
+        status: In([RequestStatus.PROPOSED, RequestStatus.NEGOTIATING]),
+      },
+      relations: {
+        student: { user: true },
+        subject: true,
+        preferredTutor: { user: true },
+      },
+      order: { proposedAt: 'DESC' },
+    });
+
+    return requests.map((req) => ({
+      id: req.id,
+      studentName: req.student?.user?.fullName || 'Ẩn danh',
+      studentEmail: req.student?.user?.email || '',
+      gradeLevel: req.student?.gradeLevel || '',
+      subject: req.subject?.name || 'Môn học',
+      preferredArea: req.preferredArea || 'Toàn quốc',
+      preferredSchedule: req.preferredSchedule || 'Linh hoạt',
+      requirements: req.requirements || '',
+      proposedFee: Number(req.proposedFee) || 0,
+      proposedSessions: req.proposedSessions || 0,
+      totalFee: (Number(req.proposedFee) || 0) * (req.proposedSessions || 0),
+      status: req.status,
+      proposedAt: req.proposedAt,
+      createdAt: req.createdAt,
+    }));
+  }
+
   async getTutorRecommendations(userId: string) {
     const tutorEntity = await this.tutorRepository.findOne({
       where: { user: { id: userId } },
@@ -1333,6 +1370,101 @@ export class TutorsService implements OnModuleInit {
         totalSessions,
         totalFee: feePerSession * totalSessions,
       },
+    };
+  }
+
+  async modifyProposal(
+    requestId: string,
+    userId: string,
+    feePerSession: number,
+    totalSessions: number,
+  ) {
+    const request = await this.classRequestRepository.findOne({
+      where: { id: requestId },
+      relations: {
+        preferredTutor: { user: true },
+      },
+    });
+
+    if (!request) throw new NotFoundException('Không tìm thấy yêu cầu');
+    if (
+      request.status !== RequestStatus.PROPOSED &&
+      request.status !== RequestStatus.NEGOTIATING
+    ) {
+      throw new BadRequestException('Yêu cầu này không thể sửa đề xuất');
+    }
+
+    const tutorEntity = await this.tutorRepository.findOne({
+      where: { user: { id: userId } },
+    });
+    if (!tutorEntity) throw new NotFoundException('Không tìm thấy hồ sơ gia sư');
+    if (!request.preferredTutor || request.preferredTutor.id !== tutorEntity.id) {
+      throw new BadRequestException('Bạn không phải là gia sư được đề xuất');
+    }
+
+    if (!feePerSession || feePerSession < 50000) {
+      throw new BadRequestException('Học phí tối thiểu là 50.000đ/buổi');
+    }
+    if (!totalSessions || totalSessions < 1) {
+      throw new BadRequestException('Số buổi học tối thiểu là 1');
+    }
+
+    request.proposedFee = feePerSession;
+    request.proposedSessions = totalSessions;
+    request.proposedAt = new Date();
+    request.status = RequestStatus.PROPOSED;
+    request.requirements = [
+      request.requirements || '',
+      `[Gia sư đã cập nhật đề xuất: ${feePerSession.toLocaleString('vi-VN')}đ/buổi, ${totalSessions} buổi]`,
+    ]
+      .filter(Boolean)
+      .join('\n');
+    await this.classRequestRepository.save(request);
+
+    return {
+      message: `Đã cập nhật đề xuất: ${feePerSession.toLocaleString('vi-VN')}đ/buổi, ${totalSessions} buổi.`,
+    };
+  }
+
+  async withdrawProposal(requestId: string, userId: string) {
+    const request = await this.classRequestRepository.findOne({
+      where: { id: requestId },
+      relations: {
+        preferredTutor: { user: true },
+      },
+    });
+
+    if (!request) throw new NotFoundException('Không tìm thấy yêu cầu');
+    if (
+      request.status !== RequestStatus.PROPOSED &&
+      request.status !== RequestStatus.NEGOTIATING
+    ) {
+      throw new BadRequestException('Yêu cầu này không thể rút đề xuất');
+    }
+
+    const tutorEntity = await this.tutorRepository.findOne({
+      where: { user: { id: userId } },
+    });
+    if (!tutorEntity) throw new NotFoundException('Không tìm thấy hồ sơ gia sư');
+    if (!request.preferredTutor || request.preferredTutor.id !== tutorEntity.id) {
+      throw new BadRequestException('Bạn không phải là gia sư được đề xuất');
+    }
+
+    request.preferredTutor = null as any;
+    request.status = RequestStatus.PENDING;
+    request.proposedFee = null as any;
+    request.proposedSessions = null as any;
+    request.proposedAt = null as any;
+    request.requirements = [
+      request.requirements || '',
+      `[Gia sư ${tutorEntity.user?.fullName || ''} đã rút đề xuất.]`,
+    ]
+      .filter(Boolean)
+      .join('\n');
+    await this.classRequestRepository.save(request);
+
+    return {
+      message: 'Bạn đã rút đề xuất. Yêu cầu mở lại cho tất cả gia sư.',
     };
   }
 

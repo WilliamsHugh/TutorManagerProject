@@ -96,8 +96,8 @@ export interface AuthUser {
   role: { id: number; name: string } | null;
 }
 
-const USER_KEY = "auth_user";
-const TOKEN_KEY = "access_token";
+export const USER_KEY = "auth_user";
+export const TOKEN_KEY = "access_token";
 
 /** Lưu thông tin người dùng vào localStorage */
 export function saveAuth(token: string, user: AuthUser) {

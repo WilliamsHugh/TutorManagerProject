@@ -200,6 +200,94 @@ export async function declineRecommendation(id: string) {
   return res.json();
 }
 
+// Lấy danh sách đề xuất đang chờ (PROPOSED + NEGOTIATING)
+export async function getMyPendingProposals() {
+  const token = getToken();
+  const res = await fetch(`${API_URL}/tutor/recommendations/pending`, {
+    headers: { 'Authorization': `Bearer ${token}` },
+  });
+  if (!res.ok) throw new Error('Không thể tải danh sách đề xuất đang chờ');
+  return res.json();
+}
+
+// Điều chỉnh đề xuất (khi học sinh yêu cầu sửa)
+export async function modifyProposal(id: string, feePerSession: number, totalSessions: number) {
+  const token = getToken();
+  const res = await fetch(`${API_URL}/tutor/recommendations/${id}/modify`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    },
+    body: JSON.stringify({ feePerSession, totalSessions }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || 'Không thể điều chỉnh đề xuất');
+  }
+  return res.json();
+}
+
+// Rút đề xuất
+export async function withdrawProposal(id: string) {
+  const token = getToken();
+  const res = await fetch(`${API_URL}/tutor/recommendations/${id}/withdraw`, {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${token}` },
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || 'Không thể rút đề xuất');
+  }
+  return res.json();
+}
+
+// Tutor yêu cầu hủy lớp học
+export async function tutorRequestCancellation(classId: string, reason: string) {
+  const token = getToken();
+  const res = await fetch(`${API_URL}/tutor/classes/${classId}/request-cancellation`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    },
+    body: JSON.stringify({ reason }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || 'Không thể yêu cầu hủy lớp');
+  }
+  return res.json();
+}
+
+// Tutor phản hồi yêu cầu hủy lớp
+export async function tutorRespondCancellation(classId: string, agree: boolean) {
+  const token = getToken();
+  const res = await fetch(`${API_URL}/tutor/classes/${classId}/respond-cancellation`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    },
+    body: JSON.stringify({ agree }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || 'Không thể phản hồi yêu cầu hủy lớp');
+  }
+  return res.json();
+}
+
+// Tutor lấy danh sách lớp có yêu cầu hủy
+export async function getTutorCancellations() {
+  const token = getToken();
+  const res = await fetch(`${API_URL}/tutor/classes/cancellations`, {
+    headers: { 'Authorization': `Bearer ${token}` },
+  });
+  if (!res.ok) throw new Error('Không thể tải danh sách yêu cầu hủy lớp');
+  return res.json();
+}
+
 // Hàm hủy lịch nghỉ (khôi phục buổi học)
 export async function cancelLeaveSchedule(scheduleId: string) {
   const token = getToken();

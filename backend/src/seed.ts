@@ -169,16 +169,25 @@ const SCHEDULE_NOTES = [
 ];
 
 // =====================================================================
-// RESET DATABASE - Xoá toàn bộ dữ liệu cũ trước khi seed
+// MAIN SEED FUNCTION
 // =====================================================================
-async function resetDatabase() {
+async function seed() {
+  await dataSource.initialize();
+  console.log('✅ Database connected for seeding...');
+
+  // Đồng bộ schema trước — tạo các cột mới (proposed_fee, proposed_sessions, cancellation_*) 
+  // mà entity đã thêm nhưng database chưa có
+  await dataSource.synchronize();
+  console.log('   + Schema synced');
+
+  // Dùng queryRunner với transaction để đảm bảo mọi operation chạy trên
+  // CÙNG một database connection — tránh FK violation do connection pool isolation
   const queryRunner = dataSource.createQueryRunner();
+  await queryRunner.startTransaction();
+
   try {
     console.log('\n--- 0. Resetting Database ---');
-    // Disable foreign key triggers
-    await queryRunner.query(`SET session_replication_role = 'replica'`);
-
-    // Truncate all tables in dependency order (child → parent)
+    // DELETE FROM thay vì TRUNCATE (DML-safe trong transaction với deferred constraints)
     const tables = [
       'notifications',
       'reviews',
@@ -196,41 +205,26 @@ async function resetDatabase() {
       'subjects',
       'settings',
     ];
-
     for (const table of tables) {
-      await queryRunner.query(`TRUNCATE TABLE "${table}" CASCADE`);
+      await queryRunner.query(`DELETE FROM "${table}"`);
     }
+    console.log('   + All tables cleared successfully');
 
-    // Re-enable foreign key triggers
-    await queryRunner.query(`SET session_replication_role = 'origin'`);
+    // Dùng repositories gắn với queryRunner
+    const roleRepo = queryRunner.manager.getRepository(Role);
+    const userRepo = queryRunner.manager.getRepository(User);
+    const subjectRepo = queryRunner.manager.getRepository(Subject);
+    const tutorRepo = queryRunner.manager.getRepository(Tutor);
+    const tutorSubjectRepo = queryRunner.manager.getRepository(TutorSubject);
+    const studentRepo = queryRunner.manager.getRepository(Student);
+    const requestRepo = queryRunner.manager.getRepository(ClassRequest);
+    const classRepo = queryRunner.manager.getRepository(Class);
+    const scheduleRepo = queryRunner.manager.getRepository(Schedule);
+    const reviewRepo = queryRunner.manager.getRepository(Review);
+    const reportRepo = queryRunner.manager.getRepository(LearningReport);
+    const notificationRepo = queryRunner.manager.getRepository(Notification);
 
-    console.log('   + All tables truncated successfully');
-  } finally {
-    await queryRunner.release();
-  }
-}
-
-// =====================================================================
-// MAIN SEED FUNCTION
-// =====================================================================
-async function seed() {
-  await dataSource.initialize();
-  console.log('✅ Database connected for seeding...');
-  await resetDatabase();
-  const startTime = Date.now();
-
-  const roleRepo = dataSource.getRepository(Role);
-  const userRepo = dataSource.getRepository(User);
-  const subjectRepo = dataSource.getRepository(Subject);
-  const tutorRepo = dataSource.getRepository(Tutor);
-  const tutorSubjectRepo = dataSource.getRepository(TutorSubject);
-  const studentRepo = dataSource.getRepository(Student);
-  const requestRepo = dataSource.getRepository(ClassRequest);
-  const classRepo = dataSource.getRepository(Class);
-  const scheduleRepo = dataSource.getRepository(Schedule);
-  const reviewRepo = dataSource.getRepository(Review);
-  const reportRepo = dataSource.getRepository(LearningReport);
-  const notificationRepo = dataSource.getRepository(Notification);
+    const startTime = Date.now();
 
   // ===================================================================
   // 1. ROLES
@@ -925,6 +919,20 @@ async function seed() {
   console.log(`   🔔 Notifications: ${notificationCount}`);
   console.log('='.repeat(60));
 
+  // Commit transaction
+  await queryRunner.commitTransaction();
+  console.log('\n✅ Database transaction committed successfully!');
+
+  } catch (err) {
+    // Rollback nếu có lỗi
+    await queryRunner.rollbackTransaction();
+    await queryRunner.release();
+    await dataSource.destroy();
+    console.error('❌ Error seeding database:', err);
+    process.exit(1);
+  }
+
+  await queryRunner.release();
   await dataSource.destroy();
 }
 

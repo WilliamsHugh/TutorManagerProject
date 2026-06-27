@@ -14,6 +14,7 @@ import { User } from '../../users/entities/user.entity';
 
 export enum ClassStatus {
   ACTIVE = 'active',
+  CANCELLATION_REQUESTED = 'cancellation_requested',
   COMPLETED = 'completed',
   CANCELLED = 'cancelled',
   SUSPENDED = 'suspended',
@@ -70,4 +71,26 @@ export class Class {
 
   @Column({ type: 'text', nullable: true })
   notes!: string;
+
+  @Column({
+    name: 'cancellation_requested_by',
+    type: 'varchar',
+    length: 20,
+    nullable: true,
+  })
+  cancellationRequestedBy!: string; // 'tutor' | 'student'
+
+  @Column({
+    name: 'cancellation_reason',
+    type: 'text',
+    nullable: true,
+  })
+  cancellationReason!: string;
+
+  @Column({
+    name: 'cancellation_requested_at',
+    type: 'timestamp',
+    nullable: true,
+  })
+  cancellationRequestedAt!: Date;
 }

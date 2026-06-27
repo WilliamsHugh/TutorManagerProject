@@ -13,12 +13,16 @@ import {
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard'; // Bảo mật bằng JWT
 import { TutorsService } from './tutors.service';
+import { ClassesService } from '../classes/classes.service';
 import { CreateLearningReportDto } from '../classes/dto/create-learning-report.dto';
 
 @Controller('tutor')
 @UseGuards(JwtAuthGuard) // Kích hoạt lại bảo mật JWT
 export class TutorController {
-  constructor(private readonly tutorsService: TutorsService) {}
+  constructor(
+    private readonly tutorsService: TutorsService,
+    private readonly classesService: ClassesService,
+  ) {}
 
   // Lấy hồ sơ chi tiết của gia sư
   @Get('profile')
@@ -163,6 +167,13 @@ export class TutorController {
     return this.tutorsService.getTutorRecommendations(tutorId);
   }
 
+  // Lấy danh sách đề xuất đang chờ (PROPOSED + NEGOTIATING)
+  @Get('recommendations/pending')
+  async getPendingRecommendations(@Request() req) {
+    const tutorId = req.user.id || req.user.sub;
+    return this.tutorsService.getTutorPendingProposals(tutorId);
+  }
+
   // Gửi đề xuất học phí & số buổi cho học sinh
   @Post('recommendations/:id/propose')
   async proposeRecommendation(
@@ -184,6 +195,65 @@ export class TutorController {
   async declineRecommendation(@Param('id') id: string, @Request() req) {
     const tutorId = req.user.id || req.user.sub;
     return this.tutorsService.declineRecommendation(id, tutorId);
+  }
+
+  // Điều chỉnh đề xuất (khi học sinh yêu cầu sửa)
+  @Post('recommendations/:id/modify')
+  async modifyProposal(
+    @Param('id') id: string,
+    @Body() body: { feePerSession: number; totalSessions: number },
+    @Request() req,
+  ) {
+    const tutorId = req.user.id || req.user.sub;
+    return this.tutorsService.modifyProposal(
+      id,
+      tutorId,
+      body.feePerSession,
+      body.totalSessions,
+    );
+  }
+
+  // Rút đề xuất
+  @Post('recommendations/:id/withdraw')
+  async withdrawProposal(@Param('id') id: string, @Request() req) {
+    const tutorId = req.user.id || req.user.sub;
+    return this.tutorsService.withdrawProposal(id, tutorId);
+  }
+
+  // Gia sư yêu cầu hủy lớp học
+  @Post('classes/:classId/request-cancellation')
+  async requestCancellation(
+    @Param('classId') classId: string,
+    @Body('reason') reason: string,
+    @Request() req,
+  ) {
+    const tutorId = req.user.id || req.user.sub;
+    return this.classesService.requestClassCancellation(classId, tutorId, 'tutor', reason);
+  }
+
+  // Gia sư phản hồi yêu cầu hủy lớp
+  @Post('classes/:classId/respond-cancellation')
+  async respondCancellation(
+    @Param('classId') classId: string,
+    @Body('agree') agree: boolean,
+    @Request() req,
+  ) {
+    const tutorId = req.user.id || req.user.sub;
+    return this.classesService.respondToCancellation(classId, tutorId, 'tutor', agree);
+  }
+
+  // Gia sư xem thông tin hủy lớp
+  @Get('classes/:classId/cancellation')
+  async getClassCancellation(@Param('classId') classId: string, @Request() req) {
+    const tutorId = req.user.id || req.user.sub;
+    return this.classesService.getClassCancellationInfo(classId, tutorId, 'tutor');
+  }
+
+  // Gia sư lấy danh sách lớp có yêu cầu hủy
+  @Get('classes/cancellations')
+  async getCancellations(@Request() req) {
+    const tutorId = req.user.id || req.user.sub;
+    return this.classesService.getTutorCancellations(tutorId);
   }
 
   // API Endpoint sinh dữ liệu mẫu

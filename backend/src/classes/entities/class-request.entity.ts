@@ -15,6 +15,8 @@ import { Tutor } from '../../users/entities/tutor.entity';
 export enum RequestStatus {
   PENDING = 'pending',
   PROPOSED = 'proposed',
+  NEGOTIATING = 'negotiating',
+  DECLINED = 'declined',
   PROCESSING = 'processing',
   MATCHED = 'matched',
   CANCELLED = 'cancelled',

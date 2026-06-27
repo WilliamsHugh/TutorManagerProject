@@ -12,6 +12,8 @@ import {
   getStudentProfile,
   getStudentProposals,
   confirmProposal,
+  declineProposal,
+  counterProposal,
 } from "@/lib/api";
 
 import type { TutorSuggestion } from "./types";
@@ -44,6 +46,9 @@ export default function StudentDashboardPage() {
   const [proposals, setProposals] = useState<any[]>([]);
   const [proposalsLoading, setProposalsLoading] = useState(true);
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
+  const [decliningId, setDecliningId] = useState<string | null>(null);
+  const [counterModal, setCounterModal] = useState<any | null>(null);
+  const [counterNote, setCounterNote] = useState("");
   const [proposalToast, setProposalToast] = useState<{
     message: string;
     type: "success" | "error" | "info";
@@ -238,6 +243,56 @@ export default function StudentDashboardPage() {
     }
   }, [subject, subjectMap, studentId, area, schedule, level, school, note]);
 
+  const handleDeclineProposal = async (requestId: string) => {
+    setDecliningId(requestId);
+    try {
+      const result = await declineProposal(requestId);
+      setProposalToast({
+        message: result.message || "Đã từ chối đề xuất của gia sư",
+        type: "info",
+      });
+      setProposals((prev) => prev.filter((p: any) => p.id !== requestId));
+      setTimeout(() => setProposalToast(null), 5000);
+    } catch (err: any) {
+      setProposalToast({
+        message: err.message || "Không thể từ chối đề xuất",
+        type: "error",
+      });
+      setTimeout(() => setProposalToast(null), 5000);
+    } finally {
+      setDecliningId(null);
+    }
+  };
+
+  const openCounterModal = (prop: any) => {
+    setCounterModal(prop);
+    setCounterNote("");
+  };
+
+  const handleCounterProposal = async () => {
+    if (!counterModal || !counterNote.trim()) return;
+    setDecliningId(counterModal.id);
+    try {
+      const result = await counterProposal(counterModal.id, counterNote);
+      setProposalToast({
+        message: result.message || "Đã gửi yêu cầu điều chỉnh",
+        type: "info",
+      });
+      setProposals((prev) => prev.filter((p: any) => p.id !== counterModal.id));
+      setCounterModal(null);
+      setCounterNote("");
+      setTimeout(() => setProposalToast(null), 5000);
+    } catch (err: any) {
+      setProposalToast({
+        message: err.message || "Không thể gửi yêu cầu điều chỉnh",
+        type: "error",
+      });
+      setTimeout(() => setProposalToast(null), 5000);
+    } finally {
+      setDecliningId(null);
+    }
+  };
+
   const handleConfirmProposal = async (requestId: string) => {
     setConfirmingId(requestId);
     try {
@@ -425,8 +480,8 @@ export default function StudentDashboardPage() {
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-end gap-3 px-5 py-3 bg-white border-t border-slate-100">
-                    <p className="text-xs text-slate-400 mr-auto">
+                  <div className="flex items-center justify-between gap-3 px-5 py-3 bg-white border-t border-slate-100">
+                    <p className="text-xs text-slate-400">
                       {prop.proposedAt
                         ? new Date(prop.proposedAt).toLocaleDateString("vi-VN", {
                             hour: "2-digit",
@@ -434,22 +489,124 @@ export default function StudentDashboardPage() {
                           })
                         : ""}
                     </p>
-                    <button
-                      onClick={() => handleConfirmProposal(prop.id)}
-                      disabled={confirmingId === prop.id}
-                      className="flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                    >
-                      {confirmingId === prop.id ? (
-                        <Icon icon="lucide:loader-2" className="animate-spin" fontSize={16} />
-                      ) : (
-                        <Icon icon="lucide:check-circle" fontSize={16} />
-                      )}
-                      Xác nhận & tạo lớp
-                    </button>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => openCounterModal(prop)}
+                        disabled={confirmingId === prop.id || decliningId === prop.id}
+                        className="flex items-center gap-2 rounded-lg border border-amber-300 px-4 py-2 text-sm font-medium text-amber-700 bg-amber-50 hover:bg-amber-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      >
+                        <Icon icon="lucide:edit" fontSize={16} />
+                        Yêu cầu sửa
+                      </button>
+                      <button
+                        onClick={() => handleDeclineProposal(prop.id)}
+                        disabled={confirmingId === prop.id || decliningId === prop.id}
+                        className="flex items-center gap-2 rounded-lg border border-red-300 px-4 py-2 text-sm font-medium text-red-700 bg-red-50 hover:bg-red-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      >
+                        {decliningId === prop.id ? (
+                          <Icon icon="lucide:loader-2" className="animate-spin" fontSize={16} />
+                        ) : (
+                          <Icon icon="lucide:x" fontSize={16} />
+                        )}
+                        Từ chối
+                      </button>
+                      <button
+                        onClick={() => handleConfirmProposal(prop.id)}
+                        disabled={confirmingId === prop.id || decliningId === prop.id}
+                        className="flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      >
+                        {confirmingId === prop.id ? (
+                          <Icon icon="lucide:loader-2" className="animate-spin" fontSize={16} />
+                        ) : (
+                          <Icon icon="lucide:check-circle" fontSize={16} />
+                        )}
+                        Đồng ý & tạo lớp
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))
             )}
+          </div>
+        )}
+
+        {/* Counter-offer Modal */}
+        {counterModal && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 px-4"
+            onClick={() => setCounterModal(null)}
+          >
+            <div
+              className="w-full max-w-md rounded-xl bg-white p-6 shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="mb-5 flex items-center justify-between">
+                <h3 className="text-lg font-bold text-slate-900">
+                  Yêu cầu điều chỉnh đề xuất
+                </h3>
+                <button
+                  onClick={() => setCounterModal(null)}
+                  className="text-slate-400 hover:text-slate-600"
+                >
+                  <Icon icon="lucide:x" fontSize={20} />
+                </button>
+              </div>
+
+              <p className="mb-5 text-sm text-slate-600">
+                Gửi yêu cầu điều chỉnh cho{" "}
+                <strong>{counterModal.tutorName}</strong> về mức học phí hoặc số
+                buổi học phù hợp hơn.
+              </p>
+
+              <div className="rounded-lg bg-slate-50 p-4 mb-4">
+                <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">
+                  Đề xuất hiện tại
+                </p>
+                <p className="mt-1 text-sm font-semibold text-slate-800">
+                  {counterModal.proposedFee?.toLocaleString("vi-VN")}đ/buổi ×{" "}
+                  {counterModal.proposedSessions} buổi =
+                </p>
+                <p className="text-lg font-bold text-blue-600">
+                  {counterModal.totalFee?.toLocaleString("vi-VN")}đ
+                </p>
+              </div>
+
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-slate-700">
+                  Ghi chú yêu cầu điều chỉnh
+                </label>
+                <textarea
+                  value={counterNote}
+                  onChange={(e) => setCounterNote(e.target.value)}
+                  placeholder="Ví dụ: Em mong muốn học phí khoảng 150.000đ/buổi hoặc rút xuống còn 10 buổi..."
+                  rows={3}
+                  className="w-full rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 resize-none"
+                />
+              </div>
+
+              <div className="mt-6 flex gap-3">
+                <button
+                  onClick={() => setCounterModal(null)}
+                  className="flex-1 rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors"
+                >
+                  Hủy
+                </button>
+                <button
+                  onClick={handleCounterProposal}
+                  disabled={!counterNote.trim() || decliningId === counterModal.id}
+                  className="flex-1 rounded-lg bg-amber-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  {decliningId === counterModal.id ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <Icon icon="lucide:loader-2" className="animate-spin" fontSize={16} />
+                      Đang gửi...
+                    </span>
+                  ) : (
+                    "Gửi yêu cầu điều chỉnh"
+                  )}
+                </button>
+              </div>
+            </div>
           </div>
         )}
 

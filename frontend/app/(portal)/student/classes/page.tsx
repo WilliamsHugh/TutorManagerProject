@@ -34,6 +34,10 @@ interface ClassItem {
       phone: string;
     };
   };
+  suspendedBy?: {
+    id: string;
+    fullName: string;
+  } | null;
 }
 
 interface ReviewItem {

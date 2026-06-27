@@ -130,13 +130,13 @@ export function clearAuth() {
   if (typeof window !== "undefined") {
     localStorage.removeItem(USER_KEY);
     localStorage.removeItem(TOKEN_KEY);
+    // Xóa cookie để tránh Middleware giữ token dẫn đến lỗi vòng lặp chuyển trang khi logout
+    document.cookie = "access_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax";
   }
 }
 
-/** Kiểm tra trạng thái đăng nhập dựa trên sự tồn tại của User Info */
 export function isLoggedIn(): boolean {
-  if (typeof window === "undefined") return false;
-  return !!localStorage.getItem(USER_KEY);
+  return !!getAuthUser();
 }
 
 /** Trả về role name ("student" | "tutor" | "admin" | null) */

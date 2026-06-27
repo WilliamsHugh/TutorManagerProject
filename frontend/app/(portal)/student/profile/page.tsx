@@ -54,15 +54,18 @@ export default function StudentProfilePage() {
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
 
+  const loggedIn = isLoggedIn();
+  const userRole = getUserRole();
+
   useEffect(() => {
-    if (!isLoggedIn() || getUserRole() !== "student") {
+    if (!loggedIn || userRole !== "student") {
       clearAuth();
       window.location.replace("/login");
       return;
     }
 
     loadProfile();
-  }, [router]);
+  }, [loggedIn, userRole, router]);
 
   const loadProfile = async () => {
     setIsLoading(true);

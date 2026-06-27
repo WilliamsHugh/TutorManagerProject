@@ -96,12 +96,15 @@ export default function StudentClassesPage() {
   };
 
   // Auth protection
+  const loggedIn = isLoggedIn();
+  const userRole = getUserRole();
+
   useEffect(() => {
-    if (!isLoggedIn() || getUserRole() !== "student") {
+    if (!loggedIn || userRole !== "student") {
       clearAuth();
       window.location.replace("/login");
     }
-  }, []);
+  }, [loggedIn, userRole]);
 
   const loadData = async () => {
     setIsLoading(true);

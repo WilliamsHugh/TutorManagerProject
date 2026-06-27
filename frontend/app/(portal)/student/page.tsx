@@ -62,12 +62,15 @@ export default function StudentDashboardPage() {
   }, []);
 
   // Auth protection
+  const loggedIn = isLoggedIn();
+  const userRole = getUserRole();
+
   useEffect(() => {
-    if (!isLoggedIn() || getUserRole() !== "student") {
+    if (!loggedIn || userRole !== "student") {
       clearAuth();
       window.location.replace("/login");
     }
-  }, []);
+  }, [loggedIn, userRole]);
 
   // Fetch student profile, subjects, and Vietnam provinces list
   useEffect(() => {

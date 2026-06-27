@@ -83,6 +83,8 @@ export class ClassRequestsService {
       .leftJoinAndSelect('request.student', 'student')
       .leftJoinAndSelect('student.user', 'studentUser')
       .leftJoinAndSelect('request.subject', 'subject')
+      .leftJoinAndSelect('request.preferredTutor', 'preferredTutor')
+      .leftJoinAndSelect('preferredTutor.user', 'preferredTutorUser')
       .leftJoinAndSelect('request.handledBy', 'handledBy')
       .orderBy('request.createdAt', 'DESC');
 
@@ -107,6 +109,7 @@ export class ClassRequestsService {
       relations: {
         student: { user: true },
         subject: true,
+        preferredTutor: { user: true },
         handledBy: true,
       },
     });

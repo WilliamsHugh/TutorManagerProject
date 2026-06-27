@@ -88,7 +88,7 @@ export class ClassesController {
   }
 
   @Get('tutor/:id/schedule')
-  @Roles(RoleType.STAFF, RoleType.ADMIN)
+  @Roles(RoleType.STAFF, RoleType.ADMIN, RoleType.STUDENT)
   getTutorSchedule(@Param('id') id: string) {
     return this.classesService.getTutorSchedules(id);
   }

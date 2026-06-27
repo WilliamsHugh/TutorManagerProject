@@ -223,7 +223,7 @@ export class ClassesService {
       throw new NotFoundException('Không tìm thấy học viên tương ứng với tài khoản này');
     }
 
-    return this.classesRepository.find({
+    const classes = await this.classesRepository.find({
       where: { student: { id: student.id } },
       relations: {
         tutor: { user: true },
@@ -233,6 +233,50 @@ export class ClassesService {
         startDate: 'DESC',
       },
     });
+
+    const requests = await this.classRequestsRepository.find({
+      where: {
+        student: { id: student.id },
+        status: In([RequestStatus.PENDING, RequestStatus.PROCESSING]),
+      },
+      relations: {
+        preferredTutor: { user: true },
+        subject: true,
+      },
+      order: {
+        createdAt: 'DESC',
+      },
+    });
+
+    // Map class requests to look like classes for the UI
+    const requestItems = requests.map((req) => ({
+      id: req.id,
+      isRequest: true,
+      location: req.preferredArea || 'Chưa xác định',
+      feePerSession: 0,
+      totalSessions: 0,
+      status: req.status, // 'pending' or 'processing'
+      startDate: req.createdAt ? req.createdAt.toISOString() : new Date().toISOString(),
+      endDate: req.createdAt ? req.createdAt.toISOString() : new Date().toISOString(),
+      notes: req.requirements || '',
+      subject: req.subject,
+      tutor: req.preferredTutor ? {
+        id: req.preferredTutor.id,
+        educationLevel: req.preferredTutor.educationLevel || '',
+        major: req.preferredTutor.major || '',
+        experience: req.preferredTutor.experience || '',
+        bio: req.preferredTutor.bio || '',
+        availableAreas: req.preferredTutor.availableAreas || '',
+        university: req.preferredTutor.university || '',
+        user: {
+          fullName: req.preferredTutor.user?.fullName || '',
+          email: req.preferredTutor.user?.email || '',
+          phone: req.preferredTutor.user?.phone || '',
+        },
+      } : null,
+    }));
+
+    return [...requestItems, ...classes];
   }
 
   async createReview(userId: string, dto: CreateReviewDto) {

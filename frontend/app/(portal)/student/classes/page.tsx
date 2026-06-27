@@ -2,10 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { isLoggedIn, getUserRole } from "@/lib/auth";
+import { isLoggedIn, getUserRole, clearAuth } from "@/lib/auth";
 import { getStudentClasses, submitReview, getClassReview, getStudentClassReports } from "@/lib/api/classes.api";
 import { Star, Calendar, MapPin, Clock, Award, MessageSquare, BookOpen, User, CheckCircle2, AlertCircle, RefreshCw, Loader2, X, FileText } from "lucide-react";
 import LearningReportPopup, { LearningReport } from "@/components/common/LearningReportPopup";
+import { ClassListSkeleton } from "../_components/StudentSkeletons";
+import { TutorDetailModal } from "../_components/TutorDetailModal";
+import type { TutorSuggestion } from "../types";
 
 interface ClassItem {
   id: string;
@@ -62,12 +65,39 @@ export default function StudentClassesPage() {
   const [isReportsLoading, setIsReportsLoading] = useState(false);
   const [reportsError, setReportsError] = useState<string | null>(null);
 
+  // Selected tutor for detail modal
+  const [selectedTutorForDetail, setSelectedTutorForDetail] = useState<TutorSuggestion | null>(null);
+
+  const handleOpenTutorDetail = (tutor: any) => {
+    if (!tutor) return;
+    const mappedTutor: TutorSuggestion = {
+      id: tutor.id,
+      name: tutor.user?.fullName || "Gia sư",
+      avatar: tutor.avatarUrl || "https://randomuser.me/api/portraits/women/1.jpg",
+      match: 95,
+      experience: tutor.experience || "Chưa cập nhật",
+      education: [tutor.educationLevel, tutor.major].filter(Boolean).join(" · ") || "Chưa cập nhật",
+      location: tutor.availableAreas || "Toàn quốc",
+      price: "Thỏa thuận",
+      rating: 5,
+      reviews: 0,
+      teachingMode: "Linh hoạt",
+      availableTime: "Linh hoạt",
+      phone: tutor.user?.phone || "",
+      email: tutor.user?.email || "",
+      bio: tutor.bio || "Chưa cập nhật giới thiệu.",
+      tags: [],
+    };
+    setSelectedTutorForDetail(mappedTutor);
+  };
+
   // Auth protection
   useEffect(() => {
     if (!isLoggedIn() || getUserRole() !== "student") {
-      router.replace("/login");
+      clearAuth();
+      window.location.replace("/login");
     }
-  }, [router]);
+  }, []);
 
   const loadData = async () => {
     setIsLoading(true);
@@ -174,6 +204,14 @@ export default function StudentClassesPage() {
             Đang học
           </span>
         );
+      case "pending":
+      case "processing":
+        return (
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-[#fef3c7] px-2.5 py-1 text-xs font-semibold text-[#b45309] border border-[#fde68a]">
+            <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
+            Chờ xử lý
+          </span>
+        );
       case "completed":
         return (
           <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700 border border-blue-200">
@@ -204,7 +242,7 @@ export default function StudentClassesPage() {
     }
   };
 
-  if (!isLoggedIn()) return null;
+  if (!isLoggedIn() || getUserRole() !== "student") return null;
 
   return (
     <div className="min-h-screen bg-[#f8fafc] text-[#0f172a] py-8 px-4 sm:px-6 lg:px-8">
@@ -231,10 +269,7 @@ export default function StudentClassesPage() {
 
         {/* Main Content */}
         {isLoading ? (
-          <div className="flex flex-col items-center justify-center py-20 bg-white rounded-2xl border border-[#e2e8f0] shadow-sm">
-            <Loader2 size={40} className="text-[#0b5fff] animate-spin mb-4" />
-            <p className="text-sm font-medium text-[#64748b]">Đang tải danh sách lớp học của bạn...</p>
-          </div>
+          <ClassListSkeleton count={4} />
         ) : error ? (
           <div className="rounded-2xl border border-rose-100 bg-rose-50/50 p-6 text-center shadow-sm">
             <AlertCircle size={32} className="text-rose-500 mx-auto mb-3" />
@@ -266,6 +301,8 @@ export default function StudentClassesPage() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {classes.map((cls) => {
+              const isPending = cls.status === "pending" || cls.status === "processing";
+              const hasTutor = !!cls.tutor;
               const review = reviews[cls.id];
               return (
                 <div
@@ -280,7 +317,9 @@ export default function StudentClassesPage() {
                           {cls.subject.name}
                         </span>
                         <h3 className="text-lg font-bold text-[#0f172a]">
-                          Lớp học với {cls.tutor.user.fullName}
+                          {isPending 
+                            ? (hasTutor ? `Yêu cầu đề xuất: ${cls.tutor.user.fullName}` : "Yêu cầu tìm gia sư mới")
+                            : `Lớp học với ${cls.tutor?.user?.fullName || "Gia sư"}`}
                         </h3>
                       </div>
                       {getStatusBadge(cls.status)}
@@ -288,7 +327,9 @@ export default function StudentClassesPage() {
 
                     <p className="text-xs text-[#64748b] mb-4 flex items-center gap-1.5">
                       <Award size={14} className="text-amber-500" />
-                      {cls.tutor.educationLevel} · {cls.tutor.major}
+                      {hasTutor 
+                        ? `${cls.tutor.educationLevel} · ${cls.tutor.major}` 
+                        : "Đang chờ nhân viên xếp lớp"}
                     </p>
 
                     <div className="h-px bg-slate-100 my-4" />
@@ -302,78 +343,104 @@ export default function StudentClassesPage() {
                       <div className="flex items-center gap-2.5">
                         <Calendar size={16} className="text-[#64748b] shrink-0" />
                         <span>
-                          {cls.startDate ? new Date(cls.startDate).toLocaleDateString("vi-VN") : "Chưa bắt đầu"} -{" "}
-                          {cls.endDate ? new Date(cls.endDate).toLocaleDateString("vi-VN") : "Chưa kết thúc"}
+                          {isPending ? "Thời gian đề xuất: " : ""}
+                          {cls.startDate ? new Date(cls.startDate).toLocaleDateString("vi-VN") : "Chưa bắt đầu"}
+                          {!isPending && ` - ${cls.endDate ? new Date(cls.endDate).toLocaleDateString("vi-VN") : "Chưa kết thúc"}`}
                         </span>
                       </div>
-                      <div className="flex items-center gap-2.5">
-                        <Clock size={16} className="text-[#64748b] shrink-0" />
-                        <span>Tổng số: {cls.totalSessions} buổi</span>
-                      </div>
-                      <div className="flex items-center gap-2.5">
-                        <div className="font-semibold text-xs text-[#64748b] w-4 text-center">₫</div>
-                        <span>
-                          Học phí:{" "}
-                          <strong className="text-[#0b5fff]">
-                            {cls.feePerSession?.toLocaleString("vi-VN")}đ
-                          </strong>{" "}
-                          / buổi
-                        </span>
-                      </div>
+                      {!isPending && (
+                        <>
+                          <div className="flex items-center gap-2.5">
+                            <Clock size={16} className="text-[#64748b] shrink-0" />
+                            <span>Tổng số: {cls.totalSessions} buổi</span>
+                          </div>
+                          <div className="flex items-center gap-2.5">
+                            <div className="font-semibold text-xs text-[#64748b] w-4 text-center">₫</div>
+                            <span>
+                              Học phí:{" "}
+                              <strong className="text-[#0b5fff]">
+                                {cls.feePerSession?.toLocaleString("vi-VN")}đ
+                              </strong>{" "}
+                              / buổi
+                            </span>
+                          </div>
+                        </>
+                      )}
                     </div>
 
                     {cls.notes && (
                       <div className="mt-4 rounded-xl bg-slate-50 p-3 text-xs text-[#64748b] leading-relaxed border border-slate-100">
-                        <strong>Ghi chú:</strong> {cls.notes}
+                        <strong>Yêu cầu / Ghi chú:</strong> {cls.notes}
                       </div>
                     )}
                   </div>
 
                   {/* Actions Section */}
                   <div className="mt-6 pt-4 border-t border-slate-100 space-y-3">
-                    {/* View Reports Button */}
-                    <button
-                      onClick={() => handleOpenReports(cls)}
-                      className="w-full inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-[#e2e8f0] bg-white px-4 py-2 text-sm font-semibold text-[#475569] hover:bg-slate-50 active:scale-95 transition-all cursor-pointer"
-                    >
-                      <FileText size={15} className="text-[#0b5fff]" />
-                      Xem báo cáo học tập
-                    </button>
-
-                    {review ? (
-                      // Display Submitted Review
-                      <div className="rounded-xl border border-[#bbf7d0] bg-[#f0fdf4] p-3 text-xs">
-                        <div className="flex items-center justify-between gap-2 mb-1.5">
-                          <span className="font-semibold text-[#15803d] flex items-center gap-1">
-                            <CheckCircle2 size={13} /> Bạn đã đánh giá
-                          </span>
-                          <div className="flex items-center gap-0.5 text-amber-500">
-                            {Array.from({ length: 5 }).map((_, i) => (
-                              <Star
-                                key={i}
-                                size={12}
-                                fill={i < review.rating ? "currentColor" : "transparent"}
-                              />
-                            ))}
-                          </div>
-                        </div>
-                        {review.comment && (
-                          <p className="text-[#166534] italic font-medium leading-relaxed">
-                            &ldquo;{review.comment}&rdquo;
-                          </p>
-                        )}
-                      </div>
-                    ) : (
-                      // Add Review Button
-                      (cls.status === "completed" || cls.status === "active") && (
+                    {isPending ? (
+                      hasTutor ? (
                         <button
-                          onClick={() => handleOpenReviewModal(cls)}
+                          onClick={() => handleOpenTutorDetail(cls.tutor)}
                           className="w-full inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-[#0b5fff] px-4 py-2 text-sm font-semibold text-white hover:opacity-90 active:scale-95 shadow-md shadow-blue-200 transition-all cursor-pointer"
                         >
-                          <Star size={15} fill="currentColor" />
-                          Đánh giá gia sư này
+                          <User size={15} />
+                          Xem hồ sơ & Lịch gia sư đề xuất
+                        </button>
+                      ) : (
+                        <button
+                          disabled
+                          className="w-full inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-semibold text-slate-400 cursor-not-allowed"
+                        >
+                          Đang chờ trung tâm đề xuất gia sư
                         </button>
                       )
+                    ) : (
+                      <>
+                        {/* View Reports Button */}
+                        <button
+                          onClick={() => handleOpenReports(cls)}
+                          className="w-full inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-[#e2e8f0] bg-white px-4 py-2 text-sm font-semibold text-[#475569] hover:bg-slate-50 active:scale-95 transition-all cursor-pointer"
+                        >
+                          <FileText size={15} className="text-[#0b5fff]" />
+                          Xem báo cáo học tập
+                        </button>
+
+                        {review ? (
+                          // Display Submitted Review
+                          <div className="rounded-xl border border-[#bbf7d0] bg-[#f0fdf4] p-3 text-xs">
+                            <div className="flex items-center justify-between gap-2 mb-1.5">
+                              <span className="font-semibold text-[#15803d] flex items-center gap-1">
+                                <CheckCircle2 size={13} /> Bạn đã đánh giá
+                              </span>
+                              <div className="flex items-center gap-0.5 text-amber-500">
+                                {Array.from({ length: 5 }).map((_, i) => (
+                                  <Star
+                                    key={i}
+                                    size={12}
+                                    fill={i < review.rating ? "currentColor" : "transparent"}
+                                  />
+                                ))}
+                              </div>
+                            </div>
+                            {review.comment && (
+                              <p className="text-[#166534] italic font-medium leading-relaxed">
+                                &ldquo;{review.comment}&rdquo;
+                              </p>
+                            )}
+                          </div>
+                        ) : (
+                          // Add Review Button
+                          (cls.status === "completed" || cls.status === "active") && (
+                            <button
+                              onClick={() => handleOpenReviewModal(cls)}
+                              className="w-full inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-[#0b5fff] px-4 py-2 text-sm font-semibold text-white hover:opacity-90 active:scale-95 shadow-md shadow-blue-200 transition-all cursor-pointer"
+                            >
+                              <Star size={15} fill="currentColor" />
+                              Đánh giá gia sư này
+                            </button>
+                          )
+                        )}
+                      </>
                     )}
                   </div>
                 </div>
@@ -494,6 +561,12 @@ export default function StudentClassesPage() {
           onClose={handleCloseReports}
         />
       )}
+
+      {/* Tutor Detail Modal */}
+      <TutorDetailModal
+        tutor={selectedTutorForDetail}
+        onClose={() => setSelectedTutorForDetail(null)}
+      />
     </div>
   );
 }

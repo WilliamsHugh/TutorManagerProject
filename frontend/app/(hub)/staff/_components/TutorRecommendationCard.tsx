@@ -11,6 +11,7 @@ type TutorRecommendationCardProps = {
   href?: string
   tutor: TutorRecommendation
   onViewSchedule?: () => void
+  onViewDetail?: () => void
 }
 
 export function TutorRecommendationCard({
@@ -18,6 +19,7 @@ export function TutorRecommendationCard({
   href,
   tutor,
   onViewSchedule,
+  onViewDetail,
 }: TutorRecommendationCardProps) {
   return (
     <div className="rounded border border-border bg-white p-3 flex flex-col justify-between h-[230px]">
@@ -75,6 +77,16 @@ export function TutorRecommendationCard({
           {tutor.status === "Hồ sơ đã duyệt" ? "✓ Đã duyệt" : "⚠ Cần duyệt"}
         </span>
         <div className="flex gap-1.5">
+          {onViewDetail && (
+            <Button 
+              type="button" 
+              variant="outline" 
+              className="h-7 rounded text-[10px] px-2 border-slate-200 text-slate-600 hover:bg-slate-50"
+              onClick={onViewDetail}
+            >
+              Chi tiết
+            </Button>
+          )}
           {onViewSchedule && (
             <Button 
               type="button" 

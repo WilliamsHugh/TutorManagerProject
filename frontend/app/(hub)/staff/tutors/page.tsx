@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useMemo } from "react"
 import { Search, BookOpen, GraduationCap, MapPin, Phone, Mail, X, Calendar } from "lucide-react"
 
 import { Card, CardContent } from "@/components/ui/card"
@@ -327,14 +327,65 @@ function TutorProfileDialog({ tutor, onClose }: TutorProfileDialogProps) {
     loadSchedule()
   }, [tutor.id, showSchedule])
 
-  const daysOfWeek = ["Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7", "Chủ nhật"]
+  // Local state for week navigation (start of week)
+  const [currentWeekStart, setCurrentWeekStart] = useState(() => {
+    const d = new Date()
+    const day = d.getDay()
+    const diff = d.getDate() - day + (day === 0 ? -6 : 1) // adjust when day is sunday
+    const monday = new Date(d.setDate(diff))
+    monday.setHours(0, 0, 0, 0)
+    return monday
+  })
+
+  // Format week range text
+  const weekRangeText = useMemo(() => {
+    const end = new Date(currentWeekStart)
+    end.setDate(end.getDate() + 6)
+    const fmt = (date: Date) => {
+      const dd = String(date.getDate()).padStart(2, '0')
+      const mm = String(date.getMonth() + 1).padStart(2, '0')
+      const yyyy = date.getFullYear()
+      return `${dd}/${mm}/${yyyy}`
+    }
+    return `Tuần từ ${fmt(currentWeekStart)} đến ${fmt(end)}`
+  }, [currentWeekStart])
+
+  // Get specific date strings for headers
+  const headerDays = useMemo(() => {
+    const days = []
+    const dayNames = ["Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7", "Chủ nhật"]
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(currentWeekStart)
+      d.setDate(d.getDate() + i)
+      const dd = String(d.getDate()).padStart(2, '0')
+      const mm = String(d.getMonth() + 1).padStart(2, '0')
+      days.push({
+        name: dayNames[i],
+        dateStr: `${dd}/${mm}`
+      })
+    }
+    return days
+  }, [currentWeekStart])
+
+  const handlePrevWeek = () => {
+    const prev = new Date(currentWeekStart)
+    prev.setDate(prev.getDate() - 7)
+    setCurrentWeekStart(prev)
+  }
+
+  const handleNextWeek = () => {
+    const next = new Date(currentWeekStart)
+    next.setDate(next.getDate() + 7)
+    setCurrentWeekStart(next)
+  }
+
   const timeSlots = [
-    { label: "Sáng (08:00 - 10:00)", start: "08:00", end: "10:00" },
-    { label: "Sáng (10:00 - 12:00)", start: "10:00", end: "12:00" },
-    { label: "Chiều (14:00 - 16:00)", start: "14:00", end: "16:00" },
-    { label: "Chiều (16:00 - 18:00)", start: "16:00", end: "18:00" },
-    { label: "Tối (17:30 - 19:30)", start: "17:30", end: "19:30" },
-    { label: "Tối (19:00 - 21:00)", start: "19:00", end: "21:00" },
+    { label: "08:00 - 10:00", start: "08:00", end: "10:00" },
+    { label: "10:00 - 12:00", start: "10:00", end: "12:00" },
+    { label: "14:00 - 16:00", start: "14:00", end: "16:00" },
+    { label: "16:00 - 18:00", start: "16:00", end: "18:00" },
+    { label: "17:30 - 19:30", start: "17:30", end: "19:30" },
+    { label: "19:00 - 21:00", start: "19:00", end: "21:00" },
   ]
 
   function getSessionInSlot(day: string, slotStart: string, slotEnd: string) {
@@ -347,11 +398,44 @@ function TutorProfileDialog({ tutor, onClose }: TutorProfileDialogProps) {
                     s.dayOfWeek === "T7" ? "Thứ 7" :
                     s.dayOfWeek === "CN" ? "Chủ nhật" : s.dayOfWeek
 
-      if (sDay !== day) return false
-
       const sStart = s.startTime.slice(0, 5)
       const sEnd = s.endTime.slice(0, 5)
-      return (sStart < slotEnd && sEnd > slotStart)
+      const timeMatch = (sStart < slotEnd && sEnd > slotStart)
+      if (!timeMatch) return false
+
+      const dayNames = ["Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7", "Chủ nhật"]
+      const dayIndex = dayNames.indexOf(day)
+      if (dayIndex === -1) return false
+
+      const slotDate = new Date(currentWeekStart)
+      slotDate.setDate(slotDate.getDate() + dayIndex)
+      slotDate.setHours(12, 0, 0, 0)
+
+      if (s.sessionDate) {
+        const sDate = new Date(s.sessionDate)
+        return (
+          sDate.getFullYear() === slotDate.getFullYear() &&
+          sDate.getMonth() === slotDate.getMonth() &&
+          sDate.getDate() === slotDate.getDate()
+        )
+      } else {
+        if (sDay !== day) return false
+        if (s.class) {
+          const clsStart = s.class.startDate ? new Date(s.class.startDate) : null
+          const clsEnd = s.class.endDate ? new Date(s.class.endDate) : null
+
+          if (clsStart) {
+            clsStart.setHours(0, 0, 0, 0)
+            if (slotDate < clsStart) return false
+          }
+          if (clsEnd) {
+            clsEnd.setHours(23, 59, 59, 999)
+            if (slotDate > clsEnd) return false
+          }
+        }
+      }
+
+      return true
     })
   }
 
@@ -605,6 +689,22 @@ function TutorProfileDialog({ tutor, onClose }: TutorProfileDialogProps) {
 
               {showSchedule && (
                 <div className="space-y-2 text-xs">
+                  <div className="flex items-center justify-between gap-3 mb-2 text-xs font-semibold bg-slate-50 p-2 rounded border border-slate-200">
+                    <button
+                      onClick={handlePrevWeek}
+                      className="px-2 py-0.5 rounded bg-white border border-slate-300 hover:bg-slate-50 transition-colors text-[10px]"
+                    >
+                      &larr; Tuần trước
+                    </button>
+                    <span className="text-slate-700 font-bold text-[10px]">{weekRangeText}</span>
+                    <button
+                      onClick={handleNextWeek}
+                      className="px-2 py-0.5 rounded bg-white border border-slate-300 hover:bg-slate-50 transition-colors text-[10px]"
+                    >
+                      Tuần sau &rarr;
+                    </button>
+                  </div>
+
                   {loadingSchedule ? (
                     <div className="h-20 w-full bg-slate-50 border border-slate-100 rounded-lg animate-pulse flex items-center justify-center text-slate-400">
                       Đang tải lịch biểu bận...
@@ -614,23 +714,26 @@ function TutorProfileDialog({ tutor, onClose }: TutorProfileDialogProps) {
                       <table className="w-full border-collapse text-left text-[11px] min-w-[550px]">
                         <thead>
                           <tr className="bg-slate-50 border-b border-slate-150 text-[9px] uppercase font-bold text-slate-500 tracking-wider">
-                            <th className="p-2 border-r border-slate-150 w-[120px]">Khung giờ</th>
-                            {daysOfWeek.map((day) => (
-                              <th key={day} className="p-2 text-center border-r last:border-r-0 border-slate-150">{day}</th>
+                            <th className="p-2 border-r border-slate-150 w-[90px]">Khung giờ</th>
+                            {headerDays.map((day) => (
+                              <th key={day.name} className="p-2 text-center border-r last:border-r-0 border-slate-150">
+                                {day.name}
+                                <span className="block text-[8px] font-medium text-slate-400 mt-0.5">({day.dateStr})</span>
+                              </th>
                             ))}
                           </tr>
                         </thead>
                         <tbody>
                           {timeSlots.map((slot) => (
                             <tr key={slot.label} className="border-b last:border-b-0 border-slate-150 hover:bg-slate-50/30">
-                              <td className="p-2 font-semibold text-slate-600 bg-slate-50/50 border-r border-slate-150 text-[10px]">
+                              <td className="p-2 font-semibold text-slate-600 bg-slate-50/50 border-r border-slate-150 text-[9px]">
                                 {slot.label}
                               </td>
-                              {daysOfWeek.map((day) => {
-                                const session = getSessionInSlot(day, slot.start, slot.end)
+                              {headerDays.map((day) => {
+                                const session = getSessionInSlot(day.name, slot.start, slot.end)
                                 return (
                                   <td 
-                                    key={day} 
+                                    key={day.name} 
                                     className={`p-1 border-r last:border-r-0 border-slate-150 text-center transition-colors ${
                                       session 
                                         ? "bg-amber-50 text-amber-900" 

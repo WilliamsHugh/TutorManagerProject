@@ -259,7 +259,7 @@ async function seed() {
   console.log('\n--- 2. Seeding Subjects ---');
   const subjectNames = [
     'Toán học', 'Vật lí', 'Hóa học', 'Tiếng Anh', 'Ngữ văn',
-    'Tin học', 'Luyện thi ĐH', 'Toán Cấp 3', 'Vật Lý 12',
+    'Tin học', 'Sinh học', 'Lịch sử', 'Địa lí', 'Luyện thi ĐH',
   ];
   const subjectMap = new Map<string, Subject>();
 

@@ -78,7 +78,7 @@ export async function apiFetch<T>(
     clearAuth();
     if (typeof window !== 'undefined') {
       sessionStorage.setItem('account_locked_msg', errBody.message);
-      window.location.href = '/login?locked=true';
+      window.location.replace('/login?locked=true');
     }
     throw new Error(errBody.message);
   }
@@ -108,7 +108,7 @@ export async function apiFetch<T>(
     if (typeof window !== 'undefined') {
       if (refreshResult.message && refreshResult.message.includes('bị khóa')) {
         sessionStorage.setItem('account_locked_msg', refreshResult.message);
-        window.location.href = '/login?locked=true';
+        window.location.replace('/login?locked=true');
       } else {
         const currentPath = window.location.pathname;
         if (

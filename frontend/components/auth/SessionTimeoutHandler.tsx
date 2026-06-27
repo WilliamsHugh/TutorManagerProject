@@ -114,7 +114,7 @@ export default function SessionTimeoutHandler() {
             }
 
             sessionStorage.setItem('account_locked_msg', body.message);
-            window.location.href = '/login?locked=true';
+            window.location.replace('/login?locked=true');
           }
         } catch (e) {
           // Ignore

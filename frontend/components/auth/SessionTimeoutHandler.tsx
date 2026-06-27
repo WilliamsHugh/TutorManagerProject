@@ -104,6 +104,13 @@ export default function SessionTimeoutHandler() {
             document.cookie = "access_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
             document.cookie = "refresh_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/api/auth/refresh;";
             
+            // Clear httpOnly cookies from backend
+            try {
+              await originalFetch("/api/logout", { method: "POST" });
+            } catch (err) {
+              console.error("Clear httpOnly cookies failed:", err);
+            }
+
             sessionStorage.setItem('account_locked_msg', body.message);
             window.location.href = '/login?locked=true';
           }

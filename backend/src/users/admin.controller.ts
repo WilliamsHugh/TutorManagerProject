@@ -4,6 +4,7 @@ import {
   Post,
   Put,
   Patch,
+  Delete,
   Body,
   Param,
   Query,
@@ -118,6 +119,19 @@ export class AdminController {
     if (!user) throw new NotFoundException('Không tìm thấy người dùng');
     user.isActive = body.isActive;
     return this.usersRepo.save(user);
+  }
+
+  @Delete('users/:id')
+  async deleteUser(@Param('id') id: string) {
+    const user = await this.usersRepo.findOneBy({ id });
+    if (!user) throw new NotFoundException('Không tìm thấy người dùng');
+    
+    // Delete student or tutor records related to the user first to clear foreign constraints
+    await this.studentsRepo.delete({ user: { id } });
+    await this.tutorsRepo.delete({ user: { id } });
+    
+    await this.usersRepo.delete({ id });
+    return { success: true, message: 'Xóa người dùng thành công' };
   }
 
   @Put('users/:id')

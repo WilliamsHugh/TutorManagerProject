@@ -125,3 +125,16 @@ export function deleteClassSchedule(classId: string, scheduleId: string) {
     method: 'DELETE',
   });
 }
+
+export function toggleUserStatusForStaff(userId: string, isActive: boolean) {
+  return request<any>(`/admin/users/${userId}/status`, {
+    method: 'PATCH',
+    body: JSON.stringify({ isActive }),
+  });
+}
+
+export function deleteUserForStaff(userId: string) {
+  return request<any>(`/admin/users/${userId}`, {
+    method: 'DELETE',
+  });
+}

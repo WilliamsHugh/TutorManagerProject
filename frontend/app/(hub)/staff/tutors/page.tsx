@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, useMemo } from "react"
+import { useEffect, useState, useMemo, useCallback } from "react"
 import { Search, BookOpen, GraduationCap, MapPin, Phone, Mail, X, Calendar } from "lucide-react"
 
 import { Card, CardContent } from "@/components/ui/card"
@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge"
 
 import { StaffShell } from "../_components/StaffShell"
 import { TablePagination } from "../_components/TablePagination"
-import { getStaffTutors, getClasses, getTutorScheduleForStaff } from "@/lib/api"
+import { getStaffTutors, getClasses, getTutorScheduleForStaff, toggleUserStatusForStaff, deleteUserForStaff } from "@/lib/api"
 
 interface TutorData {
   id: string
@@ -42,19 +42,20 @@ export default function StaffTutorsPage() {
   const [currentPage, setCurrentPage] = useState(1)
   const pageSize = 10
 
-  useEffect(() => {
-    async function loadTutors() {
-      try {
-        const data = await getStaffTutors()
-        setTutors(data)
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Không thể tải danh sách gia sư.")
-      } finally {
-        setLoading(false)
-      }
+  const loadTutors = useCallback(async () => {
+    try {
+      const data = await getStaffTutors()
+      setTutors(data)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Không thể tải danh sách gia sư.")
+    } finally {
+      setLoading(false)
     }
-    loadTutors()
   }, [])
+
+  useEffect(() => {
+    loadTutors()
+  }, [loadTutors])
 
   const filtered = tutors.filter((t) => {
     const q = search.trim().toLowerCase()
@@ -278,6 +279,7 @@ export default function StaffTutorsPage() {
         <TutorProfileDialog
           tutor={selectedTutor}
           onClose={() => setSelectedTutor(null)}
+          onRefresh={loadTutors}
         />
       )}
     </StaffShell>
@@ -287,14 +289,55 @@ export default function StaffTutorsPage() {
 type TutorProfileDialogProps = {
   tutor: TutorData
   onClose: () => void
+  onRefresh: () => void
 }
 
-function TutorProfileDialog({ tutor, onClose }: TutorProfileDialogProps) {
+function TutorProfileDialog({ tutor, onClose, onRefresh }: TutorProfileDialogProps) {
   const [classes, setClasses] = useState<any[]>([])
   const [loadingClasses, setLoadingClasses] = useState(true)
   const [schedules, setSchedules] = useState<any[]>([])
   const [loadingSchedule, setLoadingSchedule] = useState(false)
   const [showSchedule, setShowSchedule] = useState(false)
+  const [actionLoading, setActionLoading] = useState(false)
+
+  const handleToggleStatus = async () => {
+    if (actionLoading) return
+    const confirmMsg = tutor.user?.isActive 
+      ? `Bạn có chắc chắn muốn tạm khóa giảng viên "${tutor.user.fullName}"?`
+      : `Bạn có chắc chắn muốn mở khóa giảng viên "${tutor.user.fullName}"?`
+    if (!window.confirm(confirmMsg)) return
+
+    setActionLoading(true)
+    try {
+      await toggleUserStatusForStaff(tutor.user.id, !tutor.user.isActive)
+      alert(tutor.user?.isActive ? "Tạm khóa giảng viên thành công!" : "Mở khóa giảng viên thành công!")
+      onRefresh()
+      onClose()
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Thao tác thất bại.")
+    } finally {
+      setActionLoading(false)
+    }
+  }
+
+  const handleDeleteTutor = async () => {
+    if (actionLoading) return
+    if (!window.confirm(`HÀNH ĐỘNG NÀY KHÔNG THỂ KHÔI PHỤC!\nBạn có chắc chắn muốn xóa vĩnh viễn giảng viên "${tutor.user?.fullName}" cùng các hồ sơ liên quan?`)) {
+      return
+    }
+
+    setActionLoading(true)
+    try {
+      await deleteUserForStaff(tutor.user.id)
+      alert("Xóa giảng viên thành công!")
+      onRefresh()
+      onClose()
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Thao tác thất bại.")
+    } finally {
+      setActionLoading(false)
+    }
+  }
 
   useEffect(() => {
     async function loadTutorClasses() {
@@ -769,6 +812,36 @@ function TutorProfileDialog({ tutor, onClose }: TutorProfileDialogProps) {
               )}
             </div>
           </div>
+        </div>
+
+        {/* Footer actions */}
+        <div className="flex items-center justify-between border-t border-border bg-slate-50 px-5 py-3 rounded-b-xl shrink-0">
+          <div className="flex gap-2">
+            <button
+              onClick={handleToggleStatus}
+              disabled={actionLoading}
+              className={`h-8 inline-flex items-center justify-center gap-1.5 rounded px-3.5 text-xs font-semibold shadow-sm transition-all focus:outline-none focus:ring-1 focus:ring-offset-1 active:scale-95 disabled:opacity-50 cursor-pointer ${
+                tutor.user?.isActive
+                  ? "bg-amber-600 hover:bg-amber-700 text-white"
+                  : "bg-emerald-600 hover:bg-emerald-700 text-white"
+              }`}
+            >
+              {tutor.user?.isActive ? "Tạm khóa" : "Mở khóa"}
+            </button>
+            <button
+              onClick={handleDeleteTutor}
+              disabled={actionLoading}
+              className="h-8 inline-flex items-center justify-center gap-1.5 rounded bg-rose-600 hover:bg-rose-700 text-white px-3.5 text-xs font-semibold shadow-sm transition-all focus:outline-none focus:ring-1 focus:ring-offset-1 active:scale-95 disabled:opacity-50 cursor-pointer"
+            >
+              Xóa giảng viên
+            </button>
+          </div>
+          <button
+            onClick={onClose}
+            className="h-8 inline-flex items-center justify-center rounded border border-slate-200 bg-white px-4 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-all cursor-pointer"
+          >
+            Đóng
+          </button>
         </div>
       </div>
     </div>

@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, useMemo } from "react"
+import { useEffect, useState, useMemo, useCallback } from "react"
 import { Search, Mail, Phone, MapPin, GraduationCap, School, UserRound, X, Calendar } from "lucide-react"
 
 import { Card, CardContent } from "@/components/ui/card"
@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge"
 
 import { StaffShell } from "../_components/StaffShell"
 import { TablePagination } from "../_components/TablePagination"
-import { getStaffStudents, getClasses, getStudentScheduleForStaff } from "@/lib/api"
+import { getStaffStudents, getClasses, getStudentScheduleForStaff, toggleUserStatusForStaff, deleteUserForStaff } from "@/lib/api"
 
 interface StudentData {
   id: string
@@ -39,19 +39,20 @@ export default function StaffStudentsPage() {
   const [selectedStudent, setSelectedStudent] = useState<StudentData | null>(null)
   const pageSize = 10
 
-  useEffect(() => {
-    async function loadStudents() {
-      try {
-        const data = await getStaffStudents()
-        setStudents(data)
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Không thể tải danh sách học viên.")
-      } finally {
-        setLoading(false)
-      }
+  const loadStudents = useCallback(async () => {
+    try {
+      const data = await getStaffStudents()
+      setStudents(data)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Không thể tải danh sách học viên.")
+    } finally {
+      setLoading(false)
     }
-    loadStudents()
   }, [])
+
+  useEffect(() => {
+    loadStudents()
+  }, [loadStudents])
 
   const filtered = students.filter((s) => {
     const q = search.trim().toLowerCase()
@@ -265,6 +266,7 @@ export default function StaffStudentsPage() {
         <StudentProfileDialog
           student={selectedStudent}
           onClose={() => setSelectedStudent(null)}
+          onRefresh={loadStudents}
         />
       )}
     </StaffShell>
@@ -274,14 +276,55 @@ export default function StaffStudentsPage() {
 type StudentProfileDialogProps = {
   student: StudentData
   onClose: () => void
+  onRefresh: () => void
 }
 
-function StudentProfileDialog({ student, onClose }: StudentProfileDialogProps) {
+function StudentProfileDialog({ student, onClose, onRefresh }: StudentProfileDialogProps) {
   const [classes, setClasses] = useState<any[]>([])
   const [loadingClasses, setLoadingClasses] = useState(true)
   const [schedules, setSchedules] = useState<any[]>([])
   const [loadingSchedule, setLoadingSchedule] = useState(false)
   const [showSchedule, setShowSchedule] = useState(false)
+  const [actionLoading, setActionLoading] = useState(false)
+
+  const handleToggleStatus = async () => {
+    if (actionLoading) return
+    const confirmMsg = student.user?.isActive 
+      ? `Bạn có chắc chắn muốn tạm khóa học viên "${student.user.fullName}"?`
+      : `Bạn có chắc chắn muốn mở khóa học viên "${student.user.fullName}"?`
+    if (!window.confirm(confirmMsg)) return
+
+    setActionLoading(true)
+    try {
+      await toggleUserStatusForStaff(student.user.id, !student.user.isActive)
+      alert(student.user?.isActive ? "Tạm khóa học viên thành công!" : "Mở khóa học viên thành công!")
+      onRefresh()
+      onClose()
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Thao tác thất bại.")
+    } finally {
+      setActionLoading(false)
+    }
+  }
+
+  const handleDeleteStudent = async () => {
+    if (actionLoading) return
+    if (!window.confirm(`HÀNH ĐỘNG NÀY KHÔNG THỂ KHÔI PHỤC!\nBạn có chắc chắn muốn xóa vĩnh viễn học viên "${student.user?.fullName}" cùng các hồ sơ liên quan?`)) {
+      return
+    }
+
+    setActionLoading(true)
+    try {
+      await deleteUserForStaff(student.user.id)
+      alert("Xóa học viên thành công!")
+      onRefresh()
+      onClose()
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Thao tác thất bại.")
+    } finally {
+      setActionLoading(false)
+    }
+  }
 
   useEffect(() => {
     async function loadStudentClasses() {
@@ -716,6 +759,36 @@ function StudentProfileDialog({ student, onClose }: StudentProfileDialogProps) {
               )}
             </div>
           </div>
+        </div>
+
+        {/* Footer actions */}
+        <div className="flex items-center justify-between border-t border-border bg-slate-50 px-5 py-3 rounded-b-xl shrink-0">
+          <div className="flex gap-2">
+            <button
+              onClick={handleToggleStatus}
+              disabled={actionLoading}
+              className={`h-8 inline-flex items-center justify-center gap-1.5 rounded px-3.5 text-xs font-semibold shadow-sm transition-all focus:outline-none focus:ring-1 focus:ring-offset-1 active:scale-95 disabled:opacity-50 cursor-pointer ${
+                student.user?.isActive
+                  ? "bg-amber-600 hover:bg-amber-700 text-white"
+                  : "bg-emerald-600 hover:bg-emerald-700 text-white"
+              }`}
+            >
+              {student.user?.isActive ? "Tạm khóa" : "Mở khóa"}
+            </button>
+            <button
+              onClick={handleDeleteStudent}
+              disabled={actionLoading}
+              className="h-8 inline-flex items-center justify-center gap-1.5 rounded bg-rose-600 hover:bg-rose-700 text-white px-3.5 text-xs font-semibold shadow-sm transition-all focus:outline-none focus:ring-1 focus:ring-offset-1 active:scale-95 disabled:opacity-50 cursor-pointer"
+            >
+              Xóa học viên
+            </button>
+          </div>
+          <button
+            onClick={onClose}
+            className="h-8 inline-flex items-center justify-center rounded border border-slate-200 bg-white px-4 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-all cursor-pointer"
+          >
+            Đóng
+          </button>
         </div>
       </div>
     </div>

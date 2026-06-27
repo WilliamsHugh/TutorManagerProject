@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useState, useCallback } from "react"
 import { BookOpen, CalendarDays, MapPin, Search, Clock, Mail, Phone, GraduationCap, X, Download } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
@@ -24,20 +24,20 @@ export default function StaffClassesPage() {
   const [selectedClass, setSelectedClass] = useState<StaffClassItem | null>(null)
   const pageSize = 10
 
-  useEffect(() => {
-    async function loadClasses() {
-      try {
-        const data = await getClasses()
-        setClasses(data.map(mapStaffClass))
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Không thể tải danh sách lớp học.")
-      } finally {
-        setLoading(false)
-      }
+  const loadClasses = useCallback(async () => {
+    try {
+      const data = await getClasses()
+      setClasses(data.map(mapStaffClass))
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Không thể tải danh sách lớp học.")
+    } finally {
+      setLoading(false)
     }
-
-    loadClasses()
   }, [])
+
+  useEffect(() => {
+    loadClasses()
+  }, [loadClasses])
 
   const filteredClasses = useMemo(() => {
     const query = search.trim().toLowerCase()
@@ -270,6 +270,7 @@ export default function StaffClassesPage() {
         <ClassDetailDialog
           classItem={selectedClass}
           onClose={() => setSelectedClass(null)}
+          onRefresh={loadClasses}
         />
       )}
     </StaffShell>

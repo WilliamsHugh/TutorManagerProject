@@ -138,3 +138,10 @@ export function deleteUserForStaff(userId: string) {
     method: 'DELETE',
   });
 }
+
+export function updateClassStatusForStaff(classId: string, status: string) {
+  return request<any>(`/classes/${classId}/status`, {
+    method: 'PATCH',
+    body: JSON.stringify({ status }),
+  });
+}

@@ -10,6 +10,7 @@ import {
   createClassSchedule,
   updateClassSchedule,
   deleteClassSchedule,
+  updateClassStatusForStaff,
 } from "@/lib/api"
 import type { StaffClassItem } from "@/types/staff"
 
@@ -49,13 +50,40 @@ export function getStatusBadge(status?: string, size: "sm" | "md" = "sm") {
 type ClassDetailDialogProps = {
   classItem: StaffClassItem
   onClose: () => void
+  onRefresh?: () => void
 }
 
-export function ClassDetailDialog({ classItem, onClose }: ClassDetailDialogProps) {
+export function ClassDetailDialog({ classItem, onClose, onRefresh }: ClassDetailDialogProps) {
   const [reports, setReports] = useState<any[]>([])
   const [loadingReports, setLoadingReports] = useState(true)
   const [schedules, setSchedules] = useState<any[]>([])
   const [loadingSchedules, setLoadingSchedules] = useState(true)
+  const [statusLoading, setStatusLoading] = useState(false)
+
+  async function handleStatusChange(newStatus: string) {
+    if (statusLoading) return
+    const statusLabel = 
+      newStatus === "active" ? "Đang học" :
+      newStatus === "completed" ? "Hoàn thành" :
+      newStatus === "cancelled" ? "Đã hủy" :
+      newStatus === "suspended" ? "Tạm dừng" : newStatus;
+
+    if (!confirm(`Bạn có chắc chắn muốn chuyển trạng thái lớp sang "${statusLabel}" không?`)) {
+      return
+    }
+
+    setStatusLoading(true)
+    try {
+      await updateClassStatusForStaff(classItem.id, newStatus)
+      alert(`Đã cập nhật trạng thái lớp học thành "${statusLabel}"!`)
+      if (onRefresh) onRefresh()
+      onClose()
+    } catch (err: any) {
+      alert(err.message || "Không thể cập nhật trạng thái lớp.")
+    } finally {
+      setStatusLoading(false)
+    }
+  }
 
   useEffect(() => {
     async function loadData() {
@@ -586,6 +614,59 @@ export function ClassDetailDialog({ classItem, onClose }: ClassDetailDialogProps
               </div>
             </div>
           )}
+        </div>
+
+        {/* Footer actions */}
+        <div className="flex items-center justify-between border-t border-border bg-slate-50 px-5 py-3 rounded-b-xl shrink-0">
+          <div className="flex gap-2">
+            {classItem.status !== "Đang học" && (
+              <button
+                type="button"
+                onClick={() => handleStatusChange("active")}
+                disabled={statusLoading}
+                className="h-8 inline-flex items-center justify-center rounded bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 text-xs font-semibold shadow-sm transition-all focus:outline-none focus:ring-1 focus:ring-offset-1 active:scale-95 disabled:opacity-50 cursor-pointer"
+              >
+                Mở lại lớp
+              </button>
+            )}
+            {classItem.status === "Đang học" && (
+              <button
+                type="button"
+                onClick={() => handleStatusChange("suspended")}
+                disabled={statusLoading}
+                className="h-8 inline-flex items-center justify-center rounded bg-amber-600 hover:bg-amber-700 text-white px-3.5 text-xs font-semibold shadow-sm transition-all focus:outline-none focus:ring-1 focus:ring-offset-1 active:scale-95 disabled:opacity-50 cursor-pointer"
+              >
+                Tạm đóng lớp
+              </button>
+            )}
+            {classItem.status !== "Hoàn thành" && (
+              <button
+                type="button"
+                onClick={() => handleStatusChange("completed")}
+                disabled={statusLoading}
+                className="h-8 inline-flex items-center justify-center rounded bg-blue-600 hover:bg-blue-700 text-white px-3.5 text-xs font-semibold shadow-sm transition-all focus:outline-none focus:ring-1 focus:ring-offset-1 active:scale-95 disabled:opacity-50 cursor-pointer"
+              >
+                Hoàn thành lớp
+              </button>
+            )}
+            {classItem.status !== "Đã hủy" && (
+              <button
+                type="button"
+                onClick={() => handleStatusChange("cancelled")}
+                disabled={statusLoading}
+                className="h-8 inline-flex items-center justify-center rounded bg-rose-600 hover:bg-rose-700 text-white px-3.5 text-xs font-semibold shadow-sm transition-all focus:outline-none focus:ring-1 focus:ring-offset-1 active:scale-95 disabled:opacity-50 cursor-pointer"
+              >
+                Hủy lớp
+              </button>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="h-8 inline-flex items-center justify-center rounded border border-slate-200 bg-white px-4 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-all cursor-pointer"
+          >
+            Đóng
+          </button>
         </div>
 
         {/* Overlay Modal for Add/Edit Schedule */}

@@ -4,7 +4,7 @@ import { useMemo, useState, useEffect, useCallback } from "react";
 import type { FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { Icon } from "@iconify/react";
-import { isLoggedIn, getUserRole } from "@/lib/auth";
+import { isLoggedIn, getUserRole, clearAuth } from "@/lib/auth";
 import {
   getStudentTutors,
   getAllSubjects,
@@ -453,32 +453,24 @@ export default function StudentDashboardPage() {
           </div>
         )}
 
-        {/* Success banner - submit */}
-        {submitSuccess && (
-          <div className="mb-6 rounded-lg border border-[#bbf7d0] bg-[#dcfce7] px-4 py-3 text-sm font-medium text-[#166534]">
-            ✅ Yêu cầu tìm gia sư đã được gửi thành công! Nhân viên trung tâm sẽ liên hệ với bạn sớm nhất.
-          </div>
-        )}
 
-        {/* Success banner - recommend */}
-        {recommendSuccess && (
-          <div className="mb-6 rounded-lg border border-[#bbf7d0] bg-[#f0fdf4] px-4 py-3 text-sm font-medium text-[#166534]">
-            ✅ {recommendSuccess}
-          </div>
-        )}
 
 
         {activeTab === "request" ? (
           <div className="grid grid-cols-1 items-start gap-6 xl:grid-cols-12">
             <TutorRequestForm
-              area={area}
+              province={province}
+              district={district}
               level={level}
               note={note}
               school={school}
               schedule={schedule}
               subject={subject}
               submitted={submitted}
-              onAreaChange={setArea}
+              subjectsList={dbSubjects}
+              provincesList={vnProvinces}
+              onProvinceChange={setProvince}
+              onDistrictChange={setDistrict}
               onLevelChange={setLevel}
               onNoteChange={setNote}
               onSchoolChange={setSchool}
@@ -490,10 +482,16 @@ export default function StudentDashboardPage() {
             <TutorSuggestionsPanel
               search={search}
               selectedTags={selectedTags}
-              tutors={filteredTutors}
-              onSearchChange={setSearch}
+              tutors={tutors}
+              onSearchChange={handleSearchChange}
               loading={loading}
               onRecommendTutor={handleRecommendTutor}
+              currentPage={page}
+              totalPages={totalPages}
+              onPageChange={setPage}
+              subjectsList={dbSubjects}
+              provincesList={vnProvinces}
+              recommendedTutorIds={recommendedTutorIds}
             />
           </div>
         ) : (

@@ -29,10 +29,12 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
     // Kiểm tra user còn hoạt động không
     if (!user.isActive) {
-      const staffName = user.lockedBy?.fullName || "Quản trị viên";
-      const staffId = user.lockedBy?.id ? user.lockedBy.id.slice(0, 8) : "ADMIN";
+      const staffName = user.lockedBy?.fullName || 'Quản trị viên';
+      const staffId = user.lockedBy?.id
+        ? user.lockedBy.id.slice(0, 8)
+        : 'ADMIN';
       throw new UnauthorizedException(
-        `Tài khoản của bạn đã bị khóa bởi nhân viên ${staffName} (ID: ${staffId}).`
+        `Tài khoản của bạn đã bị khóa bởi nhân viên ${staffName} (ID: ${staffId}).`,
       );
     }
 

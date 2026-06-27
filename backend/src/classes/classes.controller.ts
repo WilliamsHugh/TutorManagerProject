@@ -66,7 +66,11 @@ export class ClassesController {
     @Request() req,
   ) {
     const userId = req.user.id || req.user.sub;
-    return this.classesService.getStudentScheduleReport(userId, classId, sessionDate);
+    return this.classesService.getStudentScheduleReport(
+      userId,
+      classId,
+      sessionDate,
+    );
   }
 
   @Get(':id')

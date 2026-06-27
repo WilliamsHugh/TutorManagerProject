@@ -5,13 +5,14 @@ import { ValidationPipe } from '@nestjs/common';
 import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 
-
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   // Security headers
-  app.use(helmet({
-    crossOriginResourcePolicy: { policy: 'cross-origin' },
-  }));
+  app.use(
+    helmet({
+      crossOriginResourcePolicy: { policy: 'cross-origin' },
+    }),
+  );
 
   app.use(cookieParser());
 

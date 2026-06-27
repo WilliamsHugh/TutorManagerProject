@@ -5,7 +5,9 @@ import { DataSource } from 'typeorm';
 async function bootstrap() {
   try {
     console.log('Bootstrapping app context...');
-    const app = await NestFactory.createApplicationContext(AppModule, { logger: false });
+    const app = await NestFactory.createApplicationContext(AppModule, {
+      logger: false,
+    });
     const dataSource = app.get(DataSource);
     console.log('App context loaded, executing raw schema query...');
     const rows = await dataSource.query(`

@@ -126,7 +126,7 @@ export default function SessionTimeoutHandler() {
     return () => {
       window.fetch = originalFetch;
     };
-  }, [router]);
+  }, []);
 
   // Token TTL check — log cảnh báo nếu token sắp hết hạn (chỉ trong dev)
   useEffect(() => {

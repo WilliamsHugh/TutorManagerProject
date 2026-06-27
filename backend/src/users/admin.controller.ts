@@ -127,11 +127,11 @@ export class AdminController {
   async deleteUser(@Param('id') id: string) {
     const user = await this.usersRepo.findOneBy({ id });
     if (!user) throw new NotFoundException('Không tìm thấy người dùng');
-    
+
     // Delete student or tutor records related to the user first to clear foreign constraints
     await this.studentsRepo.delete({ user: { id } });
     await this.tutorsRepo.delete({ user: { id } });
-    
+
     await this.usersRepo.delete({ id });
     return { success: true, message: 'Xóa người dùng thành công' };
   }
@@ -373,7 +373,7 @@ export class AdminController {
         where: { status: 'active' as any },
         relations: ['student'],
       }),
-      
+
       // Class status counts using group by
       this.classesRepo
         .createQueryBuilder('class')
@@ -406,7 +406,7 @@ export class AdminController {
           where: {
             createdAt: Between(range.startOfMonth, range.endOfMonth),
           },
-        })
+        }),
       ),
     ]);
 

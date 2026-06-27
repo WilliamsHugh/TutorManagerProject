@@ -132,7 +132,13 @@ export class ClassRequestsService {
     page?: number;
     limit?: number;
   }) {
-    const { search = '', subject = '', mode = '', page = 1, limit = 12 } = params;
+    const {
+      search = '',
+      subject = '',
+      mode = '',
+      page = 1,
+      limit = 12,
+    } = params;
 
     const qb = this.classRequestsRepository
       .createQueryBuilder('request')
@@ -158,7 +164,9 @@ export class ClassRequestsService {
       if (mode.toLowerCase().includes('online')) {
         qb.andWhere('request.preferredArea ILIKE :mode', { mode: '%online%' });
       } else if (mode.toLowerCase().includes('offline')) {
-        qb.andWhere('request.preferredArea NOT ILIKE :mode', { mode: '%online%' });
+        qb.andWhere('request.preferredArea NOT ILIKE :mode', {
+          mode: '%online%',
+        });
       }
     }
 

@@ -39,7 +39,10 @@ export class UsersService {
   }
 
   async findStudentByUserId(userId: string): Promise<Student | null> {
-    return this.studentsRepository.findOne({ where: { user: { id: userId } }, relations: { user: true } });
+    return this.studentsRepository.findOne({
+      where: { user: { id: userId } },
+      relations: { user: true },
+    });
   }
 
   private async getOrCreateRole(roleName: string): Promise<Role> {
@@ -125,7 +128,12 @@ export class UsersService {
 
   async updateProfile(
     userId: string,
-    data: { fullName?: string; phone?: string; address?: string; avatarUrl?: string },
+    data: {
+      fullName?: string;
+      phone?: string;
+      address?: string;
+      avatarUrl?: string;
+    },
   ): Promise<User> {
     const user = await this.findById(userId);
     if (!user) throw new Error('Không tìm thấy người dùng');

@@ -3,7 +3,7 @@
 import { GraduationCap, Menu, X, Bell, ChevronDown, LogOut, Shield, LayoutDashboard } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useLayoutEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { clearAuth, getAuthUser, isLoggedIn as checkLoginStatus } from "@/lib/auth";
 
@@ -31,6 +31,9 @@ export default function Header({
   maxWidth = "1328px" 
 }: HeaderProps) {
   const [isOpen, setIsOpen] = useState(false);
+  // Khởi tạo false/null — khớp với SSR, không hydration error
+  // useLayoutEffect chạy đồng bộ TRƯỚC khi browser paint
+  // => DOM chỉ được paint 1 lần với state đúng, không nhấp nháy
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -39,19 +42,21 @@ export default function Header({
   const router = useRouter();
   const navLinks = customLinks || defaultNavLinks;
 
-  // Đồng bộ auth state từ localStorage — chạy khi mount, khi đổi route,
-  // và khi user back/forward bằng browser (không remount Header)
+  // useLayoutEffect chạy đồng bộ trước paint → cập nhật auth state đúng
+  // ngay từ lần render đầu tiên, không gây hydration error
+  useLayoutEffect(() => {
+    setIsLoggedIn(checkLoginStatus());
+    setUser(getAuthUser());
+  }, []);
+
+  // useEffect cho event listeners (pageshow/popstate) — không cần đồng bộ
   useEffect(() => {
     const checkAuth = () => {
       setIsLoggedIn(checkLoginStatus());
       setUser(getAuthUser());
     };
 
-    checkAuth();
-
-    // pageshow: khi trang được khôi phục từ bfcache (trình duyệt)
     window.addEventListener('pageshow', checkAuth);
-    // popstate: khi Next.js App Router xử lý back/forward navigation
     window.addEventListener('popstate', checkAuth);
 
     return () => {

@@ -55,7 +55,7 @@ export default function TutorCard({ tutor }: { tutor: Tutor }) {
           <span className="text-sm text-gray-400 ml-1">/ giờ</span>
         </div>
         <button
-          className="text-sm font-semibold px-4 py-2 rounded-xl border transition-all duration-200 text-[var(--primary)] border-[var(--primary)] hover:bg-blue-700 hover:text-white hover:border-blue-700"
+          className="text-sm font-semibold px-4 py-2 rounded-xl border transition-all duration-200 text-primary border-primary hover:bg-blue-700 hover:text-white hover:border-blue-700"
         >
           Xem chi tiết
         </button>

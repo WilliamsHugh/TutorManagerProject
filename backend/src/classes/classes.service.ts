@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
@@ -525,11 +526,344 @@ export class ClassesService {
     });
   }
 
-  async getStudentScheduleReport(
-    userId: string,
+  async declineProposal(requestId: string, userId: string) {
+    const student = await this.studentsRepository.findOne({
+      where: { user: { id: userId } },
+    });
+    if (!student) {
+      throw new NotFoundException('Không tìm thấy học viên');
+    }
+
+    const request = await this.classRequestsRepository.findOne({
+      where: { id: requestId },
+      relations: { student: { user: true } },
+    });
+
+    if (!request) throw new NotFoundException('Không tìm thấy yêu cầu');
+    if (request.student.id !== student.id) {
+      throw new BadRequestException('Bạn không có quyền từ chối yêu cầu này');
+    }
+    if (request.status !== RequestStatus.PROPOSED) {
+      throw new BadRequestException('Yêu cầu này không ở trạng thái chờ xác nhận');
+    }
+
+    request.preferredTutor = null as any;
+    request.status = RequestStatus.DECLINED;
+    request.requirements = [
+      request.requirements || '',
+      '[Học viên đã từ chối đề xuất từ gia sư này. Yêu cầu mở lại cho tất cả gia sư.]',
+    ]
+      .filter(Boolean)
+      .join('\n');
+    await this.classRequestsRepository.save(request);
+
+    return { message: 'Bạn đã từ chối đề xuất của gia sư.' };
+  }
+
+  async counterProposal(requestId: string, userId: string, note: string) {
+    const student = await this.studentsRepository.findOne({
+      where: { user: { id: userId } },
+    });
+    if (!student) {
+      throw new NotFoundException('Không tìm thấy học viên');
+    }
+
+    const request = await this.classRequestsRepository.findOne({
+      where: { id: requestId },
+      relations: { student: { user: true } },
+    });
+
+    if (!request) throw new NotFoundException('Không tìm thấy yêu cầu');
+    if (request.student.id !== student.id) {
+      throw new BadRequestException('Bạn không có quyền yêu cầu sửa đề xuất này');
+    }
+    if (request.status !== RequestStatus.PROPOSED) {
+      throw new BadRequestException('Yêu cầu này không ở trạng thái chờ xác nhận');
+    }
+
+    request.status = RequestStatus.NEGOTIATING;
+    request.requirements = [
+      request.requirements || '',
+      `[Học viên yêu cầu điều chỉnh: ${note}]`,
+    ]
+      .filter(Boolean)
+      .join('\n');
+    await this.classRequestsRepository.save(request);
+
+    return {
+      message:
+        'Bạn đã gửi yêu cầu điều chỉnh. Gia sư sẽ xem xét và gửi đề xuất mới.',
+    };
+  }
+
+  async requestClassCancellation(
     classId: string,
-    sessionDate: string,
+    userId: string,
+    role: 'tutor' | 'student',
+    reason: string,
   ) {
+    const classEntity = await this.findOne(classId);
+
+    // Verify ownership
+    if (role === 'student') {
+      const student = await this.studentsRepository.findOne({
+        where: { user: { id: userId } },
+      });
+      if (!student || classEntity.student.id !== student.id) {
+        throw new BadRequestException('Bạn không phải học viên của lớp này');
+      }
+    } else if (role === 'tutor') {
+      const tutor = await this.tutorsRepository.findOne({
+        where: { user: { id: userId } },
+        relations: { user: true },
+      });
+      if (!tutor || classEntity.tutor.id !== tutor.id) {
+        throw new BadRequestException('Bạn không phải gia sư của lớp này');
+      }
+    }
+
+    if (classEntity.status !== ClassStatus.ACTIVE) {
+      throw new BadRequestException('Chỉ có thể yêu cầu hủy lớp đang hoạt động');
+    }
+
+    classEntity.status = ClassStatus.CANCELLATION_REQUESTED;
+    classEntity.cancellationRequestedBy = role;
+    classEntity.cancellationReason = reason;
+    classEntity.cancellationRequestedAt = new Date();
+    await this.classesRepository.save(classEntity);
+
+    const roleName = role === 'tutor' ? 'Gia sư' : 'Học viên';
+    return {
+      message: `${roleName} đã yêu cầu hủy lớp. Vui lòng chờ bên kia xác nhận.`,
+    };
+  }
+
+  async respondToCancellation(
+    classId: string,
+    userId: string,
+    role: 'tutor' | 'student',
+    agree: boolean,
+  ) {
+    const classEntity = await this.findOne(classId);
+
+    if (classEntity.status !== ClassStatus.CANCELLATION_REQUESTED) {
+      throw new BadRequestException('Lớp này chưa có yêu cầu hủy');
+    }
+
+    // Verify ownership + the other side is responding
+    if (role === 'tutor') {
+      const tutor = await this.tutorsRepository.findOne({
+        where: { user: { id: userId } },
+        relations: { user: true },
+      });
+      if (!tutor || classEntity.tutor.id !== tutor.id) {
+        throw new BadRequestException('Bạn không phải gia sư của lớp này');
+      }
+      if (classEntity.cancellationRequestedBy === 'tutor') {
+        throw new BadRequestException('Bạn đã yêu cầu hủy, không thể tự phản hồi');
+      }
+    } else if (role === 'student') {
+      const student = await this.studentsRepository.findOne({
+        where: { user: { id: userId } },
+      });
+      if (!student || classEntity.student.id !== student.id) {
+        throw new BadRequestException('Bạn không phải học viên của lớp này');
+      }
+      if (classEntity.cancellationRequestedBy === 'student') {
+        throw new BadRequestException('Bạn đã yêu cầu hủy, không thể tự phản hồi');
+      }
+    }
+
+    if (agree) {
+      classEntity.status = ClassStatus.CANCELLED;
+      await this.classesRepository.save(classEntity);
+
+      // Also update the request status if present
+      if (classEntity.request) {
+        classEntity.request.status = RequestStatus.CANCELLED;
+        await this.classRequestsRepository.save(classEntity.request);
+      }
+
+      return { message: 'Đã đồng ý hủy lớp. Lớp học đã được hủy.' };
+    } else {
+      classEntity.status = ClassStatus.ACTIVE;
+      classEntity.cancellationRequestedBy = null as any;
+      classEntity.cancellationReason = null as any;
+      classEntity.cancellationRequestedAt = null as any;
+      await this.classesRepository.save(classEntity);
+
+      return { message: 'Đã từ chối hủy lớp. Lớp học tiếp tục hoạt động.' };
+    }
+  }
+
+  async confirmProposal(requestId: string, userId: string) {
+    const student = await this.studentsRepository.findOne({
+      where: { user: { id: userId } },
+    });
+    if (!student) {
+      throw new NotFoundException('Không tìm thấy học viên tương ứng với tài khoản này');
+    }
+
+    const request = await this.classRequestsRepository.findOne({
+      where: { id: requestId },
+      relations: {
+        student: { user: true },
+        subject: true,
+        preferredTutor: { user: true },
+      },
+    });
+
+    if (!request) {
+      throw new NotFoundException('Không tìm thấy yêu cầu');
+    }
+
+    // Verify this is the student's own request
+    if (request.student.id !== student.id) {
+      throw new BadRequestException('Bạn không có quyền xác nhận yêu cầu này');
+    }
+
+    if (request.status !== RequestStatus.PROPOSED) {
+      throw new BadRequestException('Yêu cầu này không ở trạng thái chờ xác nhận');
+    }
+
+    if (!request.proposedFee || !request.proposedSessions) {
+      throw new BadRequestException('Gia sư chưa gửi đề xuất học phí và số buổi');
+    }
+
+    if (!request.preferredTutor) {
+      throw new NotFoundException('Không tìm thấy gia sư được đề xuất');
+    }
+
+    const tutor = request.preferredTutor;
+
+    // Check existing class
+    const existingClass = await this.classesRepository.findOne({
+      where: { request: { id: requestId } },
+    });
+    if (existingClass) {
+      throw new ConflictException('Yêu cầu này đã được tạo lớp');
+    }
+
+    // Tạo lớp học mới
+    const classEntity = this.classesRepository.create({
+      tutor,
+      student: request.student,
+      subject: request.subject,
+      request,
+      location: request.preferredArea,
+      feePerSession: request.proposedFee,
+      totalSessions: request.proposedSessions,
+      status: ClassStatus.ACTIVE,
+      startDate: new Date(),
+      notes: request.requirements,
+    });
+
+    const savedClass = await this.classesRepository.save(classEntity);
+
+    // Cập nhật trạng thái request
+    request.status = RequestStatus.MATCHED;
+    await this.classRequestsRepository.save(request);
+
+    return {
+      message: 'Bạn đã xác nhận đề xuất của gia sư thành công! Lớp học đã được tạo.',
+      class: savedClass,
+    };
+  }
+
+  async getStudentProposals(userId: string) {
+    const student = await this.studentsRepository.findOne({
+      where: { user: { id: userId } },
+    });
+    if (!student) {
+      throw new NotFoundException('Không tìm thấy học viên tương ứng với tài khoản này');
+    }
+
+    const requests = await this.classRequestsRepository.find({
+      where: {
+        student: { id: student.id },
+        status: RequestStatus.PROPOSED,
+      },
+      relations: {
+        subject: true,
+        preferredTutor: { user: true },
+      },
+      order: { proposedAt: 'DESC' },
+    });
+
+    return requests.map((req) => ({
+      id: req.id,
+      subject: req.subject?.name || 'Môn học',
+      preferredArea: req.preferredArea || 'Toàn quốc',
+      preferredSchedule: req.preferredSchedule || 'Linh hoạt',
+      requirements: req.requirements || '',
+      proposedFee: Number(req.proposedFee) || 0,
+      proposedSessions: req.proposedSessions || 0,
+      totalFee: (Number(req.proposedFee) || 0) * (req.proposedSessions || 0),
+      tutorName: req.preferredTutor?.user?.fullName || 'Gia sư',
+      tutorId: req.preferredTutor?.id || '',
+      proposedAt: req.proposedAt,
+    }));
+  }
+
+  async getTutorCancellations(tutorId: string) {
+    return this.classesRepository.find({
+      where: {
+        tutor: { id: tutorId },
+        status: ClassStatus.CANCELLATION_REQUESTED,
+      },
+      relations: {
+        student: { user: true },
+        subject: true,
+        tutor: { user: true },
+      },
+    });
+  }
+
+  async getClassCancellationInfo(classId: string, userId: string, role: 'tutor' | 'student') {
+    const classEntity = await this.findOne(classId);
+
+    // Verify ownership
+    if (role === 'student') {
+      const student = await this.studentsRepository.findOne({
+        where: { user: { id: userId } },
+      });
+      if (!student || classEntity.student.id !== student.id) {
+        throw new BadRequestException('Bạn không phải học viên của lớp này');
+      }
+    } else if (role === 'tutor') {
+      const tutor = await this.tutorsRepository.findOne({
+        where: { user: { id: userId } },
+      });
+      if (!tutor || classEntity.tutor.id !== tutor.id) {
+        throw new BadRequestException('Bạn không phải gia sư của lớp này');
+      }
+    }
+
+    if (classEntity.status !== ClassStatus.CANCELLATION_REQUESTED) {
+      return { hasCancellationRequest: false };
+    }
+
+    // Get the requesting party name
+    const otherRole = classEntity.cancellationRequestedBy === 'tutor' ? 'student' : 'tutor';
+    let requestedByName = '';
+    if (classEntity.cancellationRequestedBy === 'tutor') {
+      requestedByName = classEntity.tutor?.user?.fullName || 'Gia sư';
+    } else {
+      requestedByName = classEntity.student?.user?.fullName || 'Học viên';
+    }
+
+    return {
+      hasCancellationRequest: true,
+      requestedBy: classEntity.cancellationRequestedBy,
+      otherRole,
+      requestedByName,
+      reason: classEntity.cancellationReason,
+      requestedAt: classEntity.cancellationRequestedAt,
+      isMyRequest: classEntity.cancellationRequestedBy === role,
+    };
+  }
+
+  async getStudentScheduleReport(userId: string, classId: string, sessionDate: string) {
     const student = await this.studentsRepository.findOne({
       where: { user: { id: userId } },
     });

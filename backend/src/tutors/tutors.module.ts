@@ -1,5 +1,6 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { ClassesModule } from '../classes/classes.module';
 import { TutorController } from './tutor.controller';
 import { PublicTutorController } from './public-tutor.controller';
 import { TutorsService } from './tutors.service';
@@ -34,6 +35,7 @@ import { Review } from '../classes/entities/review.entity';
       TutorSubject,
       Review,
     ]),
+    forwardRef(() => ClassesModule),
   ],
   controllers: [TutorController, PublicTutorController],
   providers: [TutorsService],

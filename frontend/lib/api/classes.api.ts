@@ -140,10 +140,40 @@ export async function submitReview(data: { classId: string; rating: number; comm
 
 // Lấy thông tin hồ sơ học viên đang đăng nhập
 export async function getStudentProfile() {
+  const token = getToken();
+  const headers: Record<string, string> = {};
+  if (token && token !== "null" && token !== "undefined") {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
   const res = await fetch(`${API_URL}/auth/student-profile`, {
     credentials: 'include',
+    headers,
   });
   if (!res.ok) throw new Error('Không thể tải thông tin học viên');
+  return res.json();
+}
+
+// Lấy danh sách đề xuất từ gia sư đang chờ học viên xác nhận
+export async function getStudentProposals() {
+  const token = getToken();
+  const res = await fetch(`${API_URL}/classes/student/proposals`, {
+    headers: { 'Authorization': `Bearer ${token}` },
+  });
+  if (!res.ok) throw new Error('Không thể tải danh sách đề xuất');
+  return res.json();
+}
+
+// Học viên xác nhận đề xuất của gia sư → tạo lớp
+export async function confirmProposal(requestId: string) {
+  const token = getToken();
+  const res = await fetch(`${API_URL}/classes/student/confirm-proposal/${requestId}`, {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${token}` },
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || 'Không thể xác nhận đề xuất');
+  }
   return res.json();
 }
 
@@ -188,6 +218,84 @@ export async function getStudentClassReports(classId: string) {
     const err = await res.json().catch(() => ({}));
     throw new Error(err.message || 'Không thể tải báo cáo học tập');
   }
+  return res.json();
+}
+
+// Học viên từ chối đề xuất từ gia sư
+export async function declineProposal(requestId: string) {
+  const token = getToken();
+  const res = await fetch(`${API_URL}/classes/student/decline-proposal/${requestId}`, {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${token}` },
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || 'Không thể từ chối đề xuất');
+  }
+  return res.json();
+}
+
+// Học viên yêu cầu gia sư điều chỉnh đề xuất
+export async function counterProposal(requestId: string, note: string) {
+  const token = getToken();
+  const res = await fetch(`${API_URL}/classes/student/counter-proposal/${requestId}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    },
+    body: JSON.stringify({ note }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || 'Không thể gửi yêu cầu điều chỉnh');
+  }
+  return res.json();
+}
+
+// Học viên yêu cầu hủy lớp học
+export async function requestClassCancellation(classId: string, reason: string) {
+  const token = getToken();
+  const res = await fetch(`${API_URL}/classes/student/request-cancellation/${classId}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    },
+    body: JSON.stringify({ reason }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || 'Không thể yêu cầu hủy lớp');
+  }
+  return res.json();
+}
+
+// Học viên phản hồi yêu cầu hủy lớp
+export async function respondCancellation(classId: string, agree: boolean) {
+  const token = getToken();
+  const res = await fetch(`${API_URL}/classes/student/respond-cancellation/${classId}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    },
+    body: JSON.stringify({ agree }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || 'Không thể phản hồi yêu cầu hủy lớp');
+  }
+  return res.json();
+}
+
+// Lấy thông tin hủy lớp (kiểm tra có yêu cầu hủy không)
+export async function getClassCancellationInfo(classId: string) {
+  const token = getToken();
+  const res = await fetch(`${API_URL}/classes/student/cancellation/${classId}`, {
+    headers: { 'Authorization': `Bearer ${token}` },
+  });
+  if (!res.ok) throw new Error('Không thể tải thông tin hủy lớp');
   return res.json();
 }
 

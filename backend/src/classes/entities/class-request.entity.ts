@@ -14,6 +14,7 @@ import { Tutor } from '../../users/entities/tutor.entity';
 
 export enum RequestStatus {
   PENDING = 'pending',
+  PROPOSED = 'proposed',
   PROCESSING = 'processing',
   MATCHED = 'matched',
   CANCELLED = 'cancelled',
@@ -58,6 +59,29 @@ export class ClassRequest {
 
   @Column({ type: 'text', nullable: true })
   requirements!: string;
+
+  @Column({
+    name: 'proposed_fee',
+    type: 'decimal',
+    precision: 10,
+    scale: 0,
+    nullable: true,
+  })
+  proposedFee!: number;
+
+  @Column({
+    name: 'proposed_sessions',
+    type: 'int',
+    nullable: true,
+  })
+  proposedSessions!: number;
+
+  @Column({
+    name: 'proposed_at',
+    type: 'timestamp',
+    nullable: true,
+  })
+  proposedAt!: Date;
 
   @Column({
     type: 'varchar',

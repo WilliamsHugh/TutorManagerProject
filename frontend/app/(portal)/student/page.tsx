@@ -3,8 +3,16 @@
 import { useMemo, useState, useEffect, useCallback } from "react";
 import type { FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import { Icon } from "@iconify/react";
 import { isLoggedIn, getUserRole } from "@/lib/auth";
-import { getStudentTutors, getAllSubjects, createClassRequest, getStudentProfile } from "@/lib/api";
+import {
+  getStudentTutors,
+  getAllSubjects,
+  createClassRequest,
+  getStudentProfile,
+  getStudentProposals,
+  confirmProposal,
+} from "@/lib/api";
 
 import type { TutorSuggestion } from "./types";
 import { TutorRequestForm } from "./_components/TutorRequestForm";
@@ -31,6 +39,16 @@ export default function StudentDashboardPage() {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [recommendSuccess, setRecommendSuccess] = useState<string | null>(null);
+
+  // Proposals state (đề xuất từ gia sư chờ xác nhận)
+  const [proposals, setProposals] = useState<any[]>([]);
+  const [proposalsLoading, setProposalsLoading] = useState(true);
+  const [confirmingId, setConfirmingId] = useState<string | null>(null);
+  const [proposalToast, setProposalToast] = useState<{
+    message: string;
+    type: "success" | "error" | "info";
+  } | null>(null);
+  const [activeTab, setActiveTab] = useState<"request" | "proposals">("request");
 
   // Auth protection
   useEffect(() => {
@@ -80,6 +98,20 @@ export default function StudentDashboardPage() {
       }
     }
     fetchTutors();
+
+    // Fetch pending proposals
+    async function fetchProposals() {
+      try {
+        setProposalsLoading(true);
+        const data = await getStudentProposals();
+        setProposals(data || []);
+      } catch (err) {
+        console.error("Failed to fetch proposals:", err);
+      } finally {
+        setProposalsLoading(false);
+      }
+    }
+    fetchProposals();
   }, []);
 
   const filteredTutors = useMemo(() => {
@@ -206,14 +238,77 @@ export default function StudentDashboardPage() {
     }
   }, [subject, subjectMap, studentId, area, schedule, level, school, note]);
 
+  const handleConfirmProposal = async (requestId: string) => {
+    setConfirmingId(requestId);
+    try {
+      const result = await confirmProposal(requestId);
+      setProposalToast({
+        message: result.message || "Đã xác nhận đề xuất thành công!",
+        type: "success",
+      });
+      setProposals((prev) => prev.filter((p: any) => p.id !== requestId));
+      setTimeout(() => setProposalToast(null), 5000);
+    } catch (err: any) {
+      setProposalToast({
+        message: err.message || "Không thể xác nhận đề xuất",
+        type: "error",
+      });
+      setTimeout(() => setProposalToast(null), 5000);
+    } finally {
+      setConfirmingId(null);
+    }
+  };
+
   return (
     <div
       className="min-h-screen bg-[#f8fafc] text-[#0f172a]"
       style={{ fontFamily: "var(--font-family-body)" }}
     >
-
       <main className="mx-auto w-full max-w-332 px-4 py-6 sm:px-6 lg:px-8">
         <TutorRequestPageHeader />
+
+        {/* Tab Navigation */}
+        <div className="mb-6 flex gap-1 rounded-lg bg-slate-100 p-1">
+          <button
+            onClick={() => setActiveTab("request")}
+            className={`flex-1 rounded-md px-4 py-2 text-sm font-medium transition-colors ${
+              activeTab === "request"
+                ? "bg-white text-slate-900 shadow-sm"
+                : "text-slate-500 hover:text-slate-700"
+            }`}
+          >
+            Tìm gia sư
+          </button>
+          <button
+            onClick={() => setActiveTab("proposals")}
+            className={`flex-1 rounded-md px-4 py-2 text-sm font-medium transition-colors ${
+              activeTab === "proposals"
+                ? "bg-white text-slate-900 shadow-sm"
+                : "text-slate-500 hover:text-slate-700"
+            }`}
+          >
+            Đề xuất từ gia sư
+            {proposals.length > 0 && (
+              <span className="ml-2 inline-flex h-5 w-5 items-center justify-center rounded-full bg-amber-500 text-xs font-bold text-white">
+                {proposals.length}
+              </span>
+            )}
+          </button>
+        </div>
+
+        {/* Proposal Toast */}
+        {proposalToast && (
+          <div
+            className={`mb-6 rounded-lg border px-4 py-3 text-sm font-medium ${
+              proposalToast.type === "success"
+                ? "border-[#bbf7d0] bg-[#dcfce7] text-[#166534]"
+                : "border-[#fecaca] bg-[#fef2f2] text-[#991b1b]"
+            }`}
+          >
+            {proposalToast.type === "success" ? "✅ " : "❌ "}
+            {proposalToast.message}
+          </div>
+        )}
 
         {/* Success banner - submit */}
         {submitSuccess && (
@@ -236,33 +331,127 @@ export default function StudentDashboardPage() {
           </div>
         )}
 
-        <div className="grid grid-cols-1 items-start gap-6 xl:grid-cols-12">
-          <TutorRequestForm
-            area={area}
-            level={level}
-            note={note}
-            school={school}
-            schedule={schedule}
-            subject={subject}
-            submitted={submitted}
-            onAreaChange={setArea}
-            onLevelChange={setLevel}
-            onNoteChange={setNote}
-            onSchoolChange={setSchool}
-            onScheduleChange={setSchedule}
-            onSubjectChange={setSubject}
-            onSubmit={handleSubmit}
-          />
+        {activeTab === "request" ? (
+          <div className="grid grid-cols-1 items-start gap-6 xl:grid-cols-12">
+            <TutorRequestForm
+              area={area}
+              level={level}
+              note={note}
+              school={school}
+              schedule={schedule}
+              subject={subject}
+              submitted={submitted}
+              onAreaChange={setArea}
+              onLevelChange={setLevel}
+              onNoteChange={setNote}
+              onSchoolChange={setSchool}
+              onScheduleChange={setSchedule}
+              onSubjectChange={setSubject}
+              onSubmit={handleSubmit}
+            />
 
-          <TutorSuggestionsPanel
-            search={search}
-            selectedTags={selectedTags}
-            tutors={filteredTutors}
-            onSearchChange={setSearch}
-            loading={loading}
-            onRecommendTutor={handleRecommendTutor}
-          />
-        </div>
+            <TutorSuggestionsPanel
+              search={search}
+              selectedTags={selectedTags}
+              tutors={filteredTutors}
+              onSearchChange={setSearch}
+              loading={loading}
+              onRecommendTutor={handleRecommendTutor}
+            />
+          </div>
+        ) : (
+          /* Proposals Tab */
+          <div className="space-y-4">
+            {proposalsLoading ? (
+              <div className="flex items-center justify-center py-12 text-slate-500">
+                <Icon icon="lucide:loader-2" className="animate-spin mr-2" fontSize={20} />
+                Đang tải đề xuất...
+              </div>
+            ) : proposals.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12 text-slate-400 bg-white rounded-xl border border-slate-200">
+                <Icon icon="lucide:inbox" fontSize={48} className="text-slate-300 mb-3" />
+                <p className="text-sm">Chưa có đề xuất nào từ gia sư</p>
+              </div>
+            ) : (
+              proposals.map((prop: any) => (
+                <div
+                  key={prop.id}
+                  className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden"
+                >
+                  <div className="flex items-start justify-between p-5 border-b border-slate-100">
+                    <div>
+                      <h3 className="font-semibold text-slate-900">
+                        {prop.tutorName}{" "}
+                        <span className="font-normal text-slate-500">
+                          đề xuất dạy
+                        </span>{" "}
+                        {prop.subject}
+                      </h3>
+                      <div className="flex items-center gap-2 mt-1 text-xs text-slate-500">
+                        <Icon icon="lucide:map-pin" fontSize={12} />
+                        {prop.preferredArea}
+                      </div>
+                    </div>
+                    <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-700 border border-amber-200">
+                      <Icon icon="lucide:clock" fontSize={12} />
+                      Chờ xác nhận
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-4 p-5 bg-slate-50">
+                    <div className="text-center">
+                      <p className="text-xs text-slate-500 uppercase tracking-wide">
+                        Học phí/buổi
+                      </p>
+                      <p className="mt-1 text-lg font-bold text-blue-600">
+                        {prop.proposedFee?.toLocaleString("vi-VN")}đ
+                      </p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-xs text-slate-500 uppercase tracking-wide">
+                        Số buổi
+                      </p>
+                      <p className="mt-1 text-lg font-bold text-slate-900">
+                        {prop.proposedSessions}
+                      </p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-xs text-slate-500 uppercase tracking-wide">
+                        Tổng chi phí
+                      </p>
+                      <p className="mt-1 text-lg font-bold text-emerald-600">
+                        {prop.totalFee?.toLocaleString("vi-VN")}đ
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-end gap-3 px-5 py-3 bg-white border-t border-slate-100">
+                    <p className="text-xs text-slate-400 mr-auto">
+                      {prop.proposedAt
+                        ? new Date(prop.proposedAt).toLocaleDateString("vi-VN", {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })
+                        : ""}
+                    </p>
+                    <button
+                      onClick={() => handleConfirmProposal(prop.id)}
+                      disabled={confirmingId === prop.id}
+                      className="flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      {confirmingId === prop.id ? (
+                        <Icon icon="lucide:loader-2" className="animate-spin" fontSize={16} />
+                      ) : (
+                        <Icon icon="lucide:check-circle" fontSize={16} />
+                      )}
+                      Xác nhận & tạo lớp
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        )}
 
         {/* Submitting overlay */}
         {submitting && (

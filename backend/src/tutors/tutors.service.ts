@@ -1278,7 +1278,12 @@ export class TutorsService implements OnModuleInit {
     }));
   }
 
-  async acceptRecommendation(requestId: string, userId: string) {
+  async proposeRecommendation(
+    requestId: string,
+    userId: string,
+    feePerSession: number,
+    totalSessions: number,
+  ) {
     const request = await this.classRequestRepository.findOne({
       where: { id: requestId },
       relations: {
@@ -1306,27 +1311,28 @@ export class TutorsService implements OnModuleInit {
       throw new BadRequestException('Bạn không phải là gia sư được đề xuất trong yêu cầu này');
     }
 
-    // Update status to PROCESSING
-    request.status = RequestStatus.PROCESSING;
+    // Validate fee and sessions
+    if (!feePerSession || feePerSession < 50000) {
+      throw new BadRequestException('Học phí tối thiểu là 50.000đ/buổi');
+    }
+    if (!totalSessions || totalSessions < 1) {
+      throw new BadRequestException('Số buổi học tối thiểu là 1');
+    }
+
+    // Save proposal
+    request.proposedFee = feePerSession;
+    request.proposedSessions = totalSessions;
+    request.proposedAt = new Date();
+    request.status = RequestStatus.PROPOSED;
     await this.classRequestRepository.save(request);
 
-    // Create a new class
-    const newClass = this.classRepository.create({
-      tutor: tutorEntity,
-      student: request.student,
-      subject: request.subject,
-      request,
-      location: request.preferredArea,
-      feePerSession: 200000,
-      status: ClassStatus.ACTIVE,
-      startDate: new Date(),
-      notes: request.requirements,
-    });
-    await this.classRepository.save(newClass);
-
     return {
-      message: 'Bạn đã chấp nhận đề xuất từ học viên thành công!',
-      class: newClass,
+      message: `Bạn đã gửi đề xuất: ${feePerSession.toLocaleString('vi-VN')}đ/buổi, ${totalSessions} buổi. Đang chờ học viên xác nhận.`,
+      proposal: {
+        feePerSession,
+        totalSessions,
+        totalFee: feePerSession * totalSessions,
+      },
     };
   }
 

@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
@@ -431,6 +432,115 @@ export class ClassesService {
       relations: ['tutor', 'tutor.user'],
       order: { reportDate: 'DESC' },
     });
+  }
+
+  async confirmProposal(requestId: string, userId: string) {
+    const student = await this.studentsRepository.findOne({
+      where: { user: { id: userId } },
+    });
+    if (!student) {
+      throw new NotFoundException('Không tìm thấy học viên tương ứng với tài khoản này');
+    }
+
+    const request = await this.classRequestsRepository.findOne({
+      where: { id: requestId },
+      relations: {
+        student: { user: true },
+        subject: true,
+        preferredTutor: { user: true },
+      },
+    });
+
+    if (!request) {
+      throw new NotFoundException('Không tìm thấy yêu cầu');
+    }
+
+    // Verify this is the student's own request
+    if (request.student.id !== student.id) {
+      throw new BadRequestException('Bạn không có quyền xác nhận yêu cầu này');
+    }
+
+    if (request.status !== RequestStatus.PROPOSED) {
+      throw new BadRequestException('Yêu cầu này không ở trạng thái chờ xác nhận');
+    }
+
+    if (!request.proposedFee || !request.proposedSessions) {
+      throw new BadRequestException('Gia sư chưa gửi đề xuất học phí và số buổi');
+    }
+
+    if (!request.preferredTutor) {
+      throw new NotFoundException('Không tìm thấy gia sư được đề xuất');
+    }
+
+    const tutor = request.preferredTutor;
+
+    // Check existing class
+    const existingClass = await this.classesRepository.findOne({
+      where: { request: { id: requestId } },
+    });
+    if (existingClass) {
+      throw new ConflictException('Yêu cầu này đã được tạo lớp');
+    }
+
+    // Tạo lớp học mới
+    const classEntity = this.classesRepository.create({
+      tutor,
+      student: request.student,
+      subject: request.subject,
+      request,
+      location: request.preferredArea,
+      feePerSession: request.proposedFee,
+      totalSessions: request.proposedSessions,
+      status: ClassStatus.ACTIVE,
+      startDate: new Date(),
+      notes: request.requirements,
+    });
+
+    const savedClass = await this.classesRepository.save(classEntity);
+
+    // Cập nhật trạng thái request
+    request.status = RequestStatus.MATCHED;
+    await this.classRequestsRepository.save(request);
+
+    return {
+      message: 'Bạn đã xác nhận đề xuất của gia sư thành công! Lớp học đã được tạo.',
+      class: savedClass,
+    };
+  }
+
+  async getStudentProposals(userId: string) {
+    const student = await this.studentsRepository.findOne({
+      where: { user: { id: userId } },
+    });
+    if (!student) {
+      throw new NotFoundException('Không tìm thấy học viên tương ứng với tài khoản này');
+    }
+
+    const requests = await this.classRequestsRepository.find({
+      where: {
+        student: { id: student.id },
+        status: RequestStatus.PROPOSED,
+      },
+      relations: {
+        subject: true,
+        preferredTutor: { user: true },
+      },
+      order: { proposedAt: 'DESC' },
+    });
+
+    return requests.map((req) => ({
+      id: req.id,
+      subject: req.subject?.name || 'Môn học',
+      preferredArea: req.preferredArea || 'Toàn quốc',
+      preferredSchedule: req.preferredSchedule || 'Linh hoạt',
+      requirements: req.requirements || '',
+      proposedFee: Number(req.proposedFee) || 0,
+      proposedSessions: req.proposedSessions || 0,
+      totalFee: (Number(req.proposedFee) || 0) * (req.proposedSessions || 0),
+      tutorName: req.preferredTutor?.user?.fullName || 'Gia sư',
+      tutorId: req.preferredTutor?.id || '',
+      proposedAt: req.proposedAt,
+    }));
   }
 
   async getStudentScheduleReport(userId: string, classId: string, sessionDate: string) {

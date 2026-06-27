@@ -37,6 +37,22 @@ export class ClassesController {
     return this.classesService.findAll({ status });
   }
 
+  // Student: xem danh sách đề xuất từ gia sư đang chờ xác nhận
+  @Get('student/proposals')
+  @Roles(RoleType.STUDENT)
+  async getProposals(@Request() req) {
+    const userId = req.user.id || req.user.sub;
+    return this.classesService.getStudentProposals(userId);
+  }
+
+  // Student: xác nhận đề xuất từ gia sư → tạo lớp
+  @Post('student/confirm-proposal/:requestId')
+  @Roles(RoleType.STUDENT)
+  async confirmProposal(@Param('requestId') requestId: string, @Request() req) {
+    const userId = req.user.id || req.user.sub;
+    return this.classesService.confirmProposal(requestId, userId);
+  }
+
   @Get('student/my-classes')
   @Roles(RoleType.STUDENT)
   findMyClasses(@Request() req) {

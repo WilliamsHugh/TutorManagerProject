@@ -168,16 +168,20 @@ export async function getMyRecommendations() {
   return res.json();
 }
 
-// Chấp nhận đề xuất từ học sinh
-export async function acceptRecommendation(id: string) {
+// Gửi đề xuất học phí & số buổi cho học sinh
+export async function proposeToStudent(id: string, feePerSession: number, totalSessions: number) {
   const token = getToken();
-  const res = await fetch(`${API_URL}/tutor/recommendations/${id}/accept`, {
+  const res = await fetch(`${API_URL}/tutor/recommendations/${id}/propose`, {
     method: 'POST',
-    headers: { 'Authorization': `Bearer ${token}` },
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    },
+    body: JSON.stringify({ feePerSession, totalSessions }),
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
-    throw new Error(err.message || 'Không thể chấp nhận đề xuất');
+    throw new Error(err.message || 'Không thể gửi đề xuất');
   }
   return res.json();
 }

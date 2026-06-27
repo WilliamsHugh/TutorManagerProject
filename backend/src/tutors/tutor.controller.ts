@@ -163,11 +163,20 @@ export class TutorController {
     return this.tutorsService.getTutorRecommendations(tutorId);
   }
 
-  // Chấp nhận đề xuất từ học sinh
-  @Post('recommendations/:id/accept')
-  async acceptRecommendation(@Param('id') id: string, @Request() req) {
+  // Gửi đề xuất học phí & số buổi cho học sinh
+  @Post('recommendations/:id/propose')
+  async proposeRecommendation(
+    @Param('id') id: string,
+    @Body() body: { feePerSession: number; totalSessions: number },
+    @Request() req,
+  ) {
     const tutorId = req.user.id || req.user.sub;
-    return this.tutorsService.acceptRecommendation(id, tutorId);
+    return this.tutorsService.proposeRecommendation(
+      id,
+      tutorId,
+      body.feePerSession,
+      body.totalSessions,
+    );
   }
 
   // Từ chối đề xuất từ học sinh

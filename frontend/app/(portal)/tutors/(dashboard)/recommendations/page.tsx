@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { Icon } from "@iconify/react";
 import {
   getMyRecommendations,
-  acceptRecommendation,
+  proposeToStudent,
   declineRecommendation,
 } from "@/lib/api";
 import Header from "@/components/tutor/Header";
@@ -28,6 +28,14 @@ export default function TutorRecommendationsPage() {
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<any>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [proposeModal, setProposeModal] = useState<{
+    requestId: string;
+    studentName: string;
+  } | null>(null);
+  const [proposeForm, setProposeForm] = useState({
+    feePerSession: 200000,
+    totalSessions: 15,
+  });
   const [toast, setToast] = useState<{
     message: string;
     type: "success" | "error" | "info";
@@ -58,15 +66,27 @@ export default function TutorRecommendationsPage() {
     }
   };
 
-  const handleAccept = async (id: string) => {
-    setActionLoading(id);
+  const openProposeModal = (id: string, name: string) => {
+    setProposeForm({ feePerSession: 200000, totalSessions: 15 });
+    setProposeModal({ requestId: id, studentName: name });
+  };
+
+  const handlePropose = async () => {
+    if (!proposeModal) return;
+    setActionLoading(proposeModal.requestId);
     try {
-      const result = await acceptRecommendation(id);
-      showToast(result.message || "Đã chấp nhận đề xuất thành công!", "success");
-      // Remove from list
-      setRecommendations((prev) => prev.filter((r) => r.id !== id));
+      const result = await proposeToStudent(
+        proposeModal.requestId,
+        proposeForm.feePerSession,
+        proposeForm.totalSessions,
+      );
+      showToast(result.message || "Đã gửi đề xuất thành công!", "success");
+      setRecommendations((prev) =>
+        prev.filter((r) => r.id !== proposeModal.requestId)
+      );
+      setProposeModal(null);
     } catch (err: any) {
-      showToast(err.message || "Không thể chấp nhận đề xuất", "error");
+      showToast(err.message || "Không thể gửi đề xuất", "error");
     } finally {
       setActionLoading(null);
     }
@@ -294,7 +314,7 @@ export default function TutorRecommendationsPage() {
                   Từ chối
                 </button>
                 <button
-                  onClick={() => handleAccept(rec.id)}
+                  onClick={() => openProposeModal(rec.id, rec.studentName)}
                   disabled={actionLoading === rec.id}
                   className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
@@ -305,14 +325,131 @@ export default function TutorRecommendationsPage() {
                       fontSize={16}
                     />
                   ) : (
-                    <Icon icon="lucide:check" fontSize={16} />
+                    <Icon icon="lucide:send" fontSize={16} />
                   )}
-                  Chấp nhận dạy
+                  Gửi đề xuất dạy
                 </button>
               </div>
             </div>
           ))}
       </main>
+
+      {/* Propose Modal */}
+      {proposeModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 px-4"
+          onClick={() => setProposeModal(null)}
+        >
+          <div
+            className="w-full max-w-md rounded-xl bg-white p-6 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mb-5 flex items-center justify-between">
+              <h3 className="text-lg font-bold text-slate-900">
+                Gửi đề xuất dạy
+              </h3>
+              <button
+                onClick={() => setProposeModal(null)}
+                className="text-slate-400 hover:text-slate-600"
+              >
+                <Icon icon="lucide:x" fontSize={20} />
+              </button>
+            </div>
+
+            <p className="mb-5 text-sm text-slate-600">
+              Gửi đề xuất học phí và số buổi cho{" "}
+              <strong>{proposeModal.studentName}</strong>. Học viên sẽ xem xét
+              và xác nhận trước khi lớp được tạo.
+            </p>
+
+            <div className="space-y-4">
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-slate-700">
+                  Học phí mỗi buổi (VNĐ)
+                </label>
+                <input
+                  type="number"
+                  min={50000}
+                  step={10000}
+                  value={proposeForm.feePerSession}
+                  onChange={(e) =>
+                    setProposeForm((prev) => ({
+                      ...prev,
+                      feePerSession: Number(e.target.value),
+                    }))
+                  }
+                  className="w-full rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                />
+                <p className="mt-1 text-xs text-slate-400">
+                  Tối thiểu 50.000đ/buổi
+                </p>
+              </div>
+
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-slate-700">
+                  Số buổi học
+                </label>
+                <input
+                  type="number"
+                  min={1}
+                  max={100}
+                  value={proposeForm.totalSessions}
+                  onChange={(e) =>
+                    setProposeForm((prev) => ({
+                      ...prev,
+                      totalSessions: Number(e.target.value),
+                    }))
+                  }
+                  className="w-full rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                />
+              </div>
+
+              <div className="rounded-lg bg-blue-50 p-4">
+                <p className="text-sm font-medium text-blue-800">
+                  Tổng chi phí dự kiến
+                </p>
+                <p className="mt-1 text-2xl font-bold text-blue-600">
+                  {(proposeForm.feePerSession * proposeForm.totalSessions).toLocaleString(
+                    "vi-VN"
+                  )}
+                  đ
+                </p>
+                <p className="text-xs text-blue-500">
+                  {proposeForm.feePerSession.toLocaleString("vi-VN")}đ ×{" "}
+                  {proposeForm.totalSessions} buổi
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-6 flex gap-3">
+              <button
+                onClick={() => setProposeModal(null)}
+                className="flex-1 rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors"
+              >
+                Hủy
+              </button>
+              <button
+                onClick={handlePropose}
+                disabled={actionLoading === proposeModal.requestId}
+                className="flex-1 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {actionLoading === proposeModal.requestId ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <Icon
+                      icon="lucide:loader-2"
+                      className="animate-spin"
+                      fontSize={16}
+                    />
+                    Đang gửi...
+                  </span>
+                ) : (
+                  "Gửi đề xuất"
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Toast Notification */}
       {toast && (

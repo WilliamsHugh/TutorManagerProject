@@ -147,6 +147,30 @@ export async function getStudentProfile() {
   return res.json();
 }
 
+// Lấy danh sách đề xuất từ gia sư đang chờ học viên xác nhận
+export async function getStudentProposals() {
+  const token = getToken();
+  const res = await fetch(`${API_URL}/classes/student/proposals`, {
+    headers: { 'Authorization': `Bearer ${token}` },
+  });
+  if (!res.ok) throw new Error('Không thể tải danh sách đề xuất');
+  return res.json();
+}
+
+// Học viên xác nhận đề xuất của gia sư → tạo lớp
+export async function confirmProposal(requestId: string) {
+  const token = getToken();
+  const res = await fetch(`${API_URL}/classes/student/confirm-proposal/${requestId}`, {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${token}` },
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || 'Không thể xác nhận đề xuất');
+  }
+  return res.json();
+}
+
 // Gửi yêu cầu tìm gia sư từ học viên
 export async function createClassRequest(data: {
   studentId: string;

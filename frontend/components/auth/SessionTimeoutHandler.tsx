@@ -15,6 +15,7 @@ export default function SessionTimeoutHandler() {
   const countdownRef = useRef<NodeJS.Timeout | null>(null);
   const [showWarning, setShowWarning] = useState(false);
   const [warningSeconds, setWarningSeconds] = useState(60);
+  const [isLockedOut, setIsLockedOut] = useState(false);
   // Dùng ref để tránh re-register event listeners khi showWarning thay đổi
   const showWarningRef = useRef(false);
 
@@ -100,6 +101,7 @@ export default function SessionTimeoutHandler() {
         try {
           const body = await clone.json();
           if (body && typeof body.message === 'string' && body.message.includes('bị khóa')) {
+            setIsLockedOut(true);
             clearAuth();
             document.cookie = "access_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
             document.cookie = "refresh_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/api/auth/refresh;";
@@ -262,6 +264,14 @@ export default function SessionTimeoutHandler() {
                 Đăng xuất
               </button>
             </div>
+          </div>
+        </div>
+      )}
+      {isLockedOut && (
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-slate-950/80 backdrop-blur-md">
+          <div className="text-center text-white">
+            <div className="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-4 border-slate-700 border-t-blue-500" />
+            <p className="text-sm font-semibold tracking-wide">Đang đồng bộ trạng thái tài khoản...</p>
           </div>
         </div>
       )}

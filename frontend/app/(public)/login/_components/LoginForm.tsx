@@ -2,7 +2,7 @@
 
 import { Eye, EyeOff, ArrowRight, Loader2 } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { saveAuth } from "@/lib/auth";
 
@@ -11,11 +11,24 @@ export default function LoginForm() {
     const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
+    const [lockedMsg, setLockedMsg] = useState<string | null>(null);
     const [formData, setFormData] = useState({
         email: "",
         password: "",
         remember: false,
     });
+
+    useEffect(() => {
+        if (typeof window !== "undefined") {
+            const urlParams = new URLSearchParams(window.location.search);
+            const isLocked = urlParams.get("locked") === "true";
+            const msg = sessionStorage.getItem("account_locked_msg");
+            if (isLocked && msg) {
+                setLockedMsg(msg);
+                sessionStorage.removeItem("account_locked_msg");
+            }
+        }
+    }, []);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value, type, checked } = e.target;
@@ -329,6 +342,42 @@ export default function LoginForm() {
                     </p>
                 </form>
             </div>
+
+            {lockedMsg && (
+                <div className="fixed inset-0 bg-slate-950/65 z-[1000] flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-white rounded-2xl w-full max-w-md p-6 shadow-2xl border border-slate-100 flex flex-col items-center text-center animate-in zoom-in-95 duration-200">
+                        <div className="w-16 h-16 rounded-full bg-rose-50 flex items-center justify-center mb-4 border border-rose-100 text-rose-500">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-8 h-8">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+                            </svg>
+                        </div>
+                        <h2 className="text-xl font-bold text-slate-950 mb-2">Tài khoản bị khóa</h2>
+                        <p className="text-sm text-slate-600 mb-6 leading-relaxed">
+                            {lockedMsg}
+                        </p>
+                        <div className="flex flex-col sm:flex-row gap-3 w-full">
+                            <button
+                                onClick={() => {
+                                    setLockedMsg(null);
+                                    router.push("/");
+                                }}
+                                className="flex-1 h-11 inline-flex items-center justify-center rounded-xl bg-[#0b5fff] hover:opacity-90 text-white font-semibold text-sm transition-all shadow-md shadow-blue-100"
+                            >
+                                Về trang chủ
+                            </button>
+                            <button
+                                onClick={() => {
+                                    setLockedMsg(null);
+                                    router.replace("/login");
+                                }}
+                                className="flex-1 h-11 inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-sm transition-all"
+                            >
+                                Đóng
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </main>
     );
 }

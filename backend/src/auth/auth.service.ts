@@ -258,7 +258,12 @@ export class AuthService {
     // Kiểm tra user còn hoạt động
     const user = refreshToken.user;
     if (!user.isActive) {
-      throw new UnauthorizedException('Tài khoản của bạn đã bị vô hiệu hóa');
+      const userDetail = await this.usersService.findById(user.id);
+      const staffName = userDetail?.lockedBy?.fullName || "Quản trị viên";
+      const staffId = userDetail?.lockedBy?.id ? userDetail.lockedBy.id.slice(0, 8) : "ADMIN";
+      throw new UnauthorizedException(
+        `Tài khoản của bạn đã bị khóa bởi nhân viên ${staffName} (ID: ${staffId}).`
+      );
     }
 
     // Thu hồi refresh token cũ (rotation)

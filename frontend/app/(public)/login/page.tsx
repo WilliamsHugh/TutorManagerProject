@@ -1,16 +1,18 @@
-"use client";
+import { Suspense } from "react";
+import LoginPageClient from "./LoginPageClient";
 
-import LoginSidebar from "./_components/LoginSidebar";
-import LoginForm from "./_components/LoginForm";
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
+  if (searchParams) {
+    await searchParams;
+  }
 
-export default function LoginPage() {
-    return (
-        <div className="min-h-screen flex" style={{ backgroundColor: "var(--background)" }}>
-            {/* Left Sidebar */}
-            <LoginSidebar />
-
-            {/* Right Form Area */}
-            <LoginForm />
-        </div>
-    );
+  return (
+    <Suspense fallback={null}>
+      <LoginPageClient />
+    </Suspense>
+  );
 }

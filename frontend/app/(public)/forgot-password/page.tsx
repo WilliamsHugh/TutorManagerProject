@@ -1,16 +1,18 @@
-"use client";
+import { Suspense } from "react";
+import ForgotPasswordClient from "./ForgotPasswordClient";
 
-import LoginSidebar from "../login/_components/LoginSidebar";
-import ForgotPasswordForm from "./_components/ForgotPasswordForm";
+export default async function ForgotPasswordPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
+  if (searchParams) {
+    await searchParams;
+  }
 
-export default function ForgotPasswordPage() {
-    return (
-        <div className="min-h-screen flex" style={{ backgroundColor: "var(--background)" }}>
-            {/* Left Sidebar */}
-            <LoginSidebar />
-
-            {/* Right Form Area */}
-            <ForgotPasswordForm />
-        </div>
-    );
+  return (
+    <Suspense fallback={null}>
+      <ForgotPasswordClient />
+    </Suspense>
+  );
 }

@@ -1,16 +1,18 @@
-"use client";
+import { Suspense } from "react";
+import HubLoginClient from "./HubLoginClient";
 
-import HubLoginSidebar from "./_components/HubLoginSidebar";
-import HubLoginForm from "./_components/HubLoginForm";
+export default async function HubLoginPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
+  if (searchParams) {
+    await searchParams;
+  }
 
-export default function HubLoginPage() {
-    return (
-        <div className="min-h-screen flex" style={{ backgroundColor: "var(--background)" }}>
-            {/* Left Sidebar */}
-            <HubLoginSidebar />
-
-            {/* Right Form Area */}
-            <HubLoginForm />
-        </div>
-    );
+  return (
+    <Suspense fallback={null}>
+      <HubLoginClient />
+    </Suspense>
+  );
 }

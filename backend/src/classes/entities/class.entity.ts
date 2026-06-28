@@ -93,4 +93,8 @@ export class Class {
     nullable: true,
   })
   cancellationRequestedAt!: Date;
+
+  @ManyToOne(() => User, { nullable: true })
+  @JoinColumn({ name: 'suspended_by' })
+  suspendedBy!: User;
 }

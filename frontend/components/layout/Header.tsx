@@ -3,7 +3,7 @@
 import { GraduationCap, Menu, X, Bell, ChevronDown, LogOut, Shield, LayoutDashboard } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
-import { useState, useEffect, useLayoutEffect } from "react";
+import { useState, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { clearAuth, getAuthUser, isLoggedIn as checkLoginStatus } from "@/lib/auth";
 
@@ -25,65 +25,42 @@ const defaultNavLinks: NavLink[] = [
   { label: "Giới thiệu", href: "/about" },
 ];
 
-export default function Header({ 
-  customLinks, 
+export default function Header({
+  customLinks,
   showNotifications = true,
-  maxWidth = "1328px" 
+  maxWidth = "1328px"
 }: HeaderProps) {
   const [isOpen, setIsOpen] = useState(false);
-  // Khởi tạo false/null — khớp với SSR, không hydration error
-  // useLayoutEffect chạy đồng bộ TRƯỚC khi browser paint
-  // => DOM chỉ được paint 1 lần với state đúng, không nhấp nháy
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [showUserMenu, setShowUserMenu] = useState(false);
-  
+
   const pathname = usePathname();
   const router = useRouter();
   const navLinks = customLinks || defaultNavLinks;
 
-  // useLayoutEffect chạy đồng bộ trước paint → cập nhật auth state đúng
-  // ngay từ lần render đầu tiên, không gây hydration error
-  useLayoutEffect(() => {
+  useEffect(() => {
     setIsLoggedIn(checkLoginStatus());
     setUser(getAuthUser());
   }, []);
 
-  // useEffect cho event listeners (pageshow/popstate) — không cần đồng bộ
-  useEffect(() => {
-    const checkAuth = () => {
-      setIsLoggedIn(checkLoginStatus());
-      setUser(getAuthUser());
-    };
-
-    window.addEventListener('pageshow', checkAuth);
-    window.addEventListener('popstate', checkAuth);
-
-    return () => {
-      window.removeEventListener('pageshow', checkAuth);
-      window.removeEventListener('popstate', checkAuth);
-    };
-  }, [pathname]);
-
   const handleLogout = async () => {
+    try {
+      await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:3001/api"}/auth/logout`, {
+        method: "POST",
+        credentials: "include",
+      });
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
     clearAuth();
     setIsLoggedIn(false);
     setUser(null);
-
-    const targetUrl = (pathname.startsWith("/hub") || pathname.startsWith("/staff")) ? "/hub/login" : "/";
-
-    // PHẢI await để trình duyệt nhận Set-Cookie xóa httpOnly cookie TRƯỚC KHI chuyển trang
-    // Nếu không await, cookie httpOnly vẫn còn → middleware redirect về dashboard thay vì /login
-    try {
-      await Promise.race([
-        fetch("/api/logout", { method: "POST" }),
-        new Promise((_, reject) => setTimeout(() => reject(new Error("timeout")), 2000)),
-      ]);
-    } catch (err) {
-      console.error("Logout error:", err);
+    if (pathname.startsWith("/hub") || pathname.startsWith("/staff")) {
+      router.push("/hub/login");
+    } else {
+      router.push("/login");
     }
-
-    window.location.href = targetUrl;
   };
 
   return (
@@ -94,7 +71,7 @@ export default function Header({
         backgroundColor: "rgba(255, 255, 255, 0.8)",
       }}
     >
-      <div 
+      <div
         className="w-full mx-auto px-4 sm:px-6 flex items-center justify-between gap-4"
         style={{ maxWidth }}
       >
@@ -175,7 +152,7 @@ export default function Header({
                     <div className="fixed inset-0 z-40" onClick={() => setShowUserMenu(false)} />
                     <div className="absolute right-0 mt-3 w-56 rounded-2xl border shadow-2xl py-2 z-50 overflow-hidden animate-in fade-in slide-in-from-top-2"
                       style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}>
-                      
+
                       <div className="px-4 py-3 border-b mb-1" style={{ borderColor: "var(--border)" }}>
                         <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Tài khoản</p>
                         <p className="text-sm font-bold truncate" style={{ color: "var(--foreground)" }}>{user.fullName}</p>
@@ -183,16 +160,16 @@ export default function Header({
                       </div>
 
                       <Link href={
-                        user.role?.name === 'student' 
-                          ? '/student' 
-                          : user.role?.name === 'tutor' 
-                            ? '/tutors/dashboard' 
-                            : user.role?.name === 'admin' 
-                              ? '/hub/dashboard' 
-                              : user.role?.name === 'staff' 
-                                ? '/staff/request-management' 
+                        user.role?.name === 'student'
+                          ? '/student'
+                          : user.role?.name === 'tutor'
+                            ? '/tutors/dashboard'
+                            : user.role?.name === 'admin'
+                              ? '/hub/dashboard'
+                              : user.role?.name === 'staff'
+                                ? '/staff/request-management'
                                 : '/'
-                      } 
+                      }
                         onClick={() => setShowUserMenu(false)}
                         className="flex items-center gap-3 px-4 py-2.5 text-sm no-underline hover:bg-indigo-50 hover:text-indigo-600 transition-colors"
                         style={{ color: "var(--foreground)" }}>
@@ -200,19 +177,19 @@ export default function Header({
                         Trang Dashboard
                       </Link>
                       <Link href={
-                        user.role?.name === 'student' 
-                          ? '/student/profile' 
+                        user.role?.name === 'student'
+                          ? '/student/profile'
                           : '/tutors/profile'
-                      } 
+                      }
                         onClick={() => setShowUserMenu(false)}
                         className="flex items-center gap-3 px-4 py-2.5 text-sm no-underline hover:bg-indigo-50 hover:text-indigo-600 transition-colors"
                         style={{ color: "var(--foreground)" }}>
                         <Shield size={18} className="opacity-70" />
                         Cài đặt hồ sơ
                       </Link>
-                      
+
                       <div className="h-px w-full my-1" style={{ backgroundColor: "var(--border)" }} />
-                      
+
                       <button
                         onClick={handleLogout}
                         className="w-full flex items-center gap-3 px-4 py-2.5 text-sm border-none bg-transparent cursor-pointer text-red-600 hover:bg-red-50 transition-colors font-medium"
@@ -287,7 +264,7 @@ export default function Header({
                 </Link>
               ))}
             </nav>
-            
+
             {!isLoggedIn && (
               <div className="flex flex-col gap-3 border-t pt-6" style={{ borderColor: "var(--border)" }}>
                 <Link

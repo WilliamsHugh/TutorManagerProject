@@ -19,6 +19,10 @@ export async function acceptClassRequest(id: string) {
     method: 'POST',
     headers: { 'Authorization': `Bearer ${token}` },
   });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || 'Không thể nhận lớp. Vui lòng thử lại.');
+  }
   return res.json();
 }
 

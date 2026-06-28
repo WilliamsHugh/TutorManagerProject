@@ -10,6 +10,7 @@ import {
   Request,
   Query,
   Param,
+  ForbiddenException,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard'; // Bảo mật bằng JWT
 import { TutorsService } from './tutors.service';
@@ -113,6 +114,13 @@ export class TutorController {
     return this.tutorsService.getNotifications(tutorId);
   }
 
+  // Đánh dấu tất cả thông báo đã đọc
+  @Patch('notifications/read-all')
+  async markAllNotificationsRead(@Request() req) {
+    const tutorId = req.user.id || req.user.sub;
+    return this.tutorsService.markAllNotificationsRead(tutorId);
+  }
+
   // Cập nhật hồ sơ chuyên môn
   @Patch('profile')
   async updateProfile(@Request() req, @Body() updateData: any) {
@@ -159,6 +167,9 @@ export class TutorController {
   // API Endpoint sinh dữ liệu mẫu
   @Post('seed')
   async seedData() {
+    if (process.env.NODE_ENV === 'production') {
+      throw new ForbiddenException('Cannot seed in production');
+    }
     return this.tutorsService.seedMockData();
   }
 }

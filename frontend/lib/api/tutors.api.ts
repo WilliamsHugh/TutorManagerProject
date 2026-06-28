@@ -2,14 +2,6 @@ import { getToken } from '../auth';
 
 const API_URL = '/api';
 
-// Hàm lấy thông tin chung cho Dashboard
-export async function getTutorStats() {
-  const token = getToken();
-  const res = await fetch(`${API_URL}/tutor/dashboard`, {
-    headers: { 'Authorization': `Bearer ${token}` },
-  });
-  return res.json();
-}
 
 // Hàm lấy dữ liệu Dashboard Gia sư
 export async function getTutorDashboard(date?: string) {
@@ -116,6 +108,17 @@ export async function getTutorNotifications() {
     headers: { 'Authorization': `Bearer ${token}` },
   });
   if (!res.ok) throw new Error('Không thể tải thông báo');
+  return res.json();
+}
+
+// Hàm đánh dấu tất cả thông báo đã đọc
+export async function markAllNotificationsRead() {
+  const token = getToken();
+  const res = await fetch(`${API_URL}/tutor/notifications/read-all`, {
+    method: 'PATCH',
+    headers: { 'Authorization': `Bearer ${token}` },
+  });
+  if (!res.ok) throw new Error('Không thể cập nhật thông báo');
   return res.json();
 }
 

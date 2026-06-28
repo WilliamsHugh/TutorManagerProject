@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { Icon } from '@iconify/react';
 import { getAuthUser, clearAuth } from '@/lib/auth';
 import { useRouter } from 'next/navigation';
-import { getTutorNotifications } from '@/lib/api';
+import { getTutorNotifications, markAllNotificationsRead } from '@/lib/api';
 
 interface HeaderProps {
   title: string;
@@ -45,18 +45,22 @@ export default function Header({ title, showSearch = false, userProfile }: Heade
 
   const handleLogout = async () => {
     try {
-      // Gọi API Logout ở Backend để xóa Cookie HttpOnly bảo mật
-      await fetch('/api/auth/logout', {
-        method: 'POST',
-        credentials: 'include',
-      });
+      // Gọi API Logout của Next.js để xóa Cookie HttpOnly một cách an toàn
+      await fetch('/api/logout', { method: 'POST' });
     } catch (error) {
-      console.error("Lỗi đăng xuất ở backend:", error);
+      console.error("Lỗi đăng xuất:", error);
     }
     clearAuth(); // Xóa localStorage
-    // Xóa cookie ở Client-side phòng hờ
-    document.cookie = "access_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
     router.push('/login');
+  };
+
+  const handleMarkAllRead = async () => {
+    try {
+      await markAllNotificationsRead();
+      setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+    } catch (error) {
+      console.error("Lỗi đánh dấu đã đọc:", error);
+    }
   };
 
   return (
@@ -95,7 +99,7 @@ export default function Header({ title, showSearch = false, userProfile }: Heade
             >
               <div style={{ padding: '16px', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ fontWeight: 600, fontSize: '14px' }}>Thông báo</span>
-                <button style={{ fontSize: '12px', color: '#2563eb', border: 'none', background: 'none', cursor: 'pointer' }}>Đánh dấu đã đọc</button>
+                <button onClick={handleMarkAllRead} style={{ fontSize: '12px', color: '#2563eb', border: 'none', background: 'none', cursor: 'pointer' }}>Đánh dấu đã đọc</button>
               </div>
               <div style={{ maxHeight: '360px', overflowY: 'auto' }}>
                 {notifications.length > 0 ? notifications.map((noti: any) => (

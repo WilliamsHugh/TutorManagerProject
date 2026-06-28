@@ -14,6 +14,10 @@ export default function MyStudentsPage() {
   // Search & Filter State
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL'); // 'ALL', 'Đang học', 'Tạm dừng'
+
+  // Pagination State
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
   
   const router = useRouter();
 
@@ -57,6 +61,19 @@ export default function MyStudentsPage() {
       return matchesSearch && matchesStatus;
     });
   }, [students, searchQuery, statusFilter]);
+
+  // Reset pagination when filter changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, statusFilter]);
+
+  // Apply pagination
+  const paginatedStudents = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    return filteredStudents.slice(start, start + itemsPerPage);
+  }, [filteredStudents, currentPage, itemsPerPage]);
+
+  const totalPages = Math.ceil(filteredStudents.length / itemsPerPage);
 
   return (
     <>
@@ -179,7 +196,7 @@ export default function MyStudentsPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {filteredStudents.map((student) => (
+                  {paginatedStudents.map((student) => (
                     <tr 
                       key={student.id} 
                       className="hover:bg-blue-50/10 transition-colors duration-150 group"
@@ -247,6 +264,44 @@ export default function MyStudentsPage() {
                   ))}
                 </tbody>
               </table>
+              
+              {/* Pagination UI */}
+              {totalPages > 1 && (
+                <div className="p-4 border-t border-slate-100 flex items-center justify-between">
+                  <span className="text-sm text-slate-500">
+                    Hiển thị <span className="font-semibold text-slate-800">{(currentPage - 1) * itemsPerPage + 1}</span> - <span className="font-semibold text-slate-800">{Math.min(currentPage * itemsPerPage, filteredStudents.length)}</span> trong số <span className="font-semibold text-slate-800">{filteredStudents.length}</span> học viên
+                  </span>
+                  <div className="flex gap-1">
+                    <button 
+                      onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                      disabled={currentPage === 1}
+                      className="p-2 rounded-lg border border-slate-200 text-slate-600 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50 cursor-pointer"
+                    >
+                      <Icon icon="lucide:chevron-left" />
+                    </button>
+                    {Array.from({ length: totalPages }).map((_, idx) => (
+                      <button 
+                        key={idx}
+                        onClick={() => setCurrentPage(idx + 1)}
+                        className={`w-9 h-9 rounded-lg border text-sm font-semibold cursor-pointer ${
+                          currentPage === idx + 1 
+                            ? 'bg-blue-600 border-blue-600 text-white' 
+                            : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                        }`}
+                      >
+                        {idx + 1}
+                      </button>
+                    ))}
+                    <button 
+                      onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                      disabled={currentPage === totalPages}
+                      className="p-2 rounded-lg border border-slate-200 text-slate-600 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50 cursor-pointer"
+                    >
+                      <Icon icon="lucide:chevron-right" />
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           ) : (
             <div className="py-24 px-6 text-center flex flex-col items-center justify-center gap-4 max-w-md mx-auto">

@@ -28,6 +28,8 @@ import {
   deleteLearningReport
 } from '@/lib/api';
 import { useParams } from 'next/navigation';
+import { useToast } from '@/components/common/Toast';
+import ConfirmModal from '@/components/common/ConfirmModal';
 
 export default function StudentDetailPage() {
   const [student, setStudent] = useState<any>(null);
@@ -51,17 +53,10 @@ export default function StudentDetailPage() {
     isOpen: boolean;
     message: string;
     onConfirm: () => void;
-  } | null>(null);
+  }>({ isOpen: false, message: '', onConfirm: () => {} });
 
   // State cho custom toast notification
-  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
-
-  const showToast = (message: string, type: 'success' | 'error' | 'info' = 'success') => {
-    setToast({ message, type });
-    setTimeout(() => {
-      setToast(null);
-    }, 4000);
-  };
+  const { showToast, ToastComponent } = useToast();
 
   const params = useParams();
   const studentId = params.id;
@@ -515,99 +510,15 @@ export default function StudentDetailPage() {
       )}
 
       {/* Custom Confirm Modal */}
-      {confirmModal && confirmModal.isOpen && (
-        <div className="fixed inset-0 bg-black/50 z-[110] flex items-center justify-center p-4" onClick={() => setConfirmModal(null)}>
-          <div 
-            className="bg-white rounded-2xl w-full max-w-md overflow-hidden flex flex-col shadow-2xl animate-in zoom-in-95 duration-200"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="p-6 flex gap-4 items-start">
-              <div className="w-10 h-10 rounded-full bg-red-50 text-red-500 flex items-center justify-center shrink-0 border border-red-100">
-                <Icon icon="lucide:alert-triangle" fontSize={24} />
-              </div>
-              <div className="flex-grow">
-                <h3 className="text-base font-bold text-slate-900" style={{ margin: 0 }}>Xác nhận</h3>
-                <p className="text-sm text-slate-500 mt-1" style={{ margin: 0 }}>{confirmModal.message}</p>
-              </div>
-            </div>
-            <div className="p-4 bg-slate-50 border-t flex gap-3 justify-end">
-              <button 
-                onClick={() => setConfirmModal(null)}
-                className="border border-slate-200 hover:bg-slate-100 text-slate-700 px-4 py-2 rounded-lg font-medium transition-colors bg-white cursor-pointer text-xs"
-              >
-                Hủy bỏ
-              </button>
-              <button 
-                onClick={() => {
-                  confirmModal.onConfirm();
-                  setConfirmModal(null);
-                }}
-                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-semibold transition-colors cursor-pointer border-none text-xs"
-              >
-                Xác nhận
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        message={confirmModal.message}
+        onConfirm={confirmModal.onConfirm}
+        onCancel={() => setConfirmModal({ ...confirmModal, isOpen: false })}
+      />
 
       {/* Toast Notification */}
-      {toast && (
-        <div 
-          style={{
-            position: 'fixed',
-            bottom: '24px',
-            right: '24px',
-            zIndex: 9999,
-            display: 'flex',
-            alignItems: 'center',
-            gap: '12px',
-            padding: '14px 20px',
-            borderRadius: '12px',
-            boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
-            border: toast.type === 'success' ? '1px solid #bbf7d0' : toast.type === 'error' ? '1px solid #fecaca' : '1px solid #bfdbfe',
-            background: toast.type === 'success' ? '#f0fdf4' : toast.type === 'error' ? '#fef2f2' : '#eff6ff',
-            color: toast.type === 'success' ? '#166534' : toast.type === 'error' ? '#991b1b' : '#1e40af',
-            animation: 'slideIn 0.3s ease-out forwards',
-            maxWidth: '350px',
-          }}
-        >
-          <Icon 
-            icon={toast.type === 'success' ? 'lucide:check-circle' : toast.type === 'error' ? 'lucide:alert-circle' : 'lucide:info'} 
-            fontSize={20} 
-            color={toast.type === 'success' ? '#15803d' : toast.type === 'error' ? '#dc2626' : '#2563eb'}
-          />
-          <div style={{ fontSize: '13.5px', fontWeight: 550, lineHeight: 1.4 }}>{toast.message}</div>
-          <button 
-            onClick={() => setToast(null)}
-            style={{ 
-              background: 'transparent', 
-              border: 'none', 
-              cursor: 'pointer', 
-              padding: 0, 
-              marginLeft: 'auto',
-              color: toast.type === 'success' ? '#166534' : toast.type === 'error' ? '#991b1b' : '#1e40af',
-              opacity: 0.6,
-            }}
-          >
-            <Icon icon="lucide:x" fontSize={16} />
-          </button>
-        </div>
-      )}
-
-      <style>{`
-        @keyframes slideIn {
-          from {
-            transform: translateY(100px) scale(0.9);
-            opacity: 0;
-          }
-          to {
-            transform: translateY(0) scale(1);
-            opacity: 1;
-          }
-        }
-      `}</style>
+      {ToastComponent}
     </>
   );
 }

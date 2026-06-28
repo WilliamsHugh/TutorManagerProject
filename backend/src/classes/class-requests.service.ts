@@ -132,9 +132,9 @@ export class ClassRequestsService {
     }
 
     if (mode) {
-      if (mode.toLowerCase().includes('online')) {
+      if (mode?.toLowerCase()?.includes('online')) {
         qb.andWhere('request.preferredArea ILIKE :mode', { mode: '%online%' });
-      } else if (mode.toLowerCase().includes('offline')) {
+      } else if (mode?.toLowerCase()?.includes('offline')) {
         qb.andWhere('request.preferredArea NOT ILIKE :mode', { mode: '%online%' });
       }
     }

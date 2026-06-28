@@ -170,7 +170,7 @@ export default function AdminDashboardPage() {
   // Actions
   const handleLogout = async () => {
     try {
-      await fetch(`/api/auth/logout`, { method: "POST", credentials: "include" });
+      await fetch(`/api/logout`, { method: "POST" });
     } catch (error) {
       console.error("Logout error:", error);
     }

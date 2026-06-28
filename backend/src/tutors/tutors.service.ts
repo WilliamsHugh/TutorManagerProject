@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, ForbiddenException, OnModuleInit, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Between, In } from 'typeorm';
+import { Repository, Between, In, LessThanOrEqual } from 'typeorm';
 
 // Entities
 import { Class, ClassStatus } from '../classes/entities/class.entity';
@@ -47,166 +47,47 @@ export class TutorsService implements OnModuleInit {
   ) {}
 
   async onModuleInit() {
-    // Tự động gộp và dọn dẹp các môn học cũ (Toán -> Toán học, Lý -> Vật lí, Hóa -> Hóa học)
-    const mergeSubject = async (oldName: string, newName: string) => {
-      // Tìm tất cả các môn học cũ (bao gồm cả trường hợp có nhiều môn trùng tên do lỗi dữ liệu)
-      const oldSubs = await this.subjectRepository.find({ where: { name: oldName } });
-      if (oldSubs.length === 0) return;
-
-      const newSub = await this.subjectRepository.findOne({ where: { name: newName } });
-      if (newSub) {
-        for (const oldSub of oldSubs) {
-          if (oldSub.id === newSub.id) continue;
-
-          // 1. Gộp liên kết trong TutorSubject sang môn mới
-          const tsList = await this.tutorSubjectRepository.find({ where: { subject: { id: oldSub.id } } });
-          for (const ts of tsList) {
-            ts.subject = newSub;
-            try {
-              await this.tutorSubjectRepository.save(ts);
-            } catch (err) {
-              // Nếu đã có liên kết môn này rồi (tránh trùng lặp do unique constraint), xóa liên kết cũ dư thừa
-              await this.tutorSubjectRepository.delete(ts.id);
-            }
-          }
-          
-          // 2. Gộp liên kết trong Class sang môn mới
-          const classList = await this.classRepository.find({ where: { subject: { id: oldSub.id } } });
-          for (const cls of classList) {
-            cls.subject = newSub;
-            await this.classRepository.save(cls);
-          }
-
-          // 3. Gộp liên kết trong ClassRequest sang môn mới
-          const reqList = await this.classRequestRepository.find({ where: { subject: { id: oldSub.id } } });
-          for (const req of reqList) {
-            req.subject = newSub;
-            await this.classRequestRepository.save(req);
-          }
-
-          // 4. Xóa môn học cũ
-          try {
-            await this.subjectRepository.delete(oldSub.id);
-            console.log(`Merged duplicate subject '${oldName}' into '${newName}' and deleted the old one.`);
-          } catch (deleteError) {
-            console.error(`Failed to delete old subject '${oldName}':`, deleteError);
-          }
-        }
-      } else {
-        // Nếu chưa có môn mới, lấy môn cũ đầu tiên đổi tên, các môn cũ trùng tên khác (nếu có) sẽ gộp vào môn đầu tiên này
-        const firstOldSub = oldSubs[0];
-        firstOldSub.name = newName;
-        await this.subjectRepository.save(firstOldSub);
-        console.log(`Renamed subject '${oldName}' to '${newName}'.`);
-
-        if (oldSubs.length > 1) {
-          for (let i = 1; i < oldSubs.length; i++) {
-            const oldSub = oldSubs[i];
-            
-            const tsList = await this.tutorSubjectRepository.find({ where: { subject: { id: oldSub.id } } });
-            for (const ts of tsList) {
-              ts.subject = firstOldSub;
-              try {
-                await this.tutorSubjectRepository.save(ts);
-              } catch (err) {
-                await this.tutorSubjectRepository.delete(ts.id);
-              }
-            }
-
-            const classList = await this.classRepository.find({ where: { subject: { id: oldSub.id } } });
-            for (const cls of classList) {
-              cls.subject = firstOldSub;
-              await this.classRepository.save(cls);
-            }
-
-            const reqList = await this.classRequestRepository.find({ where: { subject: { id: oldSub.id } } });
-            for (const req of reqList) {
-              req.subject = firstOldSub;
-              await this.classRequestRepository.save(req);
-            }
-
-            await this.subjectRepository.delete(oldSub.id);
-          }
-        }
-      }
-    };
-
-    await mergeSubject('Toán', 'Toán học');
-    await mergeSubject('Toán Học', 'Toán học');
-    await mergeSubject('Lý', 'Vật lí');
-    await mergeSubject('Vật Lý', 'Vật lí');
-    await mergeSubject('Vật lý', 'Vật lí');
-    await mergeSubject('Hóa', 'Hóa học');
-    await mergeSubject('Hóa Học', 'Hóa học');
-
-    // Tự động seed tài khoản student@test.com và tutor@test.com nếu chưa tồn tại
-    const studentExists = await this.userRepository.findOne({ where: { email: 'student@test.com' } });
-    if (!studentExists) {
-      console.log('--- Student user not found. Seeding mock tutor and student accounts into database... ---');
-      await this.seedMockData();
-    }
-
     // Tự động dọn dẹp các lịch học trùng lặp (trùng class, ngày và giờ) khi khởi chạy module
-    try {
-      const allSchedules = await this.scheduleRepository.find({
-        relations: ['class'],
-      });
-      const groups = new Map<string, Schedule[]>();
-      for (const s of allSchedules) {
-        const classId = s.class?.id || 'no-class';
-        const dateObj = s.sessionDate instanceof Date ? s.sessionDate : new Date(s.sessionDate);
-        const y = dateObj.getFullYear();
-        const m = String(dateObj.getMonth() + 1).padStart(2, '0');
-        const d = String(dateObj.getDate()).padStart(2, '0');
-        const dateStr = `${y}-${m}-${d}`;
-        const startTime = s.startTime || 'no-start';
-        const endTime = s.endTime || 'no-end';
-        const key = `${classId}_${dateStr}_${startTime}_${endTime}`;
+    // Nên đặt sau flag env trong production
+    if (process.env.NODE_ENV !== 'production') {
+      try {
+        const allSchedules = await this.scheduleRepository.find({
+          relations: ['class'],
+        });
+        const groups = new Map<string, Schedule[]>();
+        for (const s of allSchedules) {
+          const classId = s.class?.id || 'no-class';
+          const dateObj = s.sessionDate instanceof Date ? s.sessionDate : new Date(s.sessionDate);
+          const y = dateObj.getFullYear();
+          const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+          const d = String(dateObj.getDate()).padStart(2, '0');
+          const dateStr = `${y}-${m}-${d}`;
+          const startTime = s.startTime || 'no-start';
+          const endTime = s.endTime || 'no-end';
+          const key = `${classId}_${dateStr}_${startTime}_${endTime}`;
 
-        const list = groups.get(key) || [];
-        list.push(s);
-        groups.set(key, list);
-      }
+          const list = groups.get(key) || [];
+          list.push(s);
+          groups.set(key, list);
+        }
 
-      let deletedCount = 0;
-      for (const [key, list] of groups.entries()) {
-        if (list.length > 1) {
-          const toDelete = list.slice(1);
-          for (const d of toDelete) {
-            await this.scheduleRepository.delete(d.id);
-            deletedCount++;
+        let deletedCount = 0;
+        for (const [key, list] of groups.entries()) {
+          if (list.length > 1) {
+            const toDelete = list.slice(1);
+            for (const d of toDelete) {
+              await this.scheduleRepository.delete(d.id);
+              deletedCount++;
+            }
           }
         }
+        if (deletedCount > 0) {
+          console.log(`--- Cleaned up ${deletedCount} duplicate schedules from the database successfully! ---`);
+        }
+      } catch (err) {
+        console.error('Error during automatic duplicate schedule cleanup:', err);
       }
-      if (deletedCount > 0) {
-        console.log(`--- Cleaned up ${deletedCount} duplicate schedules from the database successfully! ---`);
-      }
-    } catch (err) {
-      console.error('Error during automatic duplicate schedule cleanup:', err);
     }
-
-    // Xóa lịch học của Nguyễn Thị Hà từ 17-19h theo yêu cầu
-    try {
-      const schedulesToDelete = await this.scheduleRepository.find({
-        where: {
-          class: { student: { user: { email: 'nguyen_thi_ha@tutoredu.com' } } },
-          startTime: '17:00:00',
-          endTime: '19:00:00'
-        },
-        relations: ['class', 'class.student', 'class.student.user']
-      });
-
-      if (schedulesToDelete.length > 0) {
-        const ids = schedulesToDelete.map(s => s.id);
-        await this.scheduleRepository.delete(ids);
-        console.log(`--- Deleted ${schedulesToDelete.length} schedules of Nguyễn Thị Hà from 17:00-19:00 ---`);
-      }
-    } catch (err) {
-      console.error('Error deleting Nguyễn Thị Hà schedules:', err);
-    }
-
-    // Seed completed schedules để test earnings
-    await this.seedEarningsTestData();
   }
 
   // Hàm dùng chung để lấy thông tin profile cho Header các trang
@@ -229,8 +110,8 @@ export class TutorsService implements OnModuleInit {
       id: tutorEntity.id,
       fullName: tutorEntity.user?.fullName || 'Gia sư',
       roleName: tutorEntity.user?.role?.name === 'tutor' ? 'Gia sư hệ thống' : tutorEntity.user?.role?.name || 'Người dùng',
-      avatar: tutorEntity.user?.avatarUrl || "https://randomuser.me/api/portraits/women/1.jpg", 
-      avatarUrl: tutorEntity.user?.avatarUrl || "https://randomuser.me/api/portraits/women/1.jpg", 
+      avatar: tutorEntity.user?.avatarUrl || null, 
+      avatarUrl: tutorEntity.user?.avatarUrl || null, 
       email: tutorEntity.user?.email,
       phone: tutorEntity.user?.phone,
       address: tutorEntity.user?.address,
@@ -295,7 +176,6 @@ export class TutorsService implements OnModuleInit {
     const stats = [
       { label: 'Lớp đang phụ trách', value: activeClasses.toString(), icon: 'lucide:book-open', color: 'blue' },
       { label: 'Giờ dạy tuần này', value: `${totalHours}h`, icon: 'lucide:clock', color: 'green' },
-      { label: 'Đánh giá trung bình', value: '5.0', sub: '/5.0', icon: 'lucide:star', color: 'orange' },
       { 
         label: 'Tổng thu nhập', 
         value: `${totalEarnings.toLocaleString('vi-VN')}đ`, 
@@ -304,6 +184,24 @@ export class TutorsService implements OnModuleInit {
         color: 'purple' 
       },
     ];
+
+    // Query đánh giá trung bình thực tế từ bảng Review
+    const reviewStats = await this.reviewRepository
+      .createQueryBuilder('r')
+      .select('AVG(r.rating)', 'avgRating')
+      .addSelect('COUNT(r.id)', 'reviewCount')
+      .where('r.tutor_id = :tutorId', { tutorId })
+      .getRawOne();
+    const avgRating = reviewStats?.avgRating ? Number(reviewStats.avgRating).toFixed(1) : '0';
+    const reviewCount = Number(reviewStats?.reviewCount || 0);
+
+    stats.splice(2, 0, {
+      label: 'Đánh giá trung bình',
+      value: avgRating,
+      sub: reviewCount > 0 ? `${reviewCount} đánh giá` : 'Chưa có đánh giá',
+      icon: 'lucide:star',
+      color: 'orange'
+    });
 
     // Lấy Suggested Classes từ database (ClassRequest)
     const requests = await this.classRequestRepository.find({
@@ -317,7 +215,7 @@ export class TutorsService implements OnModuleInit {
       subject: req.subject?.name || 'Môn học mới',
       location: req.preferredArea || 'Toàn quốc',
       schedule: req.preferredSchedule || 'Linh hoạt',
-      price: 'Thỏa thuận',
+      price: req.budget ? `${Number(req.budget).toLocaleString('vi-VN')}đ/buổi` : 'Thỏa thuận',
       isNew: true
     }));
 
@@ -336,7 +234,7 @@ export class TutorsService implements OnModuleInit {
       const dateStr = dateOfThisDay.getDate().toString();
       const isToday = dateOfThisDay.toDateString() === new Date().toDateString();
 
-      const scheduleForDay = fullWeeklySchedules.find(
+      const schedulesForDay = fullWeeklySchedules.filter(
         (s) => s.sessionDate && new Date(s.sessionDate).toDateString() === dateOfThisDay.toDateString()
       );
 
@@ -344,12 +242,12 @@ export class TutorsService implements OnModuleInit {
         day: dayLabel,
         date: dateStr,
         isToday,
-        event: scheduleForDay ? {
-          time: `${scheduleForDay.startTime} - ${scheduleForDay.endTime}`, 
-          title: scheduleForDay.class?.subject?.name || 'Môn học',
-          student: scheduleForDay.class?.student?.user?.fullName || 'Học viên',
-          color: 'blue' 
-        } : null,
+        events: schedulesForDay.map(s => ({
+          time: `${s.startTime} - ${s.endTime}`,
+          title: s.class?.subject?.name || 'Môn học',
+          student: s.class?.student?.user?.fullName || 'Học viên',
+          color: 'blue'
+        })),
       };
     });
 
@@ -359,12 +257,14 @@ export class TutorsService implements OnModuleInit {
     const myClasses = await this.classRepository.find({
       where: { tutor: { id: tutorId }, status: ClassStatus.ACTIVE },
       relations: ['student', 'student.user', 'subject'],
-      take: 5,
     });
 
     const currentClasses = await Promise.all(myClasses.map(async cls => {
       const completedCount = await this.scheduleRepository.count({
-        where: { class: { id: cls.id }, sessionStatus: SessionStatus.COMPLETED }
+        where: [
+          { class: { id: cls.id }, sessionStatus: SessionStatus.COMPLETED },
+          { class: { id: cls.id }, sessionDate: LessThanOrEqual(new Date()), sessionStatus: SessionStatus.SCHEDULED }
+        ]
       });
       const total = cls.totalSessions || 1;
 
@@ -373,7 +273,7 @@ export class TutorsService implements OnModuleInit {
         rawId: String(cls.id), // Đảm bảo trả về chuỗi UUID chính xác
         studentId: cls.student?.id || '',
         subject: cls.subject?.name || 'Chưa cập nhật',
-        type: cls.location?.toLowerCase().includes('online') ? 'Trực tuyến' : 'Tại nhà', 
+        type: cls.location?.toLowerCase()?.includes('online') ? 'Trực tuyến' : 'Tại nhà', 
         student: cls.student?.user?.fullName || 'Chưa có',
         initials: cls.student?.user?.fullName?.substring(0, 2).toUpperCase() || 'NA',
         schedule: 'Hàng tuần', 
@@ -468,18 +368,30 @@ export class TutorsService implements OnModuleInit {
     // Lọc trùng học viên vì một học viên có thể học nhiều môn với cùng 1 gia sư
     const studentMap = new Map();
     classes.forEach(cls => {
-      if (cls.student && !studentMap.has(cls.student.id)) {
-        studentMap.set(cls.student.id, {
-          id: cls.student.id,
-          fullName: cls.student.user?.fullName || 'Học viên',
-          gradeLevel: cls.student.gradeLevel || 'Chưa cập nhật',
-          avatar: cls.student.user?.avatarUrl || "https://randomuser.me/api/portraits/men/1.jpg", 
-          email: cls.student.user?.email,
-          phone: cls.student.user?.phone,
-          status: cls.status === ClassStatus.ACTIVE ? 'Đang học' : 'Đã kết thúc',
-          lastSubject: cls.subject?.name,
-          createdAt: cls.student.user?.createdAt || new Date()
-        });
+      if (cls.student) {
+        if (!studentMap.has(cls.student.id)) {
+          studentMap.set(cls.student.id, {
+            id: cls.student.id,
+            fullName: cls.student.user?.fullName || 'Học viên',
+            gradeLevel: cls.student.gradeLevel || 'Chưa cập nhật',
+            avatar: cls.student.user?.avatarUrl || null, 
+            email: cls.student.user?.email,
+            phone: cls.student.user?.phone,
+            status: cls.status === ClassStatus.ACTIVE ? 'Đang học' : 'Đã kết thúc',
+            lastSubject: cls.subject?.name,
+            subjects: [cls.subject?.name].filter(Boolean),
+            createdAt: cls.student.user?.createdAt || new Date()
+          });
+        } else {
+          const existing = studentMap.get(cls.student.id);
+          if (cls.subject?.name && !existing.subjects.includes(cls.subject.name)) {
+            existing.subjects.push(cls.subject.name);
+            existing.lastSubject = existing.subjects.join(', ');
+          }
+          if (cls.status === ClassStatus.ACTIVE) {
+            existing.status = 'Đang học';
+          }
+        }
       }
     });
 
@@ -498,7 +410,7 @@ export class TutorsService implements OnModuleInit {
       id: req.id,
       code: `#LH${req.id.substring(0, 4).toUpperCase()}`,
       title: `Tìm gia sư ${req.subject?.name || 'môn học'}`,
-      mode: req.preferredArea?.toLowerCase().includes('online') ? 'Online' : 'Offline',
+      mode: req.preferredArea?.toLowerCase()?.includes('online') ? 'Online' : 'Offline',
       levelTag: req.student?.gradeLevel || 'Mọi cấp độ',
       location: req.preferredArea || 'Toàn quốc',
       schedule: req.preferredSchedule || 'Linh hoạt',
@@ -524,32 +436,156 @@ export class TutorsService implements OnModuleInit {
     const profile = await this.getTutorProfileData(userId);
     const tutorId = profile.id;
 
+    // Sử dụng Update nguyên tử (Atomic Update) để tránh Race Condition khi có 2 request đồng thời
+    const updateResult = await this.classRequestRepository.update(
+      { id: requestId, status: RequestStatus.PENDING },
+      { status: RequestStatus.MATCHED }
+    );
+
     const request = await this.classRequestRepository.findOne({
       where: { id: requestId },
-      relations: ['student', 'subject'],
+      relations: ['student', 'student.user', 'subject'],
     });
 
     if (!request) throw new NotFoundException('Không tìm thấy yêu cầu lớp học');
-    if (request.status !== RequestStatus.PENDING) throw new ForbiddenException('Lớp học này đã có người nhận hoặc không còn khả dụng');
+    
+    if (updateResult.affected === 0) {
+      throw new ForbiddenException('Lớp học này đã có người nhận hoặc không còn khả dụng');
+    }
 
-    // 1. Cập nhật trạng thái yêu cầu
-    request.status = RequestStatus.MATCHED;
-    await this.classRequestRepository.save(request);
-
-    // 2. Tạo lớp học mới
+    const totalSessions = 20;
     const newClass = this.classRepository.create({
       tutor: { id: tutorId },
       student: request.student,
       subject: request.subject,
       request: request,
       location: request.preferredArea,
-      feePerSession: 200000, 
+      feePerSession: request.budget || 250000,
+      totalSessions,
       status: ClassStatus.ACTIVE,
       startDate: new Date(),
       notes: request.requirements,
     });
 
-    return this.classRepository.save(newClass);
+    const savedClass = await this.classRepository.save(newClass);
+
+    // 3. Tự động tạo Schedule dựa trên preferredSchedule
+    try {
+      await this.generateSchedulesForClass(savedClass, request.preferredSchedule, totalSessions);
+    } catch (err) {
+      console.error('Error generating schedules for new class:', err);
+    }
+
+    // 4. Tạo thông báo cho học viên
+    if (request.student?.user) {
+      try {
+        await this.notificationRepository.save({
+          user: request.student.user,
+          title: 'Lớp học đã có gia sư!',
+          message: `Gia sư ${profile.fullName} đã nhận dạy lớp ${request.subject?.name || 'môn học của bạn'}.`,
+        });
+      } catch (err) {
+        console.error('Error creating notification for student:', err);
+      }
+    }
+
+    return savedClass;
+  }
+
+  /**
+   * Parse preferredSchedule string và tạo Schedule entries cho lớp học.
+   * Hỗ trợ các format:
+   * - "Tối Thứ 2, Thứ 4 · 19:00 - 21:00"
+   * - "Sáng Thứ 7, Chủ nhật · 08:00 - 10:00"
+   * - "Tối T2, T4" (không có giờ cụ thể → dùng mặc định)
+   * - "Linh hoạt" hoặc null → tạo 2 buổi/tuần mặc định
+   */
+  private async generateSchedulesForClass(classEntity: Class, preferredSchedule: string | null, totalSessions: number) {
+    const dayMap: Record<string, number> = {
+      'Thứ 2': 1, 'T2': 1,
+      'Thứ 3': 2, 'T3': 2,
+      'Thứ 4': 3, 'T4': 3,
+      'Thứ 5': 4, 'T5': 4,
+      'Thứ 6': 5, 'T6': 5,
+      'Thứ 7': 6, 'T7': 6,
+      'Chủ nhật': 0, 'CN': 0,
+    };
+    const dayLabelMap: Record<number, string> = {
+      0: 'CN', 1: 'T2', 2: 'T3', 3: 'T4', 4: 'T5', 5: 'T6', 6: 'T7',
+    };
+
+    let days: number[] = [];
+    let startTime = '19:00:00';
+    let endTime = '21:00:00';
+
+    if (preferredSchedule && preferredSchedule !== 'Linh hoạt') {
+      // Parse format "Tối Thứ 2, Thứ 4 · 19:00 - 21:00" hoặc "Tối T2, T4"
+      const parts = preferredSchedule.split('·');
+      const daysPart = parts[0].trim();
+
+      // Trích xuất ngày
+      for (const [key, value] of Object.entries(dayMap)) {
+        if (daysPart.includes(key)) {
+          if (!days.includes(value)) days.push(value);
+        }
+      }
+
+      // Trích xuất giờ nếu có
+      if (parts.length === 2) {
+        const timePart = parts[1].trim();
+        const timeParts = timePart.split('-').map(t => t.trim());
+        if (timeParts.length === 2) {
+          startTime = timeParts[0].length === 5 ? timeParts[0] + ':00' : timeParts[0];
+          endTime = timeParts[1].length === 5 ? timeParts[1] + ':00' : timeParts[1];
+        }
+      } else {
+        // Không có giờ → dùng mặc định theo buổi
+        if (daysPart.includes('Sáng')) { startTime = '08:00:00'; endTime = '10:00:00'; }
+        else if (daysPart.includes('Chiều')) { startTime = '14:00:00'; endTime = '16:00:00'; }
+      }
+    }
+
+    // Fallback: nếu không parse được ngày, dùng T3 + T5 mặc định
+    if (days.length === 0) {
+      days = [2, 4]; // Thứ 3 và Thứ 5
+    }
+
+    // Tạo schedule cho 8 tuần tới (tối đa totalSessions buổi)
+    const weeksToGenerate = Math.ceil(totalSessions / days.length);
+    const maxWeeks = Math.min(weeksToGenerate, 12);
+    const startDate = new Date();
+    let sessionCount = 0;
+
+    for (let week = 0; week < maxWeeks && sessionCount < totalSessions; week++) {
+      for (const targetDay of days) {
+        if (sessionCount >= totalSessions) break;
+
+        // Tìm ngày gần nhất cho targetDay trong tuần hiện tại
+        const date = new Date(startDate);
+        date.setDate(date.getDate() + week * 7);
+        const currentDay = date.getDay();
+        let diff = targetDay - currentDay;
+        if (diff < 0 && week === 0) diff += 7;
+        date.setDate(date.getDate() + diff);
+        date.setHours(0, 0, 0, 0);
+
+        // Chỉ tạo cho ngày tương lai
+        if (date <= new Date()) continue;
+
+        const schedule = this.scheduleRepository.create({
+          class: classEntity,
+          sessionDate: date,
+          dayOfWeek: dayLabelMap[targetDay] || 'T2',
+          startTime,
+          endTime,
+          sessionStatus: SessionStatus.SCHEDULED,
+        });
+        await this.scheduleRepository.save(schedule);
+        sessionCount++;
+      }
+    }
+
+    console.log(`Generated ${sessionCount} schedules for class ${classEntity.id}`);
   }
 
   async getNotifications(userId: string) {
@@ -558,6 +594,14 @@ export class TutorsService implements OnModuleInit {
       order: { createdAt: 'DESC' },
       take: 10, 
     });
+  }
+
+  async markAllNotificationsRead(userId: string) {
+    await this.notificationRepository.update(
+      { user: { id: userId }, isRead: false },
+      { isRead: true }
+    );
+    return { success: true };
   }
 
   async updateTutorProfile(userId: string, updateData: any) {

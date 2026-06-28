@@ -23,14 +23,14 @@ export default function SessionTimeoutHandler() {
     showWarningRef.current = showWarning;
   }, [showWarning]);
 
-  const handleLogout = useCallback(() => {
+  const handleLogout = useCallback(async () => {
     console.log("Phiên làm việc hết hạn do không hoạt động.");
+    try {
+      await fetch('/api/logout', { method: 'POST' });
+    } catch (error) {
+      console.error("Lỗi khi đăng xuất:", error);
+    }
     clearAuth();
-
-    // Clear cookies
-    document.cookie = "access_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-    document.cookie = "refresh_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/api/auth/refresh;";
-
     setShowWarning(false);
 
     // Role-based redirect

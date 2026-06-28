@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 
 import { Icon } from '@iconify/react';
 import { getTutorProfile, updateTutorProfile, getAllSubjects } from '@/lib/api';
+import { useToast } from '@/components/common/Toast';
 import Header from '@/components/tutor/Header';
 
 export default function ProfessionalProfilePage() {
@@ -15,6 +16,7 @@ export default function ProfessionalProfilePage() {
   const [showSubjectDropdown, setShowSubjectDropdown] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
+  const { showToast, ToastComponent } = useToast();
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const certInputRef = useRef<HTMLInputElement>(null);
 
@@ -46,10 +48,10 @@ export default function ProfessionalProfilePage() {
       setIsUpdating(true);
       await updateTutorProfile(formData);
       setProfile(formData);
-      alert("Cập nhật hồ sơ thành công!");
+      showToast("Cập nhật hồ sơ thành công!", "success");
     } catch (error) {
       console.error("Lỗi cập nhật:", error);
-      alert("Không thể lưu thay đổi. Vui lòng thử lại.");
+      showToast("Không thể lưu thay đổi. Vui lòng thử lại.", "error");
     } finally {
       setIsUpdating(false);
     }
@@ -61,14 +63,14 @@ export default function ProfessionalProfilePage() {
 
     // Validate file size (5MB max)
     if (file.size > 5 * 1024 * 1024) {
-      alert('File ảnh phải nhỏ hơn 5MB');
+      showToast('File ảnh phải nhỏ hơn 5MB', 'error');
       return;
     }
 
     // Validate file type
     const allowed = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
     if (!allowed.includes(file.type)) {
-      alert('Chỉ chấp nhận file ảnh (JPEG, PNG, GIF, WebP)');
+      showToast('Chỉ chấp nhận file ảnh (JPEG, PNG, GIF, WebP)', 'error');
       return;
     }
 
@@ -93,7 +95,7 @@ export default function ProfessionalProfilePage() {
       setFormData((prev: any) => ({ ...prev, avatarUrl: url }));
     } catch (error: any) {
       console.error('Avatar upload error:', error);
-      alert(error.message || 'Có lỗi xảy ra khi tải ảnh lên');
+      showToast(error.message || 'Có lỗi xảy ra khi tải ảnh lên', 'error');
     } finally {
       setUploadingAvatar(false);
       if (avatarInputRef.current) avatarInputRef.current.value = '';
@@ -339,6 +341,7 @@ export default function ProfessionalProfilePage() {
         </div>
       </main>
       )}
+      {ToastComponent}
     </>
   );
 }

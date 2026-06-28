@@ -3,36 +3,52 @@
 import React, { useState, useEffect } from 'react';
 import ClassCard from '@/components/common/ClassCard';
 import { Icon } from '@iconify/react';
-import { getNewClasses } from '@/lib/api';
+import { getNewClasses, acceptClassRequest } from '@/lib/api';
 import Header from '@/components/tutor/Header';
+import { useToast } from '@/components/common/Toast';
+import ConfirmModal from '@/components/common/ConfirmModal';
 
 export default function NewClassesPage() {
   const [classes, setClasses] = useState<any[]>([]);
   const [filteredClasses, setFilteredClasses] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<any>(null);
+  const [acceptingId, setAcceptingId] = useState<string | null>(null);
   
   // States cho Lọc
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedSubject, setSelectedSubject] = useState("Tất cả môn học");
-  const [selectedMode, setSelectedMode] = useState("Hình thức dạy");
-  const [selectedArea, setSelectedArea] = useState("Khu vực");
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedSubject, setSelectedSubject] = useState('Tất cả môn học');
+  const [selectedMode, setSelectedMode] = useState('Hình thức dạy');
+  const [selectedArea, setSelectedArea] = useState('Khu vực');
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
 
+  // Pagination State
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 6;
+
+  // Toast & Confirm Modal
+  const { showToast, ToastComponent } = useToast();
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    message: string;
+    onConfirm: () => void;
+  }>({ isOpen: false, message: '', onConfirm: () => {} });
+
+  const fetchClasses = async () => {
+    try {
+      setLoading(true);
+      const data = await getNewClasses();
+      setClasses(data.classes || []);
+      setFilteredClasses(data.classes || []);
+      setProfile(data.profile);
+    } catch (error) {
+      console.error("Lỗi tải danh sách lớp mới:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchClasses = async () => {
-      try {
-        setLoading(true);
-        const data = await getNewClasses();
-        setClasses(data.classes || []);
-        setFilteredClasses(data.classes || []);
-        setProfile(data.profile);
-      } catch (error) {
-        console.error("Lỗi tải danh sách lớp mới:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchClasses();
   }, []);
 
@@ -60,10 +76,38 @@ export default function NewClassesPage() {
     }
 
     setFilteredClasses(result);
+    setCurrentPage(1); // Reset pagination on filter change
   }, [searchTerm, selectedSubject, selectedMode, selectedArea, classes]);
+
+  const paginatedClasses = React.useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    return filteredClasses.slice(start, start + itemsPerPage);
+  }, [filteredClasses, currentPage, itemsPerPage]);
+
+  const totalPages = Math.ceil(filteredClasses.length / itemsPerPage);
 
   const toggleDropdown = (name: string) => {
     setActiveDropdown(activeDropdown === name ? null : name);
+  };
+
+  const handleAcceptClass = (classItem: any) => {
+    setConfirmModal({
+      isOpen: true,
+      message: `Bạn có chắc chắn muốn nhận lớp "${classItem.title}" (${classItem.code})? Sau khi nhận, lịch dạy sẽ được tự động tạo dựa trên lịch yêu cầu.`,
+      onConfirm: async () => {
+        try {
+          setAcceptingId(classItem.id);
+          await acceptClassRequest(classItem.id);
+          showToast(`Nhận lớp "${classItem.title}" thành công! Lịch dạy đã được tạo tự động.`, 'success');
+          // Refresh danh sách
+          await fetchClasses();
+        } catch (error: any) {
+          showToast(error.message || 'Không thể nhận lớp. Vui lòng thử lại.', 'error');
+        } finally {
+          setAcceptingId(null);
+        }
+      },
+    });
   };
 
   return (
@@ -142,29 +186,79 @@ export default function NewClassesPage() {
 
         {/* Classes Grid */}
         {loading ? (
-          <div className="text-center py-10 text-slate-500 flex justify-center items-center gap-2">
-            <Icon icon="lucide:loader-2" className="animate-spin text-xl" /> Đang tải danh sách lớp...
-          </div>
-        ) : filteredClasses.length === 0 ? (
-          <div className="text-center py-10 text-slate-500 bg-white border border-slate-200 rounded-lg shadow-sm">
-            Không tìm thấy lớp học nào khớp với bộ lọc của bạn.
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-            {filteredClasses.map((item, index) => (
-              <ClassCard 
-                key={item.id} 
-                cls={{
-                  ...item,
-                  requirement: item.studentInfo, // Map dữ liệu từ API vào prop requirement của ClassCard
-                  salaryNote: "/ buổi"
-                }} 
-                priority={index < 3}
-              />
-            ))}
-          </div>
+            <div className="py-20 text-center flex flex-col items-center justify-center gap-3">
+              <Icon icon="lucide:loader-2" className="animate-spin text-blue-600" fontSize={32} />
+              <p className="text-slate-500 font-medium text-sm">Đang tải dữ liệu lớp học...</p>
+            </div>
+          ) : filteredClasses.length > 0 ? (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {paginatedClasses.map((c) => (
+                  <ClassCard 
+                    key={c.id} 
+                    cls={{
+                      ...c,
+                      requirement: c.studentInfo,
+                      salaryNote: "/ buổi"
+                    }} 
+                    onAccept={() => handleAcceptClass(c)}
+                    accepting={acceptingId === c.id}
+                  />
+                ))}
+              </div>
+              
+              {/* Pagination UI */}
+              {totalPages > 1 && (
+                <div className="mt-8 flex items-center justify-center gap-2">
+                  <button 
+                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                    className="p-2 rounded-lg border border-slate-200 text-slate-600 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50 cursor-pointer"
+                  >
+                    <Icon icon="lucide:chevron-left" />
+                  </button>
+                  {Array.from({ length: totalPages }).map((_, idx) => (
+                    <button 
+                      key={idx}
+                      onClick={() => setCurrentPage(idx + 1)}
+                      className={`w-9 h-9 rounded-lg border text-sm font-semibold cursor-pointer transition-colors ${
+                        currentPage === idx + 1 
+                          ? 'bg-blue-600 border-blue-600 text-white shadow-sm' 
+                          : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                      }`}
+                    >
+                      {idx + 1}
+                    </button>
+                  ))}
+                  <button 
+                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                    disabled={currentPage === totalPages}
+                    className="p-2 rounded-lg border border-slate-200 text-slate-600 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50 cursor-pointer"
+                  >
+                    <Icon icon="lucide:chevron-right" />
+                  </button>
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="py-20 px-6 text-center bg-white rounded-xl border border-dashed border-slate-300 flex flex-col items-center justify-center gap-4 max-w-lg mx-auto mt-8">
+              <p className="text-slate-500">Không tìm thấy lớp học nào khớp với bộ lọc của bạn.</p>
+            </div>
         )}
       </main>
+
+      {/* Confirm Modal */}
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        message={confirmModal.message}
+        onConfirm={confirmModal.onConfirm}
+        onCancel={() => setConfirmModal({ ...confirmModal, isOpen: false })}
+        title="Xác nhận nhận lớp"
+        confirmText="Nhận lớp"
+      />
+
+      {/* Toast */}
+      {ToastComponent}
     </>
   );
-}
+}

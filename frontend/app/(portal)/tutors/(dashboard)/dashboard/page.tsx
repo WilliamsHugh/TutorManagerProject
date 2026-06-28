@@ -4,7 +4,6 @@ import React, { useState, useEffect } from 'react';
 import { Icon } from '@iconify/react';
 import { 
   getTutorDashboard, 
-  getNewClasses,
   getClassRequestDetail, 
   getLearningReports, 
   submitLearningReport, 
@@ -13,6 +12,8 @@ import {
 } from '@/lib/api';
 import Link from 'next/link';
 import Header from '@/components/tutor/Header';
+import { useToast } from '@/components/common/Toast';
+import ConfirmModal from '@/components/common/ConfirmModal';
 
 export default function TutorDashboard() {
   // 1. Khởi tạo State rỗng để đợi dữ liệu từ backend
@@ -25,22 +26,14 @@ export default function TutorDashboard() {
   const [profile, setProfile] = useState<any>(null);
   const [currentDate, setCurrentDate] = useState(new Date());
 
-  // State cho custom toast notification
-  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
+  // Toast & Confirm Modal (shared components)
+  const { showToast, ToastComponent } = useToast();
 
-  // State cho custom confirm modal
   const [confirmModal, setConfirmModal] = useState<{
     isOpen: boolean;
     message: string;
     onConfirm: () => void;
-  } | null>(null);
-
-  const showToast = (message: string, type: 'success' | 'error' | 'info' = 'success') => {
-    setToast({ message, type });
-    setTimeout(() => {
-      setToast(null);
-    }, 4000);
-  };
+  }>({ isOpen: false, message: '', onConfirm: () => {} });
 
   // State cho Modals
   const [selectedEvent, setSelectedEvent] = useState<any>(null);
@@ -76,7 +69,10 @@ export default function TutorDashboard() {
         setCurrentClasses(data.currentClasses || []);
         setProfile(data.profile);
 
-        // Suggested classes được fetch riêng ở useEffect dưới — không ghi đè ở đây
+        // Dùng suggestedClasses từ dashboard response
+        if (data.suggestedClasses) {
+          setSuggestedClasses(data.suggestedClasses);
+        }
       } catch (error) {
         console.error("Lỗi tải dữ liệu dashboard:", error);
       } finally {
@@ -87,28 +83,6 @@ export default function TutorDashboard() {
 
     fetchDashboardData();
   }, [currentDate]);
-
-  // Fetch suggested classes từ cùng API với trang /tutors/new-classes
-  useEffect(() => {
-    const fetchSuggestedClasses = async () => {
-      try {
-        const newClassesData = await getNewClasses();
-        const mapped = (newClassesData.classes || []).map((cls: any) => ({
-          id: cls.id,
-          subject: cls.title?.replace('Tìm gia sư ', '') || 'Môn học mới',
-          location: cls.location || 'Toàn quốc',
-          schedule: cls.schedule || 'Linh hoạt',
-          price: cls.salary || 'Thỏa thuận',
-          isNew: true
-        }));
-        setSuggestedClasses(mapped);
-      } catch (error) {
-        console.error("Lỗi tải lớp học mới gợi ý:", error);
-        // Giữ nguyên dữ liệu fallback từ dashboard nếu fetch thất bại
-      }
-    };
-    fetchSuggestedClasses();
-  }, []);
 
   // Tải danh sách báo cáo khi chọn lớp
   useEffect(() => {
@@ -280,17 +254,18 @@ export default function TutorDashboard() {
                             <div style={{ fontSize: '12px', color: '#64748b' }}>{item.day}</div>
                             <div style={{ fontSize: '18px', fontWeight: 600 }}>{item.date}</div>
                           </div>
-                          {item.event && (
+                          {item.events && item.events.map((evt: any, idx: number) => (
                             <div 
-                              className={`event ${item.event.color}`} 
-                              style={{ padding: '8px', borderRadius: '4px', fontSize: '11px', background: '#dbeafe', borderLeft: '3px solid #3b82f6', cursor: 'pointer' }}
-                              onClick={() => setSelectedEvent(item.event)}
+                              key={idx}
+                              className={`event ${evt.color}`} 
+                              style={{ padding: '8px', borderRadius: '4px', fontSize: '11px', background: '#dbeafe', borderLeft: '3px solid #3b82f6', cursor: 'pointer', marginBottom: '8px' }}
+                              onClick={() => setSelectedEvent(evt)}
                             >
-                              <div style={{ fontWeight: 700 }}>{item.event.time}</div>
-                              <div style={{ fontWeight: 600 }}>{item.event.title}</div>
-                              <div style={{ marginTop: '4px' }}>{item.event.student}</div>
+                              <div style={{ fontWeight: 700 }}>{evt.time}</div>
+                              <div style={{ fontWeight: 600 }}>{evt.title}</div>
+                              <div style={{ marginTop: '4px' }}>{evt.student}</div>
                             </div>
-                          )}
+                          ))}
                         </div>
                       ))}
                     </div>
@@ -461,104 +436,85 @@ export default function TutorDashboard() {
             </div>
           </div>
         )}
-      </div>
 
-      {/* Toast Notification */}
-      {toast && (
-        <div 
-          style={{
-            position: 'fixed',
-            bottom: '24px',
-            right: '24px',
-            zIndex: 9999,
-            display: 'flex',
-            alignItems: 'center',
-            gap: '12px',
-            padding: '14px 20px',
-            borderRadius: '12px',
-            boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
-            border: toast.type === 'success' ? '1px solid #bbf7d0' : toast.type === 'error' ? '1px solid #fecaca' : '1px solid #bfdbfe',
-            background: toast.type === 'success' ? '#f0fdf4' : toast.type === 'error' ? '#fef2f2' : '#eff6ff',
-            color: toast.type === 'success' ? '#166534' : toast.type === 'error' ? '#991b1b' : '#1e40af',
-            animation: 'slideIn 0.3s ease-out forwards',
-            maxWidth: '350px',
-          }}
-        >
-          <Icon 
-            icon={toast.type === 'success' ? 'lucide:check-circle' : toast.type === 'error' ? 'lucide:alert-circle' : 'lucide:info'} 
-            fontSize={20} 
-            color={toast.type === 'success' ? '#15803d' : toast.type === 'error' ? '#dc2626' : '#2563eb'}
-          />
-          <div style={{ fontSize: '13.5px', fontWeight: 550, lineHeight: 1.4 }}>{toast.message}</div>
-          <button 
-            onClick={() => setToast(null)}
-            style={{ 
-              background: 'transparent', 
-              border: 'none', 
-              cursor: 'pointer', 
-              padding: 0, 
-              marginLeft: 'auto',
-              color: toast.type === 'success' ? '#166534' : toast.type === 'error' ? '#991b1b' : '#1e40af',
-              opacity: 0.6,
-            }}
-          >
-            <Icon icon="lucide:x" fontSize={16} />
-          </button>
-        </div>
-      )}
+        {/* Event Details Modal */}
+        {selectedEvent && (
+          <div style={{
+            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+            backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 100,
+            display: 'flex', alignItems: 'center', justifyContent: 'center'
+          }} onClick={() => setSelectedEvent(null)}>
+            <div style={{
+              background: '#fff', borderRadius: '12px', padding: '24px',
+              width: '100%', maxWidth: '400px',
+              boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)'
+            }} onClick={e => e.stopPropagation()}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 600 }}>Chi tiết buổi học</h3>
+                <button onClick={() => setSelectedEvent(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }}>
+                  <Icon icon="lucide:x" fontSize={20} />
+                </button>
+              </div>
+              
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                  <div style={{ width: '40px', height: '40px', borderRadius: '8px', background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#3b82f6' }}>
+                    <Icon icon="lucide:clock" fontSize={20} />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '12px', color: '#64748b' }}>Thời gian</div>
+                    <div style={{ fontWeight: 600 }}>{selectedEvent.time}</div>
+                  </div>
+                </div>
+                
+                <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                  <div style={{ width: '40px', height: '40px', borderRadius: '8px', background: '#f0fdf4', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#22c55e' }}>
+                    <Icon icon="lucide:book-open" fontSize={20} />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '12px', color: '#64748b' }}>Môn học</div>
+                    <div style={{ fontWeight: 600 }}>{selectedEvent.title}</div>
+                  </div>
+                </div>
 
-      {/* Custom Confirm Modal */}
-      {confirmModal && confirmModal.isOpen && (
-        <div 
-          className="fixed inset-0 bg-black/50 z-[110] flex items-center justify-center p-4"
-          onClick={() => setConfirmModal(null)}
-        >
-          <div 
-            className="bg-white rounded-xl w-full max-w-sm overflow-hidden flex flex-col shadow-2xl animate-in zoom-in-95 duration-200"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="p-5 flex flex-col items-center text-center gap-3">
-              <div style={{ width: 48, height: 48, borderRadius: 24, background: '#fee2e2', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <Icon icon="lucide:alert-triangle" fontSize={24} color="#ef4444" style={{ margin: 'auto' }} />
+                <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                  <div style={{ width: '40px', height: '40px', borderRadius: '8px', background: '#fef2f2', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ef4444' }}>
+                    <Icon icon="lucide:user" fontSize={20} />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '12px', color: '#64748b' }}>Học viên</div>
+                    <div style={{ fontWeight: 600 }}>{selectedEvent.student}</div>
+                  </div>
+                </div>
               </div>
-              <div>
-                <h3 className="text-base font-bold text-slate-900" style={{ margin: 0 }}>Xác nhận</h3>
-                <p className="text-sm text-slate-500 mt-1" style={{ margin: 0 }}>{confirmModal.message}</p>
-              </div>
-            </div>
-            <div className="p-4 bg-slate-50 border-t flex gap-3 justify-end">
+              
               <button 
-                onClick={() => setConfirmModal(null)}
-                className="border border-slate-200 hover:bg-slate-100 text-slate-700 px-4 py-2 rounded-lg font-medium transition-colors bg-white cursor-pointer text-xs"
-              >
-                Hủy bỏ
-              </button>
-              <button 
-                onClick={() => {
-                  confirmModal.onConfirm();
-                  setConfirmModal(null);
+                onClick={() => setSelectedEvent(null)}
+                style={{
+                  width: '100%', marginTop: '24px', padding: '12px',
+                  background: '#f1f5f9', color: '#475569', border: 'none', borderRadius: '8px',
+                  fontWeight: 600, cursor: 'pointer'
                 }}
-                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-semibold transition-colors cursor-pointer border-none text-xs"
               >
-                Xác nhận
+                Đóng
               </button>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
-      <style>{`
-        @keyframes slideIn {
-          from {
-            transform: translateY(100px) scale(0.9);
-            opacity: 0;
-          }
-          to {
-            transform: translateY(0) scale(1);
-            opacity: 1;
-          }
-        }
-      `}</style>
+      {/* Confirm Modal */}
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        message={confirmModal.message}
+        onConfirm={confirmModal.onConfirm}
+        onCancel={() => setConfirmModal({ ...confirmModal, isOpen: false })}
+      />
+
+      {/* Toast Notification */}
+      {ToastComponent}
+
+
     </>
   );
 }

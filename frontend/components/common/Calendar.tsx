@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useMemo, ReactNode } from 'react';
+import { useEffect, useState, useMemo, ReactNode } from 'react';
 import { Icon } from '@iconify/react';
 
 // ─── Constants ───────────────────────────────────────────

@@ -13,7 +13,6 @@ import {
   FileText,
   CheckCircle2,
   XCircle,
-  Calendar,
   Plus,
   Edit2,
   Lock,
@@ -24,10 +23,8 @@ import {
   ChevronLeft,
   Search,
 } from "lucide-react";
-import { getAuthUser, saveAuth, clearAuth } from "@/lib/auth";
+import { saveAuth, clearAuth } from "@/lib/auth";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 
 type ViewType = "dashboard" | "users" | "tutors" | "subjects" | "reports" | "create-account";

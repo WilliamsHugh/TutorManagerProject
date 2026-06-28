@@ -2,7 +2,6 @@
 
 import {
   BookOpen,
-  Clock3,
   FileText,
   GraduationCap,
   LayoutDashboard,

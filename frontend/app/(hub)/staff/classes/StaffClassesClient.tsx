@@ -1,13 +1,12 @@
 "use client"
 
 import { useEffect, useMemo, useState, useCallback } from "react"
-import { BookOpen, CalendarDays, MapPin, Search, Clock, Mail, Phone, GraduationCap, X, Download } from "lucide-react"
+import { BookOpen, CalendarDays, MapPin, Search, Download } from "lucide-react"
 
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { getClasses, getLearningReports } from "@/lib/api"
+import { getClasses } from "@/lib/api"
 import type { StaffClassItem } from "@/types/staff"
 import { mapStaffClass } from "@/types/staff"
 

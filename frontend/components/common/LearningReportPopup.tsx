@@ -7,7 +7,6 @@ import {
   CheckCircle2,
   XCircle,
   BookOpen,
-  User,
   Calendar,
   ChevronLeft,
   ChevronRight,

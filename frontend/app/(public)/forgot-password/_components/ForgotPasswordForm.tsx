@@ -3,12 +3,9 @@
 import { ArrowLeft, ArrowRight, Loader2, KeyRound, Mail, CheckCircle2, Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
-import { useRouter } from "next/navigation";
-
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:3001";
 
 export default function ForgotPasswordForm() {
-    const router = useRouter();
     const [step, setStep] = useState(1); // 1: Email, 2: OTP & New Password, 3: Success
     const [isLoading, setIsLoading] = useState(false);
     const [errorMsg, setErrorMsg] = useState<string | null>(null);

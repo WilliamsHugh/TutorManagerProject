@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Icon } from '@iconify/react';
 import { 
   getTutorDashboard, 
@@ -43,8 +43,7 @@ export default function TutorDashboard() {
   };
 
   // State cho Modals
-  const [selectedEvent, setSelectedEvent] = useState<any>(null);
-  const [selectedSuggestedClass, setSelectedSuggestedClass] = useState<any>(null);
+
   
   // Quản lý Report
   const [reportingClass, setReportingClass] = useState<any>(null);
@@ -169,8 +168,7 @@ export default function TutorDashboard() {
 
   const handleShowClassDetail = async (id: string) => {
     try {
-      const detail = await getClassRequestDetail(id);
-      setSelectedSuggestedClass(detail);
+      await getClassRequestDetail(id);
     } catch (error) {
       showToast("Không thể lấy chi tiết lớp học này.", "error");
     }
@@ -284,7 +282,6 @@ export default function TutorDashboard() {
                             <div 
                               className={`event ${item.event.color}`} 
                               style={{ padding: '8px', borderRadius: '4px', fontSize: '11px', background: '#dbeafe', borderLeft: '3px solid #3b82f6', cursor: 'pointer' }}
-                              onClick={() => setSelectedEvent(item.event)}
                             >
                               <div style={{ fontWeight: 700 }}>{item.event.time}</div>
                               <div style={{ fontWeight: 600 }}>{item.event.title}</div>

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Icon } from "@iconify/react";
 import {
   getMyRecommendations,
@@ -48,7 +48,7 @@ export default function TutorRecommendationsClient() {
   const [pendingProposals, setPendingProposals] = useState<PendingProposal[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingPending, setLoadingPending] = useState(true);
-  const [profile, setProfile] = useState<any>(null);
+  const [profile] = useState<any>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"new" | "pending">("new");
   const [proposeModal, setProposeModal] = useState<{

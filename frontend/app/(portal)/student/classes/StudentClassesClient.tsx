@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { isLoggedIn, getUserRole, clearAuth } from "@/lib/auth";
 import { getStudentClasses, submitReview, getClassReview, getStudentClassReports } from "@/lib/api/classes.api";
-import { Star, Calendar, MapPin, Clock, Award, MessageSquare, BookOpen, User, CheckCircle2, AlertCircle, RefreshCw, Loader2, X, FileText } from "lucide-react";
+import { Star, Calendar, MapPin, Clock, Award, BookOpen, User, CheckCircle2, AlertCircle, RefreshCw, Loader2, X, FileText } from "lucide-react";
 import LearningReportPopup, { LearningReport } from "@/components/common/LearningReportPopup";
 import { ClassListSkeleton } from "../_components/StudentSkeletons";
 import { TutorDetailModal } from "../_components/TutorDetailModal";

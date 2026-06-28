@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Icon } from '@iconify/react';
 import { getAuthUser, clearAuth } from '@/lib/auth';
-import { useRouter } from 'next/navigation';
+
 import { getTutorNotifications } from '@/lib/api';
 
 interface HeaderProps {
@@ -22,7 +22,6 @@ export default function Header({ title, showSearch = false, userProfile }: Heade
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [notifications, setNotifications] = useState<any[]>([]);
-  const router = useRouter();
 
   useEffect(() => {
     const userData = getAuthUser();

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import ClassCard from '@/components/common/ClassCard';
 import { Icon } from '@iconify/react';
 import { getNewClasses } from '@/lib/api';

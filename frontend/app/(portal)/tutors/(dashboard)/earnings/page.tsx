@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Icon } from '@iconify/react';
 import { getTutorEarnings } from '@/lib/api';
 import Header from '@/components/tutor/Header';

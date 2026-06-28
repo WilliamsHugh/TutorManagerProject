@@ -1,7 +1,7 @@
 "use client"
 
-import { useEffect, useState, useMemo, useCallback } from "react"
-import { Search, BookOpen, GraduationCap, MapPin, Phone, Mail, X, Calendar } from "lucide-react"
+import { useEffect, useState, useCallback } from "react"
+import { Search, BookOpen, GraduationCap, MapPin, Phone, Mail } from "lucide-react"
 
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge"
 import { StaffShell } from "../_components/StaffShell"
 import { TablePagination } from "../_components/TablePagination"
 import { AlertWindow } from "../../../(portal)/student/_components/AlertWindow"
-import { getStaffTutors, getClasses, getTutorScheduleForStaff, toggleUserStatusForStaff, deleteUserForStaff } from "@/lib/api"
+import { getStaffTutors } from "@/lib/api"
 import { TutorProfileDialog, type TutorData } from "../_components/TutorProfileDialog"
 
 export default function StaffTutorsClient() {

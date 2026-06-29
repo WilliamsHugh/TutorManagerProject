@@ -20,7 +20,7 @@ import { Role } from './entities/role.entity';
 import { Tutor, ApprovalStatus } from './entities/tutor.entity';
 import { Student } from './entities/student.entity';
 import { Subject } from '../subjects/subject.entity';
-import { Class } from '../classes/entities/class.entity';
+import { Class, ClassStatus } from '../classes/entities/class.entity';
 import { ClassRequest } from '../classes/entities/class-request.entity';
 import { TutorSubject } from '../tutors/tutor-subject.entity';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -120,7 +120,31 @@ export class AdminController {
     if (!user) throw new NotFoundException('Không tìm thấy người dùng');
     user.isActive = body.isActive;
     user.lockedBy = body.isActive ? null : req.user;
-    return this.usersRepo.save(user);
+    const savedUser = await this.usersRepo.save(user);
+
+    // Tự động tạm dừng lớp học đang hoạt động khi tài khoản bị khóa (Lock)
+    if (!body.isActive) {
+      const roleName = user.role?.name;
+      if (roleName === 'tutor') {
+        const tutor = await this.tutorsRepo.findOneBy({ user: { id: user.id } });
+        if (tutor) {
+          await this.classesRepo.update(
+            { tutor: { id: tutor.id }, status: ClassStatus.ACTIVE },
+            { status: ClassStatus.SUSPENDED, suspendedBy: req.user },
+          );
+        }
+      } else if (roleName === 'student') {
+        const student = await this.studentsRepo.findOneBy({ user: { id: user.id } });
+        if (student) {
+          await this.classesRepo.update(
+            { student: { id: student.id }, status: ClassStatus.ACTIVE },
+            { status: ClassStatus.SUSPENDED, suspendedBy: req.user },
+          );
+        }
+      }
+    }
+
+    return savedUser;
   }
 
   @Delete('users/:id')
@@ -128,9 +152,34 @@ export class AdminController {
     const user = await this.usersRepo.findOneBy({ id });
     if (!user) throw new NotFoundException('Không tìm thấy người dùng');
 
-    // Delete student or tutor records related to the user first to clear foreign constraints
-    await this.studentsRepo.delete({ user: { id } });
-    await this.tutorsRepo.delete({ user: { id } });
+    // Delete related student/tutor records to clear foreign constraints
+    const tutor = await this.tutorsRepo.findOneBy({ user: { id } });
+    if (tutor) {
+      // Kiểm tra ràng buộc khoá ngoại với bảng lớp học (classes)
+      const hasClasses = await this.classesRepo.findOneBy({ tutor: { id: tutor.id } });
+      if (hasClasses) {
+        throw new ConflictException(
+          'Không thể xóa gia sư này vì tài khoản đã được liên kết với lớp học trong hệ thống. Vui lòng sử dụng tính năng Khóa tài khoản.',
+        );
+      }
+
+      // Xoá các môn học của gia sư (tránh lỗi foreign key constraint)
+      await this.tutorSubjectsRepo.delete({ tutor: { id: tutor.id } });
+      await this.tutorsRepo.delete({ id: tutor.id });
+    }
+
+    const student = await this.studentsRepo.findOneBy({ user: { id } });
+    if (student) {
+      // Kiểm tra ràng buộc khoá ngoại với bảng lớp học và yêu cầu lớp học
+      const hasClasses = await this.classesRepo.findOneBy({ student: { id: student.id } });
+      const hasRequests = await this.requestsRepo.findOneBy({ student: { id: student.id } });
+      if (hasClasses || hasRequests) {
+        throw new ConflictException(
+          'Không thể xóa học viên này vì tài khoản đã có lớp học hoặc yêu cầu lớp học liên kết. Vui lòng sử dụng tính năng Khóa tài khoản.',
+        );
+      }
+      await this.studentsRepo.delete({ id: student.id });
+    }
 
     await this.usersRepo.delete({ id });
     return { success: true, message: 'Xóa người dùng thành công' };

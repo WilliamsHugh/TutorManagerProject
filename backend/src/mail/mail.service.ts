@@ -72,7 +72,9 @@ export class MailService {
       // Fallback: log ra console khi gửi thất bại
       this.logger.log(`[MAILER FALLBACK] Gửi email tới ${options.to}`);
       this.logger.log(`[MAILER FALLBACK] Tiêu đề: ${options.subject}`);
-      this.logger.log(`[MAILER FALLBACK] Nội dung: ${options.text || options.html}`);
+      this.logger.log(
+        `[MAILER FALLBACK] Nội dung: ${options.text || options.html}`,
+      );
     }
   }
 

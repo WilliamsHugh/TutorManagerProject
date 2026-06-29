@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { BookOpen, Clock, Mail, Phone, GraduationCap, X, Calendar } from "lucide-react"
+import { BookOpen, Clock, Mail, Phone, GraduationCap, X, Calendar, FileText, CheckCircle2, XCircle } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
 import {
@@ -10,6 +10,7 @@ import {
   createClassSchedule,
   updateClassSchedule,
   deleteClassSchedule,
+  updateClassStatusForStaff,
 } from "@/lib/api"
 import type { StaffClassItem } from "@/types/staff"
 
@@ -49,13 +50,41 @@ export function getStatusBadge(status?: string, size: "sm" | "md" = "sm") {
 type ClassDetailDialogProps = {
   classItem: StaffClassItem
   onClose: () => void
+  onRefresh?: () => void
+  showToast: (title: string, message: string, type: "success" | "error" | "warning") => void
 }
 
-export function ClassDetailDialog({ classItem, onClose }: ClassDetailDialogProps) {
+export function ClassDetailDialog({ classItem, onClose, onRefresh, showToast }: ClassDetailDialogProps) {
   const [reports, setReports] = useState<any[]>([])
   const [loadingReports, setLoadingReports] = useState(true)
   const [schedules, setSchedules] = useState<any[]>([])
   const [loadingSchedules, setLoadingSchedules] = useState(true)
+  const [statusLoading, setStatusLoading] = useState(false)
+
+  async function handleStatusChange(newStatus: string) {
+    if (statusLoading) return
+    const statusLabel = 
+      newStatus === "active" ? "Đang học" :
+      newStatus === "completed" ? "Hoàn thành" :
+      newStatus === "cancelled" ? "Đã hủy" :
+      newStatus === "suspended" ? "Tạm dừng" : newStatus;
+
+    if (!confirm(`Bạn có chắc chắn muốn chuyển trạng thái lớp sang "${statusLabel}" không?`)) {
+      return
+    }
+
+    setStatusLoading(true)
+    try {
+      await updateClassStatusForStaff(classItem.id, newStatus)
+      showToast("Thành công", `Đã cập nhật trạng thái lớp học thành "${statusLabel}"!`, "success")
+      if (onRefresh) onRefresh()
+      onClose()
+    } catch (err: any) {
+      showToast("Thất bại", err.message || "Không thể cập nhật trạng thái lớp.", "error")
+    } finally {
+      setStatusLoading(false)
+    }
+  }
 
   useEffect(() => {
     async function loadData() {
@@ -427,6 +456,106 @@ export function ClassDetailDialog({ classItem, onClose }: ClassDetailDialogProps
             </div>
           </div>
 
+          {/* Báo cáo học tập từ gia sư */}
+          <div className="space-y-2.5">
+            <div className="flex items-center gap-1.5 font-bold text-xs text-slate-400 uppercase tracking-wider">
+              <FileText size={13} className="text-slate-400 shrink-0" />
+              <span>Báo cáo học tập ({reports.length})</span>
+            </div>
+            {loadingReports ? (
+              <div className="flex items-center gap-2 py-3 text-xs text-muted-foreground">
+                <div className="size-3 border-2 border-slate-300 border-t-primary rounded-full animate-spin" />
+                Đang tải báo cáo...
+              </div>
+            ) : reports.length > 0 ? (
+              <div className="space-y-3 max-h-[320px] overflow-y-auto pr-1">
+                {reports.map((report: any, idx: number) => {
+                  const progressLabels: Record<string, string> = {
+                    excellent: 'Xuất sắc',
+                    good: 'Tốt',
+                    fair: 'Trung bình',
+                    poor: 'Yếu',
+                  }
+                  const progressColors: Record<string, string> = {
+                    excellent: 'bg-emerald-100 text-emerald-700 border-emerald-200',
+                    good: 'bg-blue-100 text-blue-700 border-blue-200',
+                    fair: 'bg-amber-100 text-amber-700 border-amber-200',
+                    poor: 'bg-red-100 text-red-700 border-red-200',
+                  }
+                  const rating = report.progressRating?.toLowerCase()
+                  return (
+                    <div
+                      key={report.id || idx}
+                      className="rounded-lg border border-slate-200 bg-white p-3.5 text-xs space-y-2.5 shadow-xs"
+                    >
+                      {/* Header: Ngày + Gia sư */}
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <div className="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary font-bold text-[10px]">
+                            {report.tutor?.user?.fullName?.charAt(0)?.toUpperCase() || "G"}
+                          </div>
+                          <div className="min-w-0">
+                            <span className="font-semibold text-foreground block truncate">
+                              {report.tutor?.user?.fullName || "Gia sư"}
+                            </span>
+                            <span className="text-[10px] text-muted-foreground">
+                              {report.reportDate
+                                ? new Intl.DateTimeFormat("vi-VN", {
+                                    dateStyle: "medium",
+                                  }).format(new Date(report.reportDate))
+                                : "—"}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          {rating && progressLabels[rating] && (
+                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${progressColors[rating] || 'bg-slate-100 text-slate-600'}`}>
+                              {progressLabels[rating]}
+                            </span>
+                          )}
+                          {report.attendanceStatus !== undefined && (
+                            <span className={`flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold border ${
+                              report.attendanceStatus
+                                ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                : 'bg-rose-50 text-rose-700 border-rose-200'
+                            }`}>
+                              {report.attendanceStatus ? (
+                                <><CheckCircle2 size={10} /> Có mặt</>
+                              ) : (
+                                <><XCircle size={10} /> Vắng</>
+                              )}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Nội dung báo cáo */}
+                      {report.content && (
+                        <div className="bg-slate-50 rounded-lg p-2.5 border border-slate-100">
+                          <span className="font-semibold text-slate-500 text-[10px] uppercase tracking-wider block mb-1">Nội dung</span>
+                          <p className="text-slate-700 leading-relaxed whitespace-pre-wrap">{report.content}</p>
+                        </div>
+                      )}
+
+                      {/* Bài tập về nhà */}
+                      {report.homework && (
+                        <div className="bg-amber-50/50 rounded-lg p-2.5 border border-amber-100">
+                          <span className="font-semibold text-amber-600 text-[10px] uppercase tracking-wider block mb-1">Bài tập về nhà</span>
+                          <p className="text-amber-900 leading-relaxed whitespace-pre-wrap">{report.homework}</p>
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            ) : (
+              <div className="text-center py-4 border border-dashed border-slate-200 rounded-lg text-xs text-muted-foreground bg-slate-50/30">
+                <FileText size={16} className="mx-auto mb-1.5 text-slate-300" />
+                Chưa có báo cáo học tập nào từ gia sư cho lớp này.
+              </div>
+            )}
+          </div>
+
           {/* Student Info */}
           <div className="space-y-2.5">
             <h4 className="font-bold text-xs text-slate-400 uppercase tracking-wider">Thông tin học viên</h4>
@@ -486,6 +615,59 @@ export function ClassDetailDialog({ classItem, onClose }: ClassDetailDialogProps
               </div>
             </div>
           )}
+        </div>
+
+        {/* Footer actions */}
+        <div className="flex items-center justify-between border-t border-border bg-slate-50 px-5 py-3 rounded-b-xl shrink-0">
+          <div className="flex gap-2">
+            {classItem.status !== "Đang học" && (
+              <button
+                type="button"
+                onClick={() => handleStatusChange("active")}
+                disabled={statusLoading}
+                className="h-8 inline-flex items-center justify-center rounded bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 text-xs font-semibold shadow-sm transition-all focus:outline-none focus:ring-1 focus:ring-offset-1 active:scale-95 disabled:opacity-50 cursor-pointer"
+              >
+                Mở lại lớp
+              </button>
+            )}
+            {classItem.status === "Đang học" && (
+              <button
+                type="button"
+                onClick={() => handleStatusChange("suspended")}
+                disabled={statusLoading}
+                className="h-8 inline-flex items-center justify-center rounded bg-amber-600 hover:bg-amber-700 text-white px-3.5 text-xs font-semibold shadow-sm transition-all focus:outline-none focus:ring-1 focus:ring-offset-1 active:scale-95 disabled:opacity-50 cursor-pointer"
+              >
+                Tạm đóng lớp
+              </button>
+            )}
+            {classItem.status !== "Hoàn thành" && (
+              <button
+                type="button"
+                onClick={() => handleStatusChange("completed")}
+                disabled={statusLoading}
+                className="h-8 inline-flex items-center justify-center rounded bg-blue-600 hover:bg-blue-700 text-white px-3.5 text-xs font-semibold shadow-sm transition-all focus:outline-none focus:ring-1 focus:ring-offset-1 active:scale-95 disabled:opacity-50 cursor-pointer"
+              >
+                Hoàn thành lớp
+              </button>
+            )}
+            {classItem.status !== "Đã hủy" && (
+              <button
+                type="button"
+                onClick={() => handleStatusChange("cancelled")}
+                disabled={statusLoading}
+                className="h-8 inline-flex items-center justify-center rounded bg-rose-600 hover:bg-rose-700 text-white px-3.5 text-xs font-semibold shadow-sm transition-all focus:outline-none focus:ring-1 focus:ring-offset-1 active:scale-95 disabled:opacity-50 cursor-pointer"
+              >
+                Hủy lớp
+              </button>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="h-8 inline-flex items-center justify-center rounded border border-slate-200 bg-white px-4 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-all cursor-pointer"
+          >
+            Đóng
+          </button>
         </div>
 
         {/* Overlay Modal for Add/Edit Schedule */}

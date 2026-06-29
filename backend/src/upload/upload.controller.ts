@@ -27,7 +27,12 @@ export class UploadController {
         if (allowed.includes(file.mimetype)) {
           cb(null, true);
         } else {
-          cb(new BadRequestException('Chỉ chấp nhận file ảnh (JPEG, PNG, GIF, WebP)'), false);
+          cb(
+            new BadRequestException(
+              'Chỉ chấp nhận file ảnh (JPEG, PNG, GIF, WebP)',
+            ),
+            false,
+          );
         }
       },
     }),
@@ -38,24 +43,26 @@ export class UploadController {
     }
 
     // Upload buffer to Cloudinary
-    const result = await new Promise<{ secure_url: string }>((resolve, reject) => {
-      const uploadStream = this.cloudinary.uploader.upload_stream(
-        {
-          folder: 'avatars',
-          resource_type: 'image',
-          transformation: [
-            { width: 400, height: 400, crop: 'limit', quality: 'auto' },
-          ],
-        },
-        (error: any, result: any) => {
-          if (error) {
-            console.error('Cloudinary upload error:', error);
-            reject(new Error('Không thể tải ảnh lên Cloudinary'));
-          } else resolve(result);
-        },
-      );
-      uploadStream.end(file.buffer);
-    });
+    const result = await new Promise<{ secure_url: string }>(
+      (resolve, reject) => {
+        const uploadStream = this.cloudinary.uploader.upload_stream(
+          {
+            folder: 'avatars',
+            resource_type: 'image',
+            transformation: [
+              { width: 400, height: 400, crop: 'limit', quality: 'auto' },
+            ],
+          },
+          (error: any, result: any) => {
+            if (error) {
+              console.error('Cloudinary upload error:', error);
+              reject(new Error('Không thể tải ảnh lên Cloudinary'));
+            } else resolve(result);
+          },
+        );
+        uploadStream.end(file.buffer);
+      },
+    );
 
     return { url: result.secure_url };
   }

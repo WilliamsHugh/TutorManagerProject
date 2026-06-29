@@ -25,7 +25,10 @@ import {
   getLearningReports, 
   submitLearningReport,
   updateLearningReport,
-  deleteLearningReport
+  deleteLearningReport,
+  getTutorClassCancellationInfo,
+  tutorRequestCancellation,
+  tutorRespondCancellation
 } from '@/lib/api';
 import { useParams } from 'next/navigation';
 import { useToast } from '@/components/common/Toast';
@@ -47,6 +50,12 @@ export default function StudentDetailPage() {
   const [progressRating, setProgressRating] = useState('good'); // 'excellent', 'good', 'fair', 'poor'
   const [attendanceStatus, setAttendanceStatus] = useState(true); // true = Present, false = Absent
   const [editingReportId, setEditingReportId] = useState<string | null>(null);
+
+  // Cancellation State
+  const [cancellationInfo, setCancellationInfo] = useState<any>(null);
+  const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
+  const [cancelReason, setCancelReason] = useState('');
+  const [processingCancel, setProcessingCancel] = useState(false);
 
   // State cho custom confirm modal
   const [confirmModal, setConfirmModal] = useState<{
@@ -82,7 +91,15 @@ export default function StudentDetailPage() {
         if (foundClass) {
           setClassDetail(foundClass);
           
-          // 3. Fetch actual learning reports for this class from database
+          // 3. Fetch cancellation info
+          try {
+            const cancelData = await getTutorClassCancellationInfo(foundClass.rawId);
+            setCancellationInfo(cancelData);
+          } catch (e) {
+            console.error("Lỗi tải thông tin hủy lớp:", e);
+          }
+          
+          // 4. Fetch actual learning reports for this class from database
           setLoadingReports(true);
           const reportsData = await getLearningReports(foundClass.rawId);
           if (Array.isArray(reportsData)) {
@@ -216,6 +233,39 @@ export default function StudentDetailPage() {
     });
   };
 
+  const handleRequestCancellation = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!cancelReason.trim()) {
+      showToast("Vui lòng nhập lý do hủy lớp.", "error");
+      return;
+    }
+    if (!classDetail?.rawId) return;
+
+    try {
+      setProcessingCancel(true);
+      await tutorRequestCancellation(classDetail.rawId, cancelReason.trim());
+      showToast("Đã gửi yêu cầu hủy lớp thành công.", "success");
+      setIsCancelModalOpen(false);
+      setCancelReason('');
+      await fetchStudentDetail();
+    } catch (err: any) {
+      showToast(err.message || "Lỗi khi gửi yêu cầu hủy lớp", "error");
+    } finally {
+      setProcessingCancel(false);
+    }
+  };
+
+  const handleRespondCancellation = async (agree: boolean) => {
+    if (!classDetail?.rawId) return;
+    try {
+      await tutorRespondCancellation(classDetail.rawId, agree);
+      showToast(agree ? "Đã xác nhận đồng ý hủy lớp." : "Đã từ chối yêu cầu hủy lớp.", "success");
+      await fetchStudentDetail();
+    } catch (err: any) {
+      showToast(err.message || "Lỗi khi phản hồi yêu cầu", "error");
+    }
+  };
+
   if (loading) {
     return (
       <>
@@ -293,15 +343,75 @@ export default function StudentDetailPage() {
               <MessageSquare size={16} /> Nhắn tin
             </button>
             {classDetail && (
-              <button 
-                onClick={() => setIsModalOpen(true)} 
-                className="px-5 py-2.5 rounded-xl bg-blue-600 text-white hover:bg-blue-700 text-sm font-bold flex items-center gap-2 transition-all duration-205 shadow-[0_4px_14px_rgba(37,99,235,0.15)] hover:shadow-[0_6px_20px_rgba(37,99,235,0.25)] active:scale-95 cursor-pointer border-none"
-              >
-                <ClipboardEdit size={16} /> Nộp báo cáo học tập
-              </button>
+              <div className="flex gap-2">
+                {cancellationInfo?.hasCancellationRequest ? (
+                  <button 
+                    disabled
+                    className="px-4 py-2.5 rounded-xl border border-amber-200 text-amber-700 bg-amber-50 text-sm font-bold flex items-center gap-2 shadow-sm cursor-not-allowed"
+                  >
+                    <Icon icon="lucide:clock" fontSize={16} /> Đang chờ duyệt
+                  </button>
+                ) : (
+                  <button 
+                    onClick={() => setIsCancelModalOpen(true)}
+                    className="px-4 py-2.5 rounded-xl border border-red-200 text-red-600 bg-red-50 hover:bg-red-100 hover:border-red-300 text-sm font-bold flex items-center gap-2 transition-all duration-205 cursor-pointer shadow-sm active:scale-95"
+                  >
+                    <Icon icon="lucide:x-circle" fontSize={16} /> Hủy lớp
+                  </button>
+                )}
+                <button 
+                  onClick={() => setIsModalOpen(true)} 
+                  className="px-5 py-2.5 rounded-xl bg-blue-600 text-white hover:bg-blue-700 text-sm font-bold flex items-center gap-2 transition-all duration-205 shadow-[0_4px_14px_rgba(37,99,235,0.15)] hover:shadow-[0_6px_20px_rgba(37,99,235,0.25)] active:scale-95 cursor-pointer border-none"
+                >
+                  <ClipboardEdit size={16} /> Nộp báo cáo học tập
+                </button>
+              </div>
             )}
           </div>
         </div>
+
+        {/* Cancellation Banner */}
+        {cancellationInfo?.hasCancellationRequest && (
+          <div className={`rounded-2xl p-5 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border shadow-sm animate-in fade-in slide-in-from-top-4 ${cancellationInfo.isMyRequest ? 'bg-amber-50 border-amber-200' : 'bg-red-50 border-red-200'}`}>
+            <div className="flex gap-4 items-start">
+              <div className={`mt-1 p-2 rounded-full ${cancellationInfo.isMyRequest ? 'bg-amber-100 text-amber-600' : 'bg-red-100 text-red-600'}`}>
+                <Icon icon="lucide:alert-triangle" fontSize={24} />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <h3 className={`font-bold text-base ${cancellationInfo.isMyRequest ? 'text-amber-800' : 'text-red-800'}`}>
+                  {cancellationInfo.isMyRequest 
+                    ? 'Bạn đã gửi yêu cầu hủy lớp học này'
+                    : `Học viên ${cancellationInfo.requestedByName} đã yêu cầu hủy lớp`}
+                </h3>
+                <p className={`text-sm leading-relaxed ${cancellationInfo.isMyRequest ? 'text-amber-700/80' : 'text-red-700/80'}`}>
+                  <strong>Lý do:</strong> {cancellationInfo.reason || 'Không có lý do'}
+                </p>
+                {cancellationInfo.isMyRequest && (
+                  <p className="text-xs font-medium text-amber-600 mt-1">
+                    Vui lòng chờ học viên phản hồi xác nhận yêu cầu của bạn.
+                  </p>
+                )}
+              </div>
+            </div>
+            
+            {!cancellationInfo.isMyRequest && (
+              <div className="flex gap-2 w-full sm:w-auto shrink-0 mt-2 sm:mt-0">
+                <button 
+                  onClick={() => handleRespondCancellation(false)}
+                  className="flex-1 sm:flex-none px-4 py-2 bg-white border border-red-200 text-red-600 hover:bg-red-50 rounded-xl text-sm font-bold transition-colors cursor-pointer"
+                >
+                  Từ chối
+                </button>
+                <button 
+                  onClick={() => handleRespondCancellation(true)}
+                  className="flex-1 sm:flex-none px-4 py-2 bg-red-600 border border-red-600 text-white hover:bg-red-700 rounded-xl text-sm font-bold shadow-sm transition-colors cursor-pointer"
+                >
+                  Đồng ý hủy
+                </button>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Main Details Grid Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
@@ -503,6 +613,66 @@ export default function StudentDetailPage() {
                     </div>
                   </div>
                 </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* --- REQUEST CANCELLATION MODAL --- */}
+      {isCancelModalOpen && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-in fade-in duration-200" onClick={() => !processingCancel && setIsCancelModalOpen(false)}>
+          <div 
+            className="bg-white rounded-2xl w-full max-w-md overflow-hidden flex flex-col shadow-2xl animate-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-5 border-b border-slate-100 flex items-center gap-3 bg-red-50/50">
+              <div className="w-10 h-10 rounded-full bg-red-100 text-red-600 flex items-center justify-center shrink-0">
+                <Icon icon="lucide:alert-triangle" fontSize={20} />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-bold text-red-900">Yêu cầu hủy lớp</h3>
+                <p className="text-xs text-red-600 font-medium">Hành động này cần sự đồng ý của học viên</p>
+              </div>
+              <button onClick={() => !processingCancel && setIsCancelModalOpen(false)} className="text-slate-400 hover:text-slate-600 bg-transparent border-none cursor-pointer self-start">
+                <Icon icon="lucide:x" fontSize={20} />
+              </button>
+            </div>
+            
+            <form onSubmit={handleRequestCancellation} className="p-6">
+              <div className="flex flex-col gap-4">
+                <p className="text-sm text-slate-600 leading-relaxed font-medium">
+                  Bạn đang chuẩn bị gửi yêu cầu hủy lớp học với <strong className="text-slate-900">{student.fullName}</strong>. Xin lưu ý hệ thống có thể xem xét lý do hủy lớp để đánh giá điểm tín nhiệm gia sư.
+                </p>
+                <div className="flex flex-col gap-2">
+                  <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">Lý do hủy lớp <span className="text-red-500">*</span></label>
+                  <textarea
+                    value={cancelReason}
+                    onChange={(e) => setCancelReason(e.target.value)}
+                    placeholder="Vui lòng nêu rõ lý do bạn không thể tiếp tục giảng dạy lớp học này..."
+                    className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl min-h-[120px] text-sm text-slate-800 placeholder:text-slate-400 outline-none focus:border-red-500 focus:bg-white transition-all font-medium resize-none"
+                    required
+                  />
+                </div>
+              </div>
+              
+              <div className="flex justify-end gap-3 mt-8">
+                <button 
+                  type="button" 
+                  onClick={() => setIsCancelModalOpen(false)}
+                  disabled={processingCancel}
+                  className="px-5 py-2.5 rounded-xl border border-slate-200 text-slate-700 font-bold hover:bg-slate-50 text-sm transition-colors cursor-pointer bg-white disabled:opacity-50"
+                >
+                  Đóng
+                </button>
+                <button 
+                  type="submit" 
+                  disabled={processingCancel || !cancelReason.trim()}
+                  className="px-5 py-2.5 rounded-xl bg-red-600 text-white font-bold hover:bg-red-700 text-sm transition-colors shadow-sm cursor-pointer border-none disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                >
+                  {processingCancel && <Icon icon="lucide:loader-2" className="animate-spin" />}
+                  {processingCancel ? 'Đang gửi...' : 'Gửi yêu cầu'}
+                </button>
               </div>
             </form>
           </div>

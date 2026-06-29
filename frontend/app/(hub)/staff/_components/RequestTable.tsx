@@ -25,87 +25,94 @@ export function RequestTable({
             <div>Thao tác</div>
           </div>
 
-          {requests.map((request) => (
-            <div
-              key={request.id}
-              className="grid cursor-pointer grid-cols-[120px_170px_170px_1fr_100px_90px] items-center border-t border-border bg-white px-3 py-3 text-xs transition-colors hover:bg-secondary/60"
-              role="button"
-              tabIndex={0}
-              onClick={() => onSelectRequest(request)}
-              onKeyDown={(event) => {
-                if (event.key === "Enter" || event.key === " ") {
-                  onSelectRequest(request)
-                }
-              }}
-            >
-              <div>
-                <div className="text-base font-bold">{request.id}</div>
-                <div className="mt-2 text-muted-foreground">
-                  Tạo lúc {request.createdAt}
-                </div>
-              </div>
+          {requests.map((request) => {
+            const status = request.status as any;
+            const displayStatus = 
+              status === "pending" || status === "Chờ xử lý" ? "Chờ xử lý" :
+              status === "processing" || status === "Đang xử lý" ? "Đang xử lý" :
+              status === "matched" || status === "Đã ghép" ? "Đã ghép" :
+              status === "cancelled" || status === "Đã hủy" ? "Đã hủy" : 
+              "Chờ xử lý";
 
-              <div>
-                <div className="font-bold">{request.name}</div>
-                <div className="mt-1 text-muted-foreground">{request.role}</div>
-                <div className="mt-2 font-bold">{request.phone}</div>
-              </div>
+            const isProcessing = displayStatus === "Đang xử lý";
+            const isCompletedOrCancelled = displayStatus === "Đã ghép" || displayStatus === "Đã hủy";
 
-              <div>
-                <div className="font-bold">{request.subject}</div>
-                <div className="mt-1 text-muted-foreground">
-                  {request.level}
-                </div>
-                <div className="mt-2 text-muted-foreground">{request.area}</div>
-              </div>
-
-              <div className="pr-6">
-                <div className="font-bold">{request.schedule}</div>
-                <p className="mt-2 line-clamp-2 max-w-[340px] text-muted-foreground">
-                  {request.note}
-                </p>
-              </div>
-
-              <div>
-                <Badge
-                  className={`rounded-md px-2.5 py-1 text-[11px] ${getStatusClasses(
-                    request.status
-                  )}`}
-                >
-                  {request.status}
-                </Badge>
-              </div>
-
-              <div>
-                <Button
-                  className="h-8 rounded text-xs"
-                  type="button"
-                  variant={request.status === "Đã ghép" || request.status === "Đã hủy" ? "outline" : "default"}
-                  onClick={(event) => {
-                    event.stopPropagation()
+            return (
+              <div
+                key={request.id}
+                className="grid cursor-pointer grid-cols-[120px_170px_170px_1fr_100px_90px] items-center border-t border-border bg-white px-3 py-3 text-xs transition-colors hover:bg-secondary/60"
+                role="button"
+                tabIndex={0}
+                onClick={() => onSelectRequest(request)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
                     onSelectRequest(request)
-                  }}
-                >
-                  {request.status === "Đã ghép" || request.status === "Đã hủy" ? "Xem" : "Ghép"}
-                </Button>
+                  }
+                }}
+              >
+                <div>
+                  <div className="text-base font-bold">{request.id}</div>
+                  <div className="mt-2 text-muted-foreground">
+                    Tạo lúc {request.createdAt}
+                  </div>
+                </div>
+
+                <div>
+                  <div className="font-bold">{request.name}</div>
+                  <div className="mt-1 text-muted-foreground">{request.role}</div>
+                  <div className="mt-2 font-bold">{request.phone}</div>
+                </div>
+
+                <div>
+                  <div className="font-bold">{request.subject}</div>
+                  <div className="mt-1 text-muted-foreground">
+                    {request.level}
+                  </div>
+                  <div className="mt-2 text-muted-foreground">{request.area}</div>
+                </div>
+
+                <div>
+                  <div className="font-bold">{request.schedule}</div>
+                  <p className="mt-2 line-clamp-2 max-w-[340px] text-muted-foreground">
+                    {request.note}
+                  </p>
+                </div>
+
+                <div>
+                  <Badge
+                    variant={isProcessing ? "secondary" : "outline"}
+                    className={`rounded-md px-2.5 py-1 text-[11px] font-bold ${
+                      displayStatus === "Chờ xử lý"
+                        ? "bg-orange-500 text-white border-orange-500"
+                        : displayStatus === "Đã ghép"
+                        ? "bg-green-600 text-white border-green-600"
+                        : displayStatus === "Đã hủy"
+                        ? "bg-slate-500 text-white border-slate-500"
+                        : ""
+                    }`}
+                  >
+                    {displayStatus}
+                  </Badge>
+                </div>
+
+                <div>
+                  <Button
+                    className="h-8 rounded text-xs"
+                    type="button"
+                    variant={isCompletedOrCancelled ? "outline" : "default"}
+                    onClick={(event) => {
+                      event.stopPropagation()
+                      onSelectRequest(request)
+                    }}
+                  >
+                    {isCompletedOrCancelled ? "Xem" : "Ghép"}
+                  </Button>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </div>
   )
-}
-
-function getStatusClasses(status: RequestStatus) {
-  switch (status) {
-    case "Chờ xử lý":
-      return "bg-orange-500 text-white border-orange-500"
-    case "Đang xử lý":
-      return "bg-secondary text-secondary-foreground border-secondary"
-    case "Đã ghép":
-      return "bg-green-600 text-white border-green-600"
-    case "Đã hủy":
-      return "bg-slate-500 text-white border-slate-500"
-  }
 }

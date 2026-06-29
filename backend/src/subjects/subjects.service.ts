@@ -13,7 +13,10 @@ export class SubjectsService {
   ) {}
 
   async findAll(): Promise<Subject[]> {
-    return this.subjectsRepository.find({ where: { isActive: true }, order: { name: 'ASC' } });
+    return this.subjectsRepository.find({
+      where: { isActive: true },
+      order: { name: 'ASC' },
+    });
   }
 
   async findOne(id: string): Promise<Subject> {
@@ -27,7 +30,10 @@ export class SubjectsService {
     return this.subjectsRepository.save(subject);
   }
 
-  async update(id: string, updateSubjectDto: UpdateSubjectDto): Promise<Subject> {
+  async update(
+    id: string,
+    updateSubjectDto: UpdateSubjectDto,
+  ): Promise<Subject> {
     const subject = await this.findOne(id);
     Object.assign(subject, updateSubjectDto);
     return this.subjectsRepository.save(subject);

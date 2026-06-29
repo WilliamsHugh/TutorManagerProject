@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { useState, useEffect } from "react";
 import type { ReactNode } from "react";
 import {
   CalendarDays,
@@ -15,9 +16,38 @@ import type { TutorSuggestion } from "../types";
 type TutorDetailModalProps = {
   tutor: TutorSuggestion | null;
   onClose: () => void;
+  onRecommend?: (tutor: TutorSuggestion) => void;
+  isRecommended?: boolean;
 };
 
-export function TutorDetailModal({ tutor, onClose }: TutorDetailModalProps) {
+export function TutorDetailModal({ tutor, onClose, onRecommend, isRecommended = false }: TutorDetailModalProps) {
+  const [schedules, setSchedules] = useState<any[]>([]);
+  const [loadingSchedule, setLoadingSchedule] = useState(false);
+
+  useEffect(() => {
+    if (!tutor) return;
+    setLoadingSchedule(true);
+    // Fetch schedule for the tutor dynamically
+    const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
+    fetch(`/api/classes/tutor/${tutor.id}/schedule`, {
+      headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+    })
+      .then(res => {
+        if (!res.ok) throw new Error('Failed to load schedule');
+        return res.json();
+      })
+      .then(data => {
+        if (Array.isArray(data)) {
+          setSchedules(data);
+        }
+      })
+      .catch(err => {
+        console.error("Error fetching tutor schedule:", err);
+        setSchedules([]);
+      })
+      .finally(() => setLoadingSchedule(false));
+  }, [tutor]);
+
   if (!tutor) return null;
 
   return (
@@ -25,8 +55,26 @@ export function TutorDetailModal({ tutor, onClose }: TutorDetailModalProps) {
       aria-modal="true"
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 px-4 py-6"
       role="dialog"
+      style={{
+        animation: "tutorModalFadeIn 0.2s ease-out forwards",
+      }}
     >
-      <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-lg bg-white shadow-xl">
+      <style>{`
+        @keyframes tutorModalFadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        @keyframes tutorModalScaleUp {
+          from { transform: scale(0.96); opacity: 0; }
+          to { transform: scale(1); opacity: 1; }
+        }
+      `}</style>
+      <div
+        className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-lg bg-white shadow-xl"
+        style={{
+          animation: "tutorModalScaleUp 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards",
+        }}
+      >
         <div className="flex items-start justify-between gap-4 border-b border-[#e2e8f0] p-5 sm:p-6">
           <div className="flex items-center gap-4">
             <Image
@@ -110,6 +158,47 @@ export function TutorDetailModal({ tutor, onClose }: TutorDetailModalProps) {
             </p>
           </div>
 
+          <div>
+            <h4 className="mb-2 text-sm font-semibold text-[#0f172a] flex items-center gap-1.5">
+              <CalendarDays size={16} className="text-[#0b5fff]" />
+              Lịch giảng dạy / Lịch bận
+            </h4>
+            {loadingSchedule ? (
+              <div className="text-xs text-[#64748b] animate-pulse py-2">Đang tải lịch bận...</div>
+            ) : schedules.length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[160px] overflow-y-auto pr-1">
+                {Object.entries(
+                  schedules.reduce((acc: any, curr) => {
+                    const weekdaysMap: Record<string, string> = {
+                      Mon: "Thứ 2",
+                      Tue: "Thứ 3",
+                      Wed: "Thứ 4",
+                      Thu: "Thứ 5",
+                      Fri: "Thứ 6",
+                      Sat: "Thứ 7",
+                      Sun: "Chủ nhật",
+                    };
+                    const day = weekdaysMap[curr.dayOfWeek] || curr.dayOfWeek;
+                    if (!acc[day]) acc[day] = [];
+                    acc[day].push(`${curr.startTime.slice(0, 5)} - ${curr.endTime.slice(0, 5)} (${curr.class?.subject?.name || "Lớp bận"})`);
+                    return acc;
+                  }, {})
+                ).map(([day, slots]: any) => (
+                  <div key={day} className="rounded-md border border-slate-100 bg-slate-50 p-2 text-xs">
+                    <span className="font-bold text-[#0f172a]">{day}</span>
+                    <ul className="mt-1 space-y-0.5 pl-4 list-disc text-[#64748b]">
+                      {slots.map((slot: string, idx: number) => (
+                        <li key={idx}>{slot}</li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs text-[#64748b] italic py-1">Hiện tại gia sư chưa có lịch giảng dạy cố định.</p>
+            )}
+          </div>
+
           <div className="grid grid-cols-1 gap-3 rounded-md border border-[#e2e8f0] p-4 sm:grid-cols-3">
             <div>
               <p className="text-xs font-medium text-[#64748b]">Học phí</p>
@@ -139,10 +228,21 @@ export function TutorDetailModal({ tutor, onClose }: TutorDetailModalProps) {
             Đóng
           </button>
           <button
-            className="h-10 rounded-md bg-[#0b5fff] px-4 text-sm font-medium text-white transition-opacity hover:opacity-90"
+            className={`h-10 rounded-md px-4 text-sm font-medium transition-all ${
+              isRecommended
+                ? "bg-emerald-50 border border-emerald-200 text-emerald-700 cursor-not-allowed"
+                : "bg-[#0b5fff] text-white hover:opacity-90 active:scale-95"
+            }`}
             type="button"
+            disabled={isRecommended}
+            onClick={() => {
+              if (!isRecommended) {
+                onRecommend?.(tutor);
+                onClose();
+              }
+            }}
           >
-            Đề xuất gia sư này
+            {isRecommended ? "Đã đề xuất" : "Đề xuất gia sư này"}
           </button>
         </div>
       </div>

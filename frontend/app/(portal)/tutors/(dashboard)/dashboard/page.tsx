@@ -8,7 +8,8 @@ import {
   getLearningReports, 
   submitLearningReport, 
   updateLearningReport, 
-  deleteLearningReport
+  deleteLearningReport,
+  getTutorCancellations
 } from '@/lib/api';
 import Link from 'next/link';
 import Header from '@/components/tutor/Header';
@@ -25,6 +26,9 @@ export default function TutorDashboard() {
   const [isUpdating, setIsUpdating] = useState(false);
   const [profile, setProfile] = useState<any>(null);
   const [currentDate, setCurrentDate] = useState(new Date());
+  
+  // Danh sách yêu cầu hủy lớp
+  const [cancellations, setCancellations] = useState<any[]>([]);
 
   // Toast & Confirm Modal (shared components)
   const { showToast, ToastComponent } = useToast();
@@ -72,6 +76,14 @@ export default function TutorDashboard() {
         // Dùng suggestedClasses từ dashboard response
         if (data.suggestedClasses) {
           setSuggestedClasses(data.suggestedClasses);
+        }
+
+        // Lấy danh sách yêu cầu hủy lớp
+        try {
+          const cancelData = await getTutorCancellations();
+          setCancellations(cancelData);
+        } catch (e) {
+          console.error("Lỗi lấy danh sách hủy lớp", e);
         }
       } catch (error) {
         console.error("Lỗi tải dữ liệu dashboard:", error);
@@ -304,6 +316,38 @@ export default function TutorDashboard() {
                 </div>
               </div>
             </div>
+
+            {/* Cancellations Alert List (if any) */}
+            {cancellations.length > 0 && (
+              <div className="card" style={{ background: '#fff', border: '1px solid #fca5a5', borderRadius: '8px', overflow: 'hidden' }}>
+                <div className="card-header" style={{ padding: '16px 24px', background: '#fef2f2', borderBottom: '1px solid #fca5a5', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Icon icon="lucide:alert-triangle" style={{ color: '#ef4444', fontSize: '20px' }} />
+                  <h2 className="card-title" style={{ fontSize: '16px', fontWeight: 600, color: '#991b1b', margin: 0 }}>
+                    Yêu cầu hủy lớp chờ xử lý ({cancellations.length})
+                  </h2>
+                </div>
+                <div style={{ padding: '16px 24px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  {cancellations.map((c: any, i: number) => (
+                    <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px', border: '1px solid #fecaca', borderRadius: '8px', background: '#fffaf8' }}>
+                      <div>
+                        <div style={{ fontWeight: 600, color: '#7f1d1d' }}>{c.subject?.name || 'Môn học'}</div>
+                        <div style={{ fontSize: '13px', color: '#991b1b', marginTop: '4px' }}>
+                          <span style={{ fontWeight: 500 }}>Học viên:</span> {c.student?.user?.fullName} 
+                          <span style={{ margin: '0 8px' }}>|</span> 
+                          <span style={{ fontWeight: 500 }}>Người yêu cầu:</span> {c.cancellationRequestedBy === 'student' ? 'Học viên' : 'Bạn (Gia sư)'}
+                        </div>
+                      </div>
+                      <Link 
+                        href={`/tutors/students/${c.student?.id}`}
+                        style={{ padding: '8px 16px', background: '#ef4444', color: 'white', borderRadius: '6px', fontSize: '13px', fontWeight: 600, textDecoration: 'none' }}
+                      >
+                        Xử lý ngay
+                      </Link>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Current Classes Table */}
             <div className="card" style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px' }}>

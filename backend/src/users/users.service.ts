@@ -21,11 +21,17 @@ export class UsersService {
   ) {}
 
   async findByEmail(email: string): Promise<User | null> {
-    return this.usersRepository.findOne({ where: { email } });
+    return this.usersRepository.findOne({
+      where: { email },
+      relations: { lockedBy: true },
+    });
   }
 
   async findById(id: string): Promise<User | null> {
-    return this.usersRepository.findOne({ where: { id } });
+    return this.usersRepository.findOne({
+      where: { id },
+      relations: { lockedBy: true },
+    });
   }
 
   async findTutorByUserId(userId: string): Promise<Tutor | null> {
@@ -33,7 +39,10 @@ export class UsersService {
   }
 
   async findStudentByUserId(userId: string): Promise<Student | null> {
-    return this.studentsRepository.findOne({ where: { user: { id: userId } }, relations: { user: true } });
+    return this.studentsRepository.findOne({
+      where: { user: { id: userId } },
+      relations: { user: true },
+    });
   }
 
   private async getOrCreateRole(roleName: string): Promise<Role> {
@@ -119,7 +128,12 @@ export class UsersService {
 
   async updateProfile(
     userId: string,
-    data: { fullName?: string; phone?: string; address?: string; avatarUrl?: string },
+    data: {
+      fullName?: string;
+      phone?: string;
+      address?: string;
+      avatarUrl?: string;
+    },
   ): Promise<User> {
     const user = await this.findById(userId);
     if (!user) throw new Error('Không tìm thấy người dùng');

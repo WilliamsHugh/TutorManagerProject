@@ -3,9 +3,10 @@
 import { GraduationCap, Menu, X, Bell, ChevronDown, LogOut, Shield, LayoutDashboard } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useLayoutEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { clearAuth, getAuthUser, isLoggedIn as checkLoginStatus } from "@/lib/auth";
+import { apiFetch } from "@/lib/api/interceptor";
 
 interface NavLink {
   label: string;
@@ -31,6 +32,9 @@ export default function Header({
   maxWidth = "1328px" 
 }: HeaderProps) {
   const [isOpen, setIsOpen] = useState(false);
+  // Khởi tạo false/null — khớp với SSR, không hydration error
+  // useLayoutEffect chạy đồng bộ TRƯỚC khi browser paint
+  // => DOM chỉ được paint 1 lần với state đúng, không nhấp nháy
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -39,25 +43,69 @@ export default function Header({
   const router = useRouter();
   const navLinks = customLinks || defaultNavLinks;
 
-  useEffect(() => {
+  // useLayoutEffect chạy đồng bộ trước paint → cập nhật auth state đúng
+  // ngay từ lần render đầu tiên, không gây hydration error
+  useLayoutEffect(() => {
     setIsLoggedIn(checkLoginStatus());
     setUser(getAuthUser());
   }, []);
 
+  // useEffect cho event listeners (pageshow/popstate) — không cần đồng bộ
+  useEffect(() => {
+    const checkAuth = () => {
+      setIsLoggedIn(checkLoginStatus());
+      setUser(getAuthUser());
+    };
+
+    window.addEventListener('pageshow', checkAuth);
+    window.addEventListener('popstate', checkAuth);
+
+    return () => {
+      window.removeEventListener('pageshow', checkAuth);
+      window.removeEventListener('popstate', checkAuth);
+    };
+  }, [pathname]);
+
+  // Kiểm tra token ngầm qua API khi load trang
+  useEffect(() => {
+    const verifySession = async () => {
+      if (checkLoginStatus()) {
+        try {
+          const backendUrl = process.env.NEXT_PUBLIC_API_URL ?? process.env.NEXT_PUBLIC_BACKEND_URL ?? 'http://localhost:3001/api';
+          await apiFetch(`${backendUrl}/auth/me`, {
+            headers: {
+              'X-Prevent-Redirect': 'true'
+            }
+          });
+        } catch (error) {
+          // Khi lỗi, interceptor đã gọi clearAuth(), ta chỉ cần cập nhật UI
+          setIsLoggedIn(false);
+          setUser(null);
+        }
+      }
+    };
+    verifySession();
+  }, [pathname]);
+
   const handleLogout = async () => {
-    try {
-      await fetch("/api/logout", { method: "POST" });
-    } catch (error) {
-      console.error("Logout error:", error);
-    }
     clearAuth();
     setIsLoggedIn(false);
     setUser(null);
-    if (pathname.startsWith("/hub") || pathname.startsWith("/staff")) {
-      router.push("/hub/login");
-    } else {
-      router.push("/login");
+
+    const targetUrl = (pathname.startsWith("/hub") || pathname.startsWith("/staff")) ? "/hub/login" : "/";
+
+    // PHẢI await để trình duyệt nhận Set-Cookie xóa httpOnly cookie TRƯỚC KHI chuyển trang
+    // Nếu không await, cookie httpOnly vẫn còn → middleware redirect về dashboard thay vì /login
+    try {
+      await Promise.race([
+        fetch("/api/logout", { method: "POST" }),
+        new Promise((_, reject) => setTimeout(() => reject(new Error("timeout")), 2000)),
+      ]);
+    } catch (err) {
+      console.error("Logout error:", err);
     }
+
+    window.location.href = targetUrl;
   };
 
   return (

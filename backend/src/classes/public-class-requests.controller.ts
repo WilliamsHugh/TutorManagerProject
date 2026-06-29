@@ -7,9 +7,7 @@ import { ClassRequestsService } from './class-requests.service';
  */
 @Controller('public/class-requests')
 export class PublicClassRequestsController {
-  constructor(
-    private readonly classRequestsService: ClassRequestsService,
-  ) {}
+  constructor(private readonly classRequestsService: ClassRequestsService) {}
 
   @Get()
   async getPublicClassRequests(

@@ -94,6 +94,16 @@ export class AuthService {
       throw new UnauthorizedException('Email hoặc mật khẩu không đúng');
     }
 
+    if (!user.isActive) {
+      const staffName = user.lockedBy?.fullName || 'Quản trị viên';
+      const staffId = user.lockedBy?.id
+        ? user.lockedBy.id.slice(0, 8)
+        : 'ADMIN';
+      throw new UnauthorizedException(
+        `Tài khoản của bạn đã bị khóa bởi nhân viên ${staffName} (ID: ${staffId}). Vui lòng liên hệ trung tâm để được hỗ trợ.`,
+      );
+    }
+
     const roleName = user.role?.name ?? '';
 
     // Phân luồng đăng nhập dựa theo Portal
@@ -167,7 +177,9 @@ export class AuthService {
           </div>
         `,
       });
-      console.log(`[MAILER] Đã gửi OTP đặt lại mật khẩu thành công tới ${email}`);
+      console.log(
+        `[MAILER] Đã gửi OTP đặt lại mật khẩu thành công tới ${email}`,
+      );
     } catch (error) {
       console.error(`[MAILER ERROR] Lỗi khi gửi mail tới ${email}:`, error);
     }
@@ -240,7 +252,9 @@ export class AuthService {
     });
 
     if (!refreshToken) {
-      throw new UnauthorizedException('Refresh token không hợp lệ hoặc đã bị thu hồi');
+      throw new UnauthorizedException(
+        'Refresh token không hợp lệ hoặc đã bị thu hồi',
+      );
     }
 
     if (new Date() > refreshToken.expiresAt) {
@@ -250,7 +264,14 @@ export class AuthService {
     // Kiểm tra user còn hoạt động
     const user = refreshToken.user;
     if (!user.isActive) {
-      throw new UnauthorizedException('Tài khoản của bạn đã bị vô hiệu hóa');
+      const userDetail = await this.usersService.findById(user.id);
+      const staffName = userDetail?.lockedBy?.fullName || 'Quản trị viên';
+      const staffId = userDetail?.lockedBy?.id
+        ? userDetail.lockedBy.id.slice(0, 8)
+        : 'ADMIN';
+      throw new UnauthorizedException(
+        `Tài khoản của bạn đã bị khóa bởi nhân viên ${staffName} (ID: ${staffId}).`,
+      );
     }
 
     // Thu hồi refresh token cũ (rotation)

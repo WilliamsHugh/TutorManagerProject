@@ -35,6 +35,16 @@ export type ApiClassRequest = {
   student?: ApiStudent
   subject?: ApiSubject
   handledBy?: ApiUser | null
+  preferredTutor?: {
+    id: string
+    educationLevel?: string | null
+    major?: string | null
+    experience?: string | null
+    availableAreas?: string | null
+    bio?: string | null
+    university?: string | null
+    user?: ApiUser
+  } | null
 }
 
 export type RequestItem = {
@@ -51,6 +61,18 @@ export type RequestItem = {
   note: string
   status: RequestStatus
   studentId?: string
+  preferredTutor?: {
+    id: string
+    name: string
+    educationLevel: string
+    major: string
+    experience: string
+    availableAreas: string
+    bio: string
+    university: string
+    phone: string
+    email: string
+  } | null
 }
 
 export type ApiTutorRecommendation = {

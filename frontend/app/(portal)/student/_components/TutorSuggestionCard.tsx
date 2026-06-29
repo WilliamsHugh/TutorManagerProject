@@ -5,11 +5,15 @@ import type { TutorSuggestion } from "../types";
 type TutorSuggestionCardProps = {
   tutor: TutorSuggestion;
   onViewDetails: (tutor: TutorSuggestion) => void;
+  onRecommend?: (tutor: TutorSuggestion) => void;
+  isRecommended?: boolean;
 };
 
 export function TutorSuggestionCard({
   tutor,
   onViewDetails,
+  onRecommend,
+  isRecommended = false,
 }: TutorSuggestionCardProps) {
   return (
     <article className="flex flex-col gap-4 rounded-lg border border-[#e2e8f0] bg-white p-4 sm:flex-row sm:items-start">
@@ -54,10 +58,16 @@ export function TutorSuggestionCard({
           Xem chi tiết
         </button>
         <button
-          className="h-9 rounded-md bg-[#0b5fff] px-3 text-[13px] font-medium text-white transition-opacity hover:opacity-90"
+          className={`h-9 rounded-md px-3 text-[13px] font-medium transition-all ${
+            isRecommended
+              ? "bg-emerald-50 border border-emerald-200 text-emerald-700 cursor-not-allowed"
+              : "bg-[#0b5fff] text-white hover:opacity-90 active:scale-95"
+          }`}
           type="button"
+          disabled={isRecommended}
+          onClick={() => !isRecommended && onRecommend?.(tutor)}
         >
-          Đề xuất gia sư
+          {isRecommended ? "Đã đề xuất" : "Đề xuất gia sư"}
         </button>
       </div>
     </article>

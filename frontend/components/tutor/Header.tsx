@@ -44,14 +44,20 @@ export default function Header({ title, showSearch = false, userProfile }: Heade
   const unreadCount = Array.isArray(notifications) ? notifications.filter(n => !n.isRead).length : 0;
 
   const handleLogout = async () => {
+    clearAuth();
+    document.cookie = "access_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+    
+    // PHẢI await để trình duyệt nhận Set-Cookie xóa httpOnly cookie TRƯỚC KHI chuyển trang
     try {
-      // Gọi API Logout của Next.js để xóa Cookie HttpOnly một cách an toàn
-      await fetch('/api/logout', { method: 'POST' });
-    } catch (error) {
-      console.error("Lỗi đăng xuất:", error);
+      await Promise.race([
+        fetch('/api/logout', { method: 'POST' }),
+        new Promise((_, reject) => setTimeout(() => reject(new Error("timeout")), 2000)),
+      ]);
+    } catch (err) {
+      console.error(err);
     }
-    clearAuth(); // Xóa localStorage
-    router.push('/login');
+    
+    window.location.href = '/';
   };
 
   const handleMarkAllRead = async () => {

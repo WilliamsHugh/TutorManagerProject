@@ -49,7 +49,9 @@ export class AuthController {
     const result = await this.authService.login(dto);
 
     // Cấp refresh token
-    const refreshTokenStr = await this.authService.generateRefreshToken(result.user);
+    const refreshTokenStr = await this.authService.generateRefreshToken(
+      result.user,
+    );
 
     // Set cookie httpOnly cho access_token (30 phút)
     response.cookie('access_token', result.access_token, {

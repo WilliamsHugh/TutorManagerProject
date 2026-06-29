@@ -32,7 +32,12 @@ import { ReviewsController } from './reviews.controller';
       TutorSubject,
     ]),
   ],
-  controllers: [ClassRequestsController, PublicClassRequestsController, ClassesController, ReviewsController],
+  controllers: [
+    ClassRequestsController,
+    PublicClassRequestsController,
+    ClassesController,
+    ReviewsController,
+  ],
   providers: [ClassRequestsService, ClassesService],
   exports: [ClassRequestsService, ClassesService],
 })

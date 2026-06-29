@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Setting } from './setting.entity';
@@ -18,12 +22,18 @@ export class SettingsService {
     return this.settingsRepository.findOneBy({ key });
   }
 
-  async getValue(key: string, defaultValue?: string): Promise<string | undefined> {
+  async getValue(
+    key: string,
+    defaultValue?: string,
+  ): Promise<string | undefined> {
     const setting = await this.settingsRepository.findOneBy({ key });
     return setting?.value ?? defaultValue;
   }
 
-  async getNumberValue(key: string, defaultValue?: number): Promise<number | undefined> {
+  async getNumberValue(
+    key: string,
+    defaultValue?: number,
+  ): Promise<number | undefined> {
     const setting = await this.settingsRepository.findOneBy({ key });
     if (!setting) return defaultValue;
     const num = Number(setting.value);
@@ -37,7 +47,8 @@ export class SettingsService {
       if (data.label !== undefined) existing.label = data.label;
       if (data.type !== undefined) existing.type = data.type;
       if (data.options !== undefined) existing.options = data.options;
-      if (data.description !== undefined) existing.description = data.description;
+      if (data.description !== undefined)
+        existing.description = data.description;
       return this.settingsRepository.save(existing);
     }
     return this.settingsRepository.save(
@@ -54,7 +65,8 @@ export class SettingsService {
 
   async update(key: string, value: string): Promise<Setting> {
     const setting = await this.settingsRepository.findOneBy({ key });
-    if (!setting) throw new NotFoundException(`Không tìm thấy cấu hình '${key}'`);
+    if (!setting)
+      throw new NotFoundException(`Không tìm thấy cấu hình '${key}'`);
     setting.value = value;
     return this.settingsRepository.save(setting);
   }
@@ -102,7 +114,8 @@ export class SettingsService {
         value: '30',
         label: 'Khoảng cách tối thiểu giữa các buổi (phút)',
         type: 'number',
-        description: 'Khoảng thời gian tối thiểu giữa 2 buổi học của cùng gia sư hoặc học viên',
+        description:
+          'Khoảng thời gian tối thiểu giữa 2 buổi học của cùng gia sư hoặc học viên',
       },
       {
         key: 'max_students_per_class',
@@ -120,7 +133,8 @@ export class SettingsService {
           { label: 'Không', value: 'false' },
           { label: 'Có', value: 'true' },
         ]),
-        description: 'Tự động phê duyệt hồ sơ gia sư mới mà không cần admin duyệt',
+        description:
+          'Tự động phê duyệt hồ sơ gia sư mới mà không cần admin duyệt',
       },
       {
         key: 'enable_student_review',
@@ -131,7 +145,8 @@ export class SettingsService {
           { label: 'Không', value: 'false' },
           { label: 'Có', value: 'true' },
         ]),
-        description: 'Cho phép học viên đánh giá gia sư sau khi hoàn thành khóa học',
+        description:
+          'Cho phép học viên đánh giá gia sư sau khi hoàn thành khóa học',
       },
     ];
 

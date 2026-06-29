@@ -45,12 +45,32 @@ export class ClassRequestsService {
     });
     if (!subject) throw new NotFoundException('Không tìm thấy môn học');
 
+    let preferredTutor: Tutor | null = null;
+    if (dto.preferredTutorId) {
+      const tutor = await this.tutorsRepository.findOne({
+        where: { id: dto.preferredTutorId },
+        relations: { user: true },
+      });
+      if (tutor) {
+        preferredTutor = tutor;
+      }
+    }
+
+    const requirementLines: string[] = [];
+    if (dto.requirements) requirementLines.push(dto.requirements);
+    if (preferredTutor) {
+      requirementLines.push(
+        `[Học viên đề xuất gia sư: ${preferredTutor.user?.fullName || preferredTutor.id}]`,
+      );
+    }
+
     const request = this.classRequestsRepository.create({
       student,
       subject,
+      preferredTutor: preferredTutor ?? undefined,
       preferredArea: dto.preferredArea,
       preferredSchedule: dto.preferredSchedule,
-      requirements: dto.requirements,
+      requirements: requirementLines.join('\n') || undefined,
       status: RequestStatus.PENDING,
     });
 
@@ -63,6 +83,8 @@ export class ClassRequestsService {
       .leftJoinAndSelect('request.student', 'student')
       .leftJoinAndSelect('student.user', 'studentUser')
       .leftJoinAndSelect('request.subject', 'subject')
+      .leftJoinAndSelect('request.preferredTutor', 'preferredTutor')
+      .leftJoinAndSelect('preferredTutor.user', 'preferredTutorUser')
       .leftJoinAndSelect('request.handledBy', 'handledBy')
       .orderBy('request.createdAt', 'DESC');
 
@@ -87,6 +109,7 @@ export class ClassRequestsService {
       relations: {
         student: { user: true },
         subject: true,
+        preferredTutor: { user: true },
         handledBy: true,
       },
     });
@@ -109,7 +132,13 @@ export class ClassRequestsService {
     page?: number;
     limit?: number;
   }) {
-    const { search = '', subject = '', mode = '', page = 1, limit = 12 } = params;
+    const {
+      search = '',
+      subject = '',
+      mode = '',
+      page = 1,
+      limit = 12,
+    } = params;
 
     const qb = this.classRequestsRepository
       .createQueryBuilder('request')

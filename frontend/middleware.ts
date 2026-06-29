@@ -61,6 +61,18 @@ export async function middleware(request: NextRequest) {
     }
   };
 
+  // Helper: xác thực token nghiêm ngặt (không chấp nhận token hết hạn)
+  const verifyTokenStrict = async () => {
+    if (!token) return null;
+    try {
+      const secret = new TextEncoder().encode(JWT_SECRET);
+      const { payload } = await jwtVerify(token, secret);
+      return payload as unknown as JwtPayload;
+    } catch {
+      return null;
+    }
+  };
+
   // Helper: xóa cookie token
   const clearTokenCookies = (response: NextResponse) => {
     response.cookies.delete('access_token');
@@ -128,24 +140,32 @@ export async function middleware(request: NextRequest) {
 
   // 6. Đã đăng nhập nhưng truy cập các trang đăng nhập công cộng (/login, /register)
   if (isClientAuthRoute && token) {
-    const payload = await verifyToken();
+    const payload = await verifyTokenStrict();
 
     if (payload) {
       if (payload.role === 'tutor') return NextResponse.redirect(new URL('/tutors/dashboard', request.url));
       if (payload.role === 'student') return NextResponse.redirect(new URL('/student', request.url));
       if (payload.role === 'admin') return NextResponse.redirect(new URL('/hub/dashboard', request.url));
       if (payload.role === 'staff') return NextResponse.redirect(new URL('/staff/request-management', request.url));
+    } else {
+      const response = NextResponse.next();
+      clearTokenCookies(response);
+      return response;
     }
   }
 
   // 7. Đã đăng nhập nhưng truy cập trang đăng nhập nội bộ (/hub/login)
   if (isHubLoginRoute && token) {
-    const payload = await verifyToken();
+    const payload = await verifyTokenStrict();
 
     if (payload) {
       if (payload.role === 'admin') return NextResponse.redirect(new URL('/hub/dashboard', request.url));
       if (payload.role === 'staff') return NextResponse.redirect(new URL('/staff/request-management', request.url));
       if (payload.role === 'tutor' || payload.role === 'student') return NextResponse.redirect(new URL('/403', request.url));
+    } else {
+      const response = NextResponse.next();
+      clearTokenCookies(response);
+      return response;
     }
   }
 

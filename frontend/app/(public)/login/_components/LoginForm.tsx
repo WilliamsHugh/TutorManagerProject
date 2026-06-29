@@ -66,19 +66,16 @@ export default function LoginForm() {
 
             // Lưu token và user vào localStorage
             saveAuth(data.access_token, data.user);
-            
-            // Gán cookie để Middleware có thể đọc được token (Sửa lỗi không nhảy trang)
-            document.cookie = `access_token=${data.access_token}; path=/; max-age=86400; SameSite=Lax`;
 
-            // Điều hướng theo role
+            // Điều hướng theo role — dùng window.location.href để trình duyệt
+            // gửi httpOnly cookie (do backend set qua proxy) trong request mới tới middleware
             const role: string = data.user?.role?.name ?? "";
             if (role === "tutor") {
-                router.push("/tutors/dashboard"); // Rút gọn đường dẫn
+                window.location.href = "/tutors/dashboard";
             } else if (role === "student") {
-                router.push("/student"); 
+                window.location.href = "/student"; 
             } else {
-                // Fallback nếu role không xác định
-                router.push("/");
+                window.location.href = "/";
             }
         } catch {
             setErrorMsg("Không thể kết nối đến máy chủ. Vui lòng thử lại.");

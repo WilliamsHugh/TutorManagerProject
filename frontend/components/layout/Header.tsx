@@ -7,6 +7,8 @@ import { useState, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { clearAuth, getAuthUser, isLoggedIn as checkLoginStatus } from "@/lib/auth";
 
+import { getNotifications, markNotificationAsRead, markAllNotificationsAsRead } from "@/lib/api";
+
 interface NavLink {
   label: string;
   href: string;
@@ -34,15 +36,64 @@ export default function Header({
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [isNotiOpen, setIsNotiOpen] = useState(false);
 
   const pathname = usePathname();
   const router = useRouter();
   const navLinks = customLinks || defaultNavLinks;
 
   useEffect(() => {
-    setIsLoggedIn(checkLoginStatus());
+    const logged = checkLoginStatus();
+    setIsLoggedIn(logged);
     setUser(getAuthUser());
+
+    if (logged) {
+      getNotifications()
+        .then((data) => {
+          if (Array.isArray(data)) setNotifications(data);
+        })
+        .catch((err) => console.error("Error loading notifications:", err));
+    }
   }, []);
+
+  const unreadCount = Array.isArray(notifications)
+    ? notifications.filter((n) => !n.isRead).length
+    : 0;
+
+  const handleNotificationClick = async (noti: any) => {
+    try {
+      await markNotificationAsRead(noti.id);
+      setNotifications((prev) =>
+        prev.map((n) => (n.id === noti.id ? { ...n, isRead: true } : n))
+      );
+      setIsNotiOpen(false);
+
+      const msg = noti.message?.toLowerCase() || '';
+      const title = noti.title?.toLowerCase() || '';
+
+      if (title.includes('lịch') || msg.includes('lịch học') || msg.includes('lịch dạy')) {
+        router.push('/student/calendar');
+      } else if (title.includes('lớp học') || msg.includes('lớp học')) {
+        router.push('/student/classes');
+      } else if (title.includes('đề xuất') || title.includes('yêu cầu ghép') || msg.includes('đề xuất') || msg.includes('yêu cầu ghép') || msg.includes('thương lượng')) {
+        router.push('/student');
+      } else if (title.includes('hồ sơ') || msg.includes('hồ sơ')) {
+        router.push('/student/profile');
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleMarkAllAsRead = async () => {
+    try {
+      await markAllNotificationsAsRead();
+      setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   const handleLogout = async () => {
     try {
@@ -53,13 +104,20 @@ export default function Header({
     } catch (error) {
       console.error("Logout error:", error);
     }
+    try {
+      await fetch("/api/logout", {
+        method: "POST",
+      });
+    } catch (error) {
+      console.error("Local logout error:", error);
+    }
     clearAuth();
     setIsLoggedIn(false);
     setUser(null);
     if (pathname.startsWith("/hub") || pathname.startsWith("/staff")) {
       router.push("/hub/login");
     } else {
-      router.push("/login");
+      router.push("/");
     }
   };
 
@@ -115,14 +173,72 @@ export default function Header({
           {isLoggedIn && user ? (
             <div className="flex items-center gap-2 sm:gap-4">
               {showNotifications && (
-                <button
-                  aria-label="Thông báo"
-                  className="relative flex h-10 w-10 items-center justify-center rounded-full border border-black/5 bg-white text-[#687185] cursor-pointer hover:bg-gray-50 transition-all hover:scale-105 active:scale-95"
-                  type="button"
-                >
-                  <Bell size={20} />
-                  <span className="absolute right-2 top-2 flex h-2 w-2 rounded-full bg-[#ef4444]" />
-                </button>
+                <div className="relative">
+                  <button
+                    aria-label="Thông báo"
+                    className="relative flex h-10 w-10 items-center justify-center rounded-full border border-black/5 bg-white text-[#687185] cursor-pointer hover:bg-gray-50 transition-all hover:scale-105 active:scale-95"
+                    type="button"
+                    onClick={() => setIsNotiOpen(!isNotiOpen)}
+                  >
+                    <Bell size={20} />
+                    {unreadCount > 0 && (
+                      <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-[#ef4444] text-[10px] font-bold text-white shadow-sm">
+                        {unreadCount}
+                      </span>
+                    )}
+                  </button>
+
+                  {isNotiOpen && (
+                    <>
+                      <div className="fixed inset-0 z-40" onClick={() => setIsNotiOpen(false)} />
+                      <div className="absolute right-0 mt-3 w-80 rounded-2xl border shadow-2xl py-3 z-50 overflow-hidden bg-white animate-in fade-in slide-in-from-top-2" style={{ borderColor: "var(--border)" }}>
+                        <div className="px-4 pb-2 border-b flex justify-between items-center" style={{ borderColor: "var(--border)" }}>
+                          <span className="font-bold text-sm" style={{ color: "var(--foreground)" }}>Thông báo</span>
+                          {unreadCount > 0 && (
+                            <button
+                              onClick={handleMarkAllAsRead}
+                              className="text-xs text-indigo-600 hover:text-indigo-800 bg-transparent border-none cursor-pointer font-medium"
+                            >
+                              Đọc tất cả
+                            </button>
+                          )}
+                        </div>
+
+                        <div className="max-h-64 overflow-y-auto">
+                          {notifications.length > 0 ? (
+                            notifications.map((noti: any) => (
+                              <div
+                                key={noti.id}
+                                onClick={() => handleNotificationClick(noti)}
+                                className={`px-4 py-3 hover:bg-gray-50 border-b cursor-pointer transition-colors flex gap-2.5 items-start ${!noti.isRead ? 'bg-indigo-50/30' : ''}`}
+                                style={{ borderColor: "var(--border)" }}
+                              >
+                                <div className="flex-1 text-left min-w-0">
+                                  <span className={`block text-xs font-bold ${!noti.isRead ? 'text-indigo-600' : 'text-gray-500'}`}>
+                                    {noti.title}
+                                  </span>
+                                  <span className="block text-[13px] text-gray-600 mt-0.5 leading-snug break-words">
+                                    {noti.message}
+                                  </span>
+                                  <span className="block text-[10px] text-gray-400 mt-1">
+                                    {new Date(noti.createdAt).toLocaleDateString('vi-VN')}
+                                  </span>
+                                </div>
+                                {!noti.isRead && (
+                                  <span className="h-2 w-2 rounded-full bg-indigo-600 shrink-0 mt-1" />
+                                )}
+                              </div>
+                            ))
+                          ) : (
+                            <div className="px-4 py-8 text-center text-xs text-gray-400">
+                              Không có thông báo nào
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
               )}
 
               {/* User Dropdown */}

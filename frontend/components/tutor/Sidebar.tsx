@@ -10,7 +10,7 @@ const NAV_ITEMS = [
   { href: '/tutors/calendar', icon: 'lucide:calendar', label: 'Lịch dạy' },
   { href: '/tutors/new-classes', icon: 'lucide:search', label: 'Lớp học mới' },
   { href: '/tutors/recommendations', icon: 'lucide:user-check', label: 'Đề xuất từ HS' },
-  { href: '/tutors/students', icon: 'lucide:users', label: 'Học viên của tôi' },
+  { href: '/tutors/students', icon: 'lucide:book-open', label: 'Lớp học của tôi' },
   { href: '/tutors/earnings', icon: 'lucide:wallet', label: 'Thu nhập' },
   { href: '/tutors/profile', icon: 'lucide:user', label: 'Hồ sơ chuyên môn' },
 ];

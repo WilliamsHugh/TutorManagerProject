@@ -4,7 +4,8 @@ import { useEffect, useState } from 'react';
 import { Icon } from '@iconify/react';
 import { getAuthUser, clearAuth } from '@/lib/auth';
 
-import { getTutorNotifications } from '@/lib/api';
+import { useRouter } from 'next/navigation';
+import { getNotifications, markNotificationAsRead, markAllNotificationsAsRead } from '@/lib/api';
 
 interface HeaderProps {
   title: string;
@@ -18,6 +19,7 @@ interface HeaderProps {
 }
 
 export default function Header({ title, showSearch = false, userProfile }: HeaderProps) {
+  const router = useRouter();
   const [user, setUser] = useState<any>(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
@@ -30,7 +32,7 @@ export default function Header({ title, showSearch = false, userProfile }: Heade
     // Chỉ lấy thông báo từ database nếu đang có token đăng nhập
     const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
     if (token) {
-      getTutorNotifications()
+      getNotifications()
         .then(data => {
           if (Array.isArray(data)) {
             setNotifications(data);
@@ -41,6 +43,39 @@ export default function Header({ title, showSearch = false, userProfile }: Heade
   }, []);
 
   const unreadCount = Array.isArray(notifications) ? notifications.filter(n => !n.isRead).length : 0;
+
+  const handleNotificationClick = async (noti: any) => {
+    try {
+      await markNotificationAsRead(noti.id);
+      setNotifications(prev => prev.map(n => n.id === noti.id ? { ...n, isRead: true } : n));
+      setIsNotificationsOpen(false);
+
+      // Route mapping for Tutor
+      const msg = noti.message?.toLowerCase() || '';
+      const titleLower = noti.title?.toLowerCase() || '';
+
+      if (titleLower.includes('lịch') || msg.includes('lịch dạy') || msg.includes('lịch học')) {
+        router.push('/tutors/calendar');
+      } else if (titleLower.includes('đề xuất') || titleLower.includes('yêu cầu ghép') || msg.includes('đề xuất') || msg.includes('yêu cầu ghép') || msg.includes('thương lượng')) {
+        router.push('/tutors/recommendations');
+      } else if (titleLower.includes('lớp học') || msg.includes('lớp học')) {
+        router.push('/tutors/students');
+      } else if (titleLower.includes('hồ sơ') || msg.includes('hồ sơ') || titleLower.includes('gia sư')) {
+        router.push('/tutors/profile');
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleMarkAllAsRead = async () => {
+    try {
+      await markAllNotificationsAsRead();
+      setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   const handleLogout = async () => {
     clearAuth();
@@ -93,14 +128,19 @@ export default function Header({ title, showSearch = false, userProfile }: Heade
               }}
               onClick={(e) => e.stopPropagation()}
             >
-              <div style={{ padding: '16px', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+               <div style={{ padding: '16px', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ fontWeight: 600, fontSize: '14px' }}>Thông báo</span>
-                <button style={{ fontSize: '12px', color: '#2563eb', border: 'none', background: 'none', cursor: 'pointer' }}>Đánh dấu đã đọc</button>
+                {unreadCount > 0 && (
+                  <button onClick={handleMarkAllAsRead} style={{ fontSize: '12px', color: '#2563eb', border: 'none', background: 'none', cursor: 'pointer' }}>Đánh dấu đã đọc</button>
+                )}
               </div>
               <div style={{ maxHeight: '360px', overflowY: 'auto' }}>
                 {notifications.length > 0 ? notifications.map((noti: any) => (
-                  <div key={noti.id} style={{ padding: '12px 16px', borderBottom: '1px solid #f8fafc', backgroundColor: noti.isRead ? 'transparent' : '#f0f7ff', transition: 'background 0.2s' }}>
-                    <div style={{ fontWeight: 600, fontSize: '13px', marginBottom: '2px', color: '#1e293b' }}>{noti.title}</div>
+                  <div key={noti.id} onClick={() => handleNotificationClick(noti)} style={{ padding: '12px 16px', borderBottom: '1px solid #f8fafc', backgroundColor: noti.isRead ? 'transparent' : '#f0f7ff', transition: 'background 0.2s', cursor: 'pointer' }}>
+                    <div style={{ fontWeight: 600, fontSize: '13px', marginBottom: '2px', color: '#1e293b', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span>{noti.title}</span>
+                      {!noti.isRead && <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#2563eb' }} />}
+                    </div>
                     <div style={{ fontSize: '12px', color: '#64748b', lineHeight: '1.5', marginBottom: '4px' }}>{noti.message}</div>
                     <div style={{ fontSize: '10px', color: '#94a3b8' }}>{new Date(noti.createdAt).toLocaleString('vi-VN')}</div>
                   </div>

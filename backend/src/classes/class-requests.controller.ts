@@ -58,4 +58,28 @@ export class ClassRequestsController {
   ) {
     return this.classRequestsService.updateStatus(id, dto.status, req.user);
   }
+
+  @Post(':id/propose-tutors')
+  @Roles(RoleType.STAFF, RoleType.ADMIN)
+  proposeTutors(@Param('id') id: string, @Body('tutorIds') tutorIds: string[]) {
+    return this.classRequestsService.proposeTutors(id, tutorIds);
+  }
+
+  @Get('student/my-requests')
+  @Roles(RoleType.STUDENT)
+  getStudentRequests(@Request() req) {
+    const userId = req.user.id || req.user.sub;
+    return this.classRequestsService.getStudentRequests(userId);
+  }
+
+  @Post(':id/select-tutor')
+  @Roles(RoleType.STUDENT)
+  selectTutor(
+    @Param('id') id: string,
+    @Body('tutorId') tutorId: string,
+    @Request() req,
+  ) {
+    const userId = req.user.id || req.user.sub;
+    return this.classRequestsService.selectTutor(id, tutorId, userId);
+  }
 }

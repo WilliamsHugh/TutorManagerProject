@@ -3,6 +3,8 @@ import {
   PrimaryGeneratedColumn,
   Column,
   ManyToOne,
+  ManyToMany,
+  JoinTable,
   JoinColumn,
   CreateDateColumn,
   UpdateDateColumn,
@@ -38,6 +40,14 @@ export class ClassRequest {
   @ManyToOne(() => Tutor, { nullable: true })
   @JoinColumn({ name: 'preferred_tutor_id' })
   preferredTutor?: Tutor;
+
+  @ManyToMany(() => Tutor, { cascade: true })
+  @JoinTable({
+    name: 'class_request_proposed_tutors',
+    joinColumn: { name: 'class_request_id', referencedColumnName: 'id' },
+    inverseJoinColumn: { name: 'tutor_id', referencedColumnName: 'id' },
+  })
+  proposedTutors!: Tutor[];
 
   @ManyToOne(() => User, { nullable: true })
   @JoinColumn({ name: 'handled_by' })

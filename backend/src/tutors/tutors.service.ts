@@ -4,9 +4,10 @@ import {
   ForbiddenException,
   OnModuleInit,
   BadRequestException,
+  ConflictException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Between, In } from 'typeorm';
+import { Repository, Between, In, IsNull, Not } from 'typeorm';
 
 // Entities
 import { Class, ClassStatus } from '../classes/entities/class.entity';
@@ -25,6 +26,8 @@ import { Notification } from '../notifications/notification.entity';
 import { TutorSubject } from './tutor-subject.entity';
 import { Review } from '../classes/entities/review.entity';
 import { CreateLearningReportDto } from '../classes/dto/create-learning-report.dto';
+import { NotificationsService } from '../notifications/notifications.service';
+import { NotificationType } from '../notifications/notification.entity';
 
 @Injectable()
 export class TutorsService implements OnModuleInit {
@@ -53,6 +56,7 @@ export class TutorsService implements OnModuleInit {
     private readonly tutorSubjectRepository: Repository<TutorSubject>,
     @InjectRepository(Review)
     private readonly reviewRepository: Repository<Review>,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   async onModuleInit() {
@@ -586,34 +590,48 @@ export class TutorsService implements OnModuleInit {
     const profile = await this.getTutorProfileData(userId);
     const tutorId = profile.id;
 
-    // Lấy tất cả lớp học để lọc ra danh sách học viên
+    // Lấy tất cả lớp học để quản lý theo từng lớp học (1 học viên học nhiều lớp)
     const classes = await this.classRepository.find({
       where: { tutor: { id: tutorId } },
       relations: ['student', 'student.user', 'subject'],
+      order: { startDate: 'DESC' },
     });
 
-    // Lọc trùng học viên vì một học viên có thể học nhiều môn với cùng 1 gia sư
-    const studentMap = new Map();
-    classes.forEach((cls) => {
-      if (cls.student && !studentMap.has(cls.student.id)) {
-        studentMap.set(cls.student.id, {
-          id: cls.student.id,
-          fullName: cls.student.user?.fullName || 'Học viên',
-          gradeLevel: cls.student.gradeLevel || 'Chưa cập nhật',
-          avatar:
-            cls.student.user?.avatarUrl ||
-            'https://randomuser.me/api/portraits/men/1.jpg',
-          email: cls.student.user?.email,
-          phone: cls.student.user?.phone,
-          status:
-            cls.status === ClassStatus.ACTIVE ? 'Đang học' : 'Đã kết thúc',
-          lastSubject: cls.subject?.name,
-          createdAt: cls.student.user?.createdAt || new Date(),
+    const formattedStudents = await Promise.all(
+      classes.map(async (cls) => {
+        // Tính số buổi đã học thực tế cho từng lớp học cụ thể
+        const completedCount = await this.scheduleRepository.count({
+          where: {
+            class: { id: cls.id },
+            sessionStatus: SessionStatus.COMPLETED,
+          },
         });
-      }
-    });
+        const total = cls.totalSessions || 24;
 
-    return { students: Array.from(studentMap.values()), profile };
+        return {
+          id: cls.id, // Class ID làm định danh quản lý
+          classCode: `CLASS-${cls.id.replace(/-/g, '').slice(0, 6).toUpperCase()}`,
+          studentId: cls.student?.id,
+          fullName: cls.student?.user?.fullName || 'Học viên',
+          email: cls.student?.user?.email || 'Chưa cập nhật',
+          phone: cls.student?.user?.phone || 'Chưa cập nhật',
+          gradeLevel: cls.student?.gradeLevel || 'Chưa cập nhật',
+          avatar: cls.student?.user?.avatarUrl || 'https://storage.googleapis.com/banani-avatars/avatar%2Ffemale%2F25-35%2FSoutheast%20Asian%2F1',
+          lastSubject: cls.subject?.name || 'Môn học',
+          totalSessions: total,
+          completedSessions: completedCount,
+          feePerSession: Number(cls.feePerSession || 0),
+          status: cls.status === ClassStatus.ACTIVE ? 'Đang học' : cls.status === ClassStatus.SUSPENDED ? 'Tạm dừng' : 'Đã kết thúc',
+          rawStatus: cls.status,
+          startDate: cls.startDate,
+          endDate: cls.endDate,
+          notes: cls.notes || '',
+          createdAt: cls.student?.user?.createdAt || new Date(),
+        };
+      })
+    );
+
+    return { students: formattedStudents, profile };
   }
 
   async getAvailableClasses(userId?: string) {
@@ -624,21 +642,35 @@ export class TutorsService implements OnModuleInit {
       order: { createdAt: 'DESC' },
     });
 
-    const classes = requests.map((req) => ({
-      id: req.id,
-      code: `#LH${req.id.substring(0, 4).toUpperCase()}`,
-      title: `Tìm gia sư ${req.subject?.name || 'môn học'}`,
-      mode: req.preferredArea?.toLowerCase().includes('online')
-        ? 'Online'
-        : 'Offline',
-      levelTag: req.student?.gradeLevel || 'Mọi cấp độ',
-      location: req.preferredArea || 'Toàn quốc',
-      schedule: req.preferredSchedule || 'Linh hoạt',
-      studentInfo: `${req.student?.gradeLevel || 'Cấp độ học viên'} · ${req.student?.user?.fullName || 'Ẩn danh'}`,
-      salary: 'Thỏa thuận',
-      status: 'MỚI',
-      postedAt: 'Vừa xong',
-    }));
+    const classes = requests.map((req) => {
+      // Calculate a friendly postedAt time
+      const diffMs = new Date().getTime() - new Date(req.createdAt).getTime();
+      const diffMins = Math.floor(diffMs / 60000);
+      const diffHours = Math.floor(diffMins / 60);
+      let postedAt = 'Vừa xong';
+      if (diffHours > 0) {
+        postedAt = `${diffHours} giờ trước`;
+      } else if (diffMins > 0) {
+        postedAt = `${diffMins} phút trước`;
+      }
+
+      return {
+        id: req.id,
+        code: `#LH${req.id.substring(0, 4).toUpperCase()}`,
+        title: `Tìm gia sư ${req.subject?.name || 'môn học'}`,
+        mode: req.preferredArea?.toLowerCase().includes('online')
+          ? 'Online'
+          : 'Offline',
+        levelTag: req.student?.gradeLevel || 'Mọi cấp độ',
+        location: req.preferredArea || 'Toàn quốc',
+        schedule: req.preferredSchedule || 'Linh hoạt',
+        studentInfo: `${req.student?.gradeLevel || 'Cấp độ học viên'} · ${req.student?.user?.fullName || 'Ẩn danh'}`,
+        requirements: req.requirements || '',
+        salary: 'Thỏa thuận',
+        status: 'MỚI',
+        postedAt,
+      };
+    });
 
     return { classes, profile };
   }
@@ -1574,6 +1606,7 @@ export class TutorsService implements OnModuleInit {
       where: {
         preferredTutor: { id: tutorEntity.id },
         status: In([RequestStatus.PROPOSED, RequestStatus.NEGOTIATING]),
+        proposedFee: Not(IsNull()),
       },
       relations: {
         student: { user: true },
@@ -1608,10 +1641,17 @@ export class TutorsService implements OnModuleInit {
     if (!tutorEntity) throw new NotFoundException('Không tìm thấy hồ sơ gia sư');
 
     const requests = await this.classRequestRepository.find({
-      where: {
-        preferredTutor: { id: tutorEntity.id },
-        status: RequestStatus.PENDING,
-      },
+      where: [
+        {
+          preferredTutor: { id: tutorEntity.id },
+          status: RequestStatus.PENDING,
+        },
+        {
+          preferredTutor: { id: tutorEntity.id },
+          status: RequestStatus.PROPOSED,
+          proposedFee: IsNull(),
+        },
+      ],
       relations: {
         student: { user: true },
         subject: true,
@@ -1640,11 +1680,12 @@ export class TutorsService implements OnModuleInit {
     userId: string,
     feePerSession: number,
     totalSessions: number,
+    schedule?: string,
   ) {
     const request = await this.classRequestRepository.findOne({
       where: { id: requestId },
       relations: {
-        student: true,
+        student: { user: true },
         subject: true,
         preferredTutor: { user: true },
       },
@@ -1654,18 +1695,27 @@ export class TutorsService implements OnModuleInit {
       throw new NotFoundException('Không tìm thấy yêu cầu');
     }
 
-    if (request.status !== RequestStatus.PENDING) {
-      throw new BadRequestException('Yêu cầu này không còn khả dụng');
+    if (
+      request.status !== RequestStatus.PENDING &&
+      request.status !== RequestStatus.PROPOSED
+    ) {
+      throw new BadRequestException('Yêu cầu này không còn khả dụng để đề xuất');
     }
 
-    // Verify this tutor is the preferred one
     const tutorEntity = await this.tutorRepository.findOne({
       where: { user: { id: userId } },
+      relations: { user: true },
     });
     if (!tutorEntity) throw new NotFoundException('Không tìm thấy hồ sơ gia sư');
 
-    if (!request.preferredTutor || request.preferredTutor.id !== tutorEntity.id) {
-      throw new BadRequestException('Bạn không phải là gia sư được đề xuất trong yêu cầu này');
+    // If it is a private request proposed to another tutor, block it
+    if (request.preferredTutor && request.preferredTutor.id !== tutorEntity.id) {
+      throw new BadRequestException('Bạn không phải là gia sư được chỉ định cho yêu cầu này');
+    }
+
+    // Set this tutor as preferred tutor if it's a public request
+    if (!request.preferredTutor) {
+      request.preferredTutor = tutorEntity;
     }
 
     // Validate fee and sessions
@@ -1679,9 +1729,19 @@ export class TutorsService implements OnModuleInit {
     // Save proposal
     request.proposedFee = feePerSession;
     request.proposedSessions = totalSessions;
+    if (schedule) request.preferredSchedule = schedule;
     request.proposedAt = new Date();
     request.status = RequestStatus.PROPOSED;
     await this.classRequestRepository.save(request);
+
+    if (request.student?.user?.id) {
+      await this.notificationsService.createNotification(
+        request.student.user.id,
+        'Gia sư đã gửi đề xuất',
+        `Gia sư ${tutorEntity.user?.fullName || 'Gia sư'} đã gửi đề xuất dạy môn ${request.subject?.name || 'môn học'}: ${feePerSession.toLocaleString('vi-VN')}đ/buổi, ${totalSessions} buổi.`,
+        NotificationType.NEW_REQUEST,
+      );
+    }
 
     return {
       message: `Bạn đã gửi đề xuất: ${feePerSession.toLocaleString('vi-VN')}đ/buổi, ${totalSessions} buổi. Đang chờ học viên xác nhận.`,
@@ -1698,11 +1758,14 @@ export class TutorsService implements OnModuleInit {
     userId: string,
     feePerSession: number,
     totalSessions: number,
+    schedule?: string,
   ) {
     const request = await this.classRequestRepository.findOne({
       where: { id: requestId },
       relations: {
+        student: { user: true },
         preferredTutor: { user: true },
+        subject: true,
       },
     });
 
@@ -1716,6 +1779,7 @@ export class TutorsService implements OnModuleInit {
 
     const tutorEntity = await this.tutorRepository.findOne({
       where: { user: { id: userId } },
+      relations: { user: true },
     });
     if (!tutorEntity) throw new NotFoundException('Không tìm thấy hồ sơ gia sư');
     if (!request.preferredTutor || request.preferredTutor.id !== tutorEntity.id) {
@@ -1731,26 +1795,99 @@ export class TutorsService implements OnModuleInit {
 
     request.proposedFee = feePerSession;
     request.proposedSessions = totalSessions;
+    if (schedule) {
+      request.preferredSchedule = schedule;
+    }
     request.proposedAt = new Date();
     request.status = RequestStatus.PROPOSED;
     request.requirements = [
       request.requirements || '',
-      `[Gia sư đã cập nhật đề xuất: ${feePerSession.toLocaleString('vi-VN')}đ/buổi, ${totalSessions} buổi]`,
+      `[Gia sư đã cập nhật đề xuất: ${feePerSession.toLocaleString('vi-VN')}đ/buổi, ${totalSessions} buổi${schedule ? `, Lịch học: ${schedule}` : ''}]`,
     ]
       .filter(Boolean)
       .join('\n');
     await this.classRequestRepository.save(request);
+
+    if (request.student?.user?.id) {
+      await this.notificationsService.createNotification(
+        request.student.user.id,
+        'Gia sư đã cập nhật đề xuất',
+        `Gia sư ${tutorEntity.user?.fullName || 'Gia sư'} đã cập nhật đề xuất dạy môn ${request.subject?.name || 'môn học'}: ${feePerSession.toLocaleString('vi-VN')}đ/buổi, ${totalSessions} buổi${schedule ? `, Lịch học: ${schedule}` : ''}.`,
+        NotificationType.NEW_REQUEST,
+      );
+    }
 
     return {
       message: `Đã cập nhật đề xuất: ${feePerSession.toLocaleString('vi-VN')}đ/buổi, ${totalSessions} buổi.`,
     };
   }
 
+  async confirmProposalByTutor(requestId: string, userId: string) {
+    const tutorEntity = await this.tutorRepository.findOne({
+      where: { user: { id: userId } },
+      relations: { user: true },
+    });
+    if (!tutorEntity) throw new NotFoundException('Không tìm thấy hồ sơ gia sư');
+
+    const request = await this.classRequestRepository.findOne({
+      where: { id: requestId },
+      relations: {
+        student: { user: true },
+        preferredTutor: { user: true },
+        subject: true,
+      },
+    });
+
+    if (!request) throw new NotFoundException('Không tìm thấy yêu cầu');
+    if (!request.preferredTutor || request.preferredTutor.id !== tutorEntity.id) {
+      throw new BadRequestException('Bạn không phải là gia sư được đề xuất');
+    }
+
+    if (request.status !== RequestStatus.NEGOTIATING) {
+      throw new BadRequestException('Yêu cầu này không ở trạng thái thương lượng');
+    }
+
+    if (!request.proposedFee || !request.proposedSessions) {
+      throw new BadRequestException('Chưa có đề xuất học phí và số buổi để xác nhận');
+    }
+
+    request.status = RequestStatus.MATCHED;
+    await this.classRequestRepository.save(request);
+
+    if (request.student?.user?.id) {
+      await this.notificationsService.createNotification(
+        request.student.user.id,
+        'Gia sư đã đồng ý đề xuất',
+        `Gia sư ${tutorEntity.user?.fullName || 'Gia sư'} đã đồng ý đề xuất điều chỉnh của bạn cho môn ${request.subject?.name || 'môn học'}. Vui lòng chờ nhân viên trung tâm duyệt tạo lớp.`,
+        NotificationType.NEW_REQUEST,
+      );
+    }
+
+    // Thông báo cho tất cả Staff
+    const staffUsers = await this.userRepository.find({
+      relations: { role: true },
+    });
+    for (const staff of staffUsers) {
+      if (staff.role?.name === 'staff') {
+        await this.notificationsService.createNotification(
+          staff.id,
+          'Yêu cầu ghép lớp đã hoàn tất đàm phán',
+          `Học viên và gia sư đã thống nhất thông tin ghép lớp cho yêu cầu môn ${request.subject?.name || 'môn học'}. Vui lòng tạo lớp học.`,
+          NotificationType.NEW_REQUEST,
+        );
+      }
+    }
+
+    return { message: 'Đồng ý đề xuất thành công. Đã gửi yêu cầu tạo lớp tới nhân viên trung tâm!' };
+  }
+
   async withdrawProposal(requestId: string, userId: string) {
     const request = await this.classRequestRepository.findOne({
       where: { id: requestId },
       relations: {
+        student: { user: true },
         preferredTutor: { user: true },
+        subject: true,
       },
     });
 
@@ -1764,6 +1901,7 @@ export class TutorsService implements OnModuleInit {
 
     const tutorEntity = await this.tutorRepository.findOne({
       where: { user: { id: userId } },
+      relations: { user: true },
     });
     if (!tutorEntity) throw new NotFoundException('Không tìm thấy hồ sơ gia sư');
     if (!request.preferredTutor || request.preferredTutor.id !== tutorEntity.id) {
@@ -1783,6 +1921,15 @@ export class TutorsService implements OnModuleInit {
       .join('\n');
     await this.classRequestRepository.save(request);
 
+    if (request.student?.user?.id) {
+      await this.notificationsService.createNotification(
+        request.student.user.id,
+        'Gia sư đã rút đề xuất',
+        `Gia sư ${tutorEntity.user?.fullName || 'Gia sư'} đã rút đề xuất dạy môn ${request.subject?.name || 'môn học'}. Yêu cầu của bạn đã được mở lại cho tất cả gia sư.`,
+        NotificationType.TUTOR_REJECTED,
+      );
+    }
+
     return {
       message: 'Bạn đã rút đề xuất. Yêu cầu mở lại cho tất cả gia sư.',
     };
@@ -1792,7 +1939,9 @@ export class TutorsService implements OnModuleInit {
     const request = await this.classRequestRepository.findOne({
       where: { id: requestId },
       relations: {
+        student: { user: true },
         preferredTutor: { user: true },
+        subject: true,
       },
     });
 
@@ -1806,6 +1955,7 @@ export class TutorsService implements OnModuleInit {
 
     const tutorEntity = await this.tutorRepository.findOne({
       where: { user: { id: userId } },
+      relations: { user: true },
     });
     if (!tutorEntity) throw new NotFoundException('Không tìm thấy hồ sơ gia sư');
 
@@ -1824,6 +1974,15 @@ export class TutorsService implements OnModuleInit {
       .join('\n');
 
     await this.classRequestRepository.save(request);
+
+    if (request.student?.user?.id) {
+      await this.notificationsService.createNotification(
+        request.student.user.id,
+        'Gia sư từ chối đề xuất',
+        `Gia sư ${oldTutorName} đã từ chối đề xuất dạy môn ${request.subject?.name || 'môn học'} từ bạn. Yêu cầu sẽ được mở lại cho các gia sư khác.`,
+        NotificationType.TUTOR_REJECTED,
+      );
+    }
 
     return {
       message: 'Bạn đã từ chối đề xuất từ học viên. Yêu cầu sẽ được mở lại cho tất cả gia sư.',

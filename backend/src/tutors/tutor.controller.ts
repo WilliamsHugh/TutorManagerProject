@@ -185,7 +185,7 @@ export class TutorController {
   @Post('recommendations/:id/propose')
   async proposeRecommendation(
     @Param('id') id: string,
-    @Body() body: { feePerSession: number; totalSessions: number },
+    @Body() body: { feePerSession: number; totalSessions: number; schedule?: string },
     @Request() req,
   ) {
     const tutorId = req.user.id || req.user.sub;
@@ -194,6 +194,7 @@ export class TutorController {
       tutorId,
       body.feePerSession,
       body.totalSessions,
+      body.schedule,
     );
   }
 
@@ -208,7 +209,7 @@ export class TutorController {
   @Post('recommendations/:id/modify')
   async modifyProposal(
     @Param('id') id: string,
-    @Body() body: { feePerSession: number; totalSessions: number },
+    @Body() body: { feePerSession: number; totalSessions: number; schedule?: string },
     @Request() req,
   ) {
     const tutorId = req.user.id || req.user.sub;
@@ -217,7 +218,15 @@ export class TutorController {
       tutorId,
       body.feePerSession,
       body.totalSessions,
+      body.schedule,
     );
+  }
+
+  // Gia sư đồng ý đề xuất điều chỉnh của học sinh
+  @Post('recommendations/:id/confirm')
+  async confirmProposal(@Param('id') id: string, @Request() req) {
+    const tutorId = req.user.id || req.user.sub;
+    return this.tutorsService.confirmProposalByTutor(id, tutorId);
   }
 
   // Rút đề xuất

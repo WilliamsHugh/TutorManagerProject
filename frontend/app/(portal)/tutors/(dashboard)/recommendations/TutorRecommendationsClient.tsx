@@ -9,8 +9,10 @@ import {
   declineRecommendation,
   modifyProposal,
   withdrawProposal,
+  confirmProposalByTutor,
 } from "@/lib/api";
 import Header from "@/components/tutor/Header";
+import SchedulePicker from "@/components/common/SchedulePicker";
 
 type Recommendation = {
   id: string;
@@ -43,6 +45,12 @@ type PendingProposal = {
   createdAt: string;
 };
 
+type ProposeForm = {
+  feePerSession: number | "";
+  totalSessions: number | "";
+  schedule: string;
+};
+
 export default function TutorRecommendationsClient() {
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
   const [pendingProposals, setPendingProposals] = useState<PendingProposal[]>([]);
@@ -55,9 +63,10 @@ export default function TutorRecommendationsClient() {
     requestId: string;
     studentName: string;
   } | null>(null);
-  const [proposeForm, setProposeForm] = useState({
+  const [proposeForm, setProposeForm] = useState<ProposeForm>({
     feePerSession: 200000,
     totalSessions: 15,
+    schedule: "",
   });
   const [modifyModal, setModifyModal] = useState<{
     proposal: PendingProposal;
@@ -74,6 +83,16 @@ export default function TutorRecommendationsClient() {
     setToast({ message, type });
     setTimeout(() => setToast(null), 4000);
   };
+
+  const feePerSessionValue =
+    typeof proposeForm.feePerSession === "number" ? proposeForm.feePerSession : 0;
+  const totalSessionsValue =
+    typeof proposeForm.totalSessions === "number" ? proposeForm.totalSessions : 0;
+  const isProposalFormValid =
+    feePerSessionValue >= 50000 &&
+    Number.isInteger(totalSessionsValue) &&
+    totalSessionsValue >= 1 &&
+    totalSessionsValue <= 100;
 
   useEffect(() => {
     fetchRecommendations();
@@ -105,19 +124,33 @@ export default function TutorRecommendationsClient() {
     }
   };
 
-  const openProposeModal = (id: string, name: string) => {
-    setProposeForm({ feePerSession: 200000, totalSessions: 15 });
+  const openProposeModal = (id: string, name: string, preferredSchedule?: string) => {
+    setProposeForm({ feePerSession: 200000, totalSessions: 15, schedule: preferredSchedule || "" });
     setProposeModal({ requestId: id, studentName: name });
+  };
+
+  const openModifyModal = (prop: PendingProposal) => {
+    setProposeForm({
+      feePerSession: prop.proposedFee || 200000,
+      totalSessions: prop.proposedSessions || 15,
+      schedule: prop.preferredSchedule || "",
+    });
+    setModifyModal({ proposal: prop });
   };
 
   const handlePropose = async () => {
     if (!proposeModal) return;
+    if (!isProposalFormValid) {
+      showToast("Học phí tối thiểu 50.000đ/buổi và số buổi phải từ 1 đến 100", "error");
+      return;
+    }
     setActionLoading(proposeModal.requestId);
     try {
       const result = await proposeToStudent(
         proposeModal.requestId,
-        proposeForm.feePerSession,
-        proposeForm.totalSessions,
+        feePerSessionValue,
+        totalSessionsValue,
+        proposeForm.schedule || undefined,
       );
       showToast(result.message || "Đã gửi đề xuất thành công!", "success");
       setRecommendations((prev) =>
@@ -146,12 +179,17 @@ export default function TutorRecommendationsClient() {
 
   const handleModify = async () => {
     if (!modifyModal) return;
+    if (!isProposalFormValid) {
+      showToast("Học phí tối thiểu 50.000đ/buổi và số buổi phải từ 1 đến 100", "error");
+      return;
+    }
     setActionLoading(modifyModal.proposal.id);
     try {
       const result = await modifyProposal(
         modifyModal.proposal.id,
-        proposeForm.feePerSession,
-        proposeForm.totalSessions,
+        feePerSessionValue,
+        totalSessionsValue,
+        proposeForm.schedule,
       );
       showToast(result.message || "Đã điều chỉnh đề xuất", "success");
       setModifyModal(null);
@@ -159,6 +197,19 @@ export default function TutorRecommendationsClient() {
       fetchPendingProposals();
     } catch (err: any) {
       showToast(err.message || "Không thể điều chỉnh đề xuất", "error");
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleConfirmProposalByTutor = async (id: string) => {
+    setActionLoading(id);
+    try {
+      const result = await confirmProposalByTutor(id);
+      showToast(result.message || "Đồng ý đề xuất thành công!", "success");
+      setPendingProposals((prev) => prev.filter((p) => p.id !== id));
+    } catch (err: any) {
+      showToast(err.message || "Không thể đồng ý đề xuất", "error");
     } finally {
       setActionLoading(null);
     }
@@ -351,7 +402,7 @@ export default function TutorRecommendationsClient() {
                       Từ chối
                     </button>
                     <button
-                      onClick={() => openProposeModal(rec.id, rec.studentName)}
+                      onClick={() => openProposeModal(rec.id, rec.studentName, rec.preferredSchedule)}
                       disabled={actionLoading === rec.id}
                       className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                     >
@@ -465,7 +516,17 @@ export default function TutorRecommendationsClient() {
                       </button>
                       {prop.status === "negotiating" && (
                         <button
-                          onClick={() => setModifyModal({ proposal: prop })}
+                          onClick={() => handleConfirmProposalByTutor(prop.id)}
+                          disabled={actionLoading === prop.id}
+                          className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        >
+                          {actionLoading === prop.id ? <Icon icon="lucide:loader-2" className="animate-spin" fontSize={16} /> : <Icon icon="lucide:check-circle" fontSize={16} />}
+                          Đồng ý đề xuất
+                        </button>
+                      )}
+                      {(prop.status === "negotiating" || prop.status === "proposed") && (
+                        <button
+                          onClick={() => openModifyModal(prop)}
                           disabled={actionLoading === prop.id}
                           className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                         >
@@ -488,7 +549,7 @@ export default function TutorRecommendationsClient() {
           onClick={() => setProposeModal(null)}
         >
           <div
-            className="w-full max-w-md rounded-xl bg-white p-6 shadow-2xl"
+            className="w-full max-w-2xl rounded-xl bg-white p-6 shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="mb-5 flex items-center justify-between">
@@ -522,12 +583,23 @@ export default function TutorRecommendationsClient() {
                   onChange={(e) =>
                     setProposeForm((prev) => ({
                       ...prev,
-                      feePerSession: Number(e.target.value),
+                      feePerSession:
+                        e.target.value === "" ? "" : Number(e.target.value),
                     }))
                   }
-                  className="w-full rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                  className={`w-full rounded-lg border px-3.5 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 ${
+                    proposeForm.feePerSession !== "" && feePerSessionValue < 50000
+                      ? "border-red-400"
+                      : "border-slate-300"
+                  }`}
                 />
-                <p className="mt-1 text-xs text-slate-400">
+                <p
+                  className={`mt-1 text-xs ${
+                    proposeForm.feePerSession !== "" && feePerSessionValue < 50000
+                      ? "text-red-500"
+                      : "text-slate-400"
+                  }`}
+                >
                   Tối thiểu 50.000đ/buổi
                 </p>
               </div>
@@ -544,26 +616,40 @@ export default function TutorRecommendationsClient() {
                   onChange={(e) =>
                     setProposeForm((prev) => ({
                       ...prev,
-                      totalSessions: Number(e.target.value),
+                      totalSessions:
+                        e.target.value === "" ? "" : Number(e.target.value),
                     }))
                   }
-                  className="w-full rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                  className={`w-full rounded-lg border px-3.5 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 ${
+                    proposeForm.totalSessions !== "" &&
+                    (!Number.isInteger(totalSessionsValue) ||
+                      totalSessionsValue < 1 ||
+                      totalSessionsValue > 100)
+                      ? "border-red-400"
+                      : "border-slate-300"
+                  }`}
                 />
               </div>
+
+              <SchedulePicker
+                value={proposeForm.schedule}
+                onChange={(val) =>
+                  setProposeForm((prev) => ({ ...prev, schedule: val }))
+                }
+                label="Lịch học mong muốn"
+              />
 
               <div className="rounded-lg bg-blue-50 p-4">
                 <p className="text-sm font-medium text-blue-800">
                   Tổng chi phí dự kiến
                 </p>
                 <p className="mt-1 text-2xl font-bold text-blue-600">
-                  {(proposeForm.feePerSession * proposeForm.totalSessions).toLocaleString(
-                    "vi-VN"
-                  )}
+                  {(feePerSessionValue * totalSessionsValue).toLocaleString("vi-VN")}
                   đ
                 </p>
                 <p className="text-xs text-blue-500">
-                  {proposeForm.feePerSession.toLocaleString("vi-VN")}đ ×{" "}
-                  {proposeForm.totalSessions} buổi
+                  {feePerSessionValue.toLocaleString("vi-VN")}đ ×{" "}
+                  {totalSessionsValue} buổi
                 </p>
               </div>
             </div>
@@ -577,7 +663,7 @@ export default function TutorRecommendationsClient() {
               </button>
               <button
                 onClick={handlePropose}
-                disabled={actionLoading === proposeModal.requestId}
+                disabled={actionLoading === proposeModal.requestId || !isProposalFormValid}
                 className="flex-1 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 {actionLoading === proposeModal.requestId ? (
@@ -605,7 +691,7 @@ export default function TutorRecommendationsClient() {
           onClick={() => setModifyModal(null)}
         >
           <div
-            className="w-full max-w-md rounded-xl bg-white p-6 shadow-2xl"
+            className="w-full max-w-2xl rounded-xl bg-white p-6 shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="mb-5 flex items-center justify-between">
@@ -639,11 +725,25 @@ export default function TutorRecommendationsClient() {
                   onChange={(e) =>
                     setProposeForm((prev) => ({
                       ...prev,
-                      feePerSession: Number(e.target.value),
+                      feePerSession:
+                        e.target.value === "" ? "" : Number(e.target.value),
                     }))
                   }
-                  className="w-full rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                  className={`w-full rounded-lg border px-3.5 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 ${
+                    proposeForm.feePerSession !== "" && feePerSessionValue < 50000
+                      ? "border-red-400"
+                      : "border-slate-300"
+                  }`}
                 />
+                <p
+                  className={`mt-1 text-xs ${
+                    proposeForm.feePerSession !== "" && feePerSessionValue < 50000
+                      ? "text-red-500"
+                      : "text-slate-400"
+                  }`}
+                >
+                  Tối thiểu 50.000đ/buổi
+                </p>
               </div>
 
               <div>
@@ -658,17 +758,33 @@ export default function TutorRecommendationsClient() {
                   onChange={(e) =>
                     setProposeForm((prev) => ({
                       ...prev,
-                      totalSessions: Number(e.target.value),
+                      totalSessions:
+                        e.target.value === "" ? "" : Number(e.target.value),
                     }))
                   }
-                  className="w-full rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                  className={`w-full rounded-lg border px-3.5 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 ${
+                    proposeForm.totalSessions !== "" &&
+                    (!Number.isInteger(totalSessionsValue) ||
+                      totalSessionsValue < 1 ||
+                      totalSessionsValue > 100)
+                      ? "border-red-400"
+                      : "border-slate-300"
+                  }`}
                 />
               </div>
+
+              <SchedulePicker
+                value={proposeForm.schedule}
+                onChange={(val) =>
+                  setProposeForm((prev) => ({ ...prev, schedule: val }))
+                }
+                label="Lịch dạy học"
+              />
 
               <div className="rounded-lg bg-blue-50 p-4">
                 <p className="text-sm font-medium text-blue-800">Tổng chi phí mới</p>
                 <p className="mt-1 text-2xl font-bold text-blue-600">
-                  {(proposeForm.feePerSession * proposeForm.totalSessions).toLocaleString("vi-VN")}đ
+                  {(feePerSessionValue * totalSessionsValue).toLocaleString("vi-VN")}đ
                 </p>
               </div>
             </div>
@@ -682,7 +798,7 @@ export default function TutorRecommendationsClient() {
               </button>
               <button
                 onClick={handleModify}
-                disabled={actionLoading === modifyModal.proposal.id}
+                disabled={actionLoading === modifyModal.proposal.id || !isProposalFormValid}
                 className="flex-1 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 {actionLoading === modifyModal.proposal.id ? (

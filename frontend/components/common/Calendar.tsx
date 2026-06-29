@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useMemo, ReactNode } from 'react';
+import { useEffect, useState, useMemo, ReactNode } from 'react';
 import { Icon } from '@iconify/react';
 
 // ─── Constants ───────────────────────────────────────────
@@ -116,7 +116,7 @@ function EventBadge({ event, compact = false, onClick }: {
       <div
         className="rounded px-1.5 py-1 text-[11px] font-semibold leading-tight truncate shadow-sm border-l-2 cursor-pointer hover:shadow-md transition-shadow"
         style={{ background: bg, borderColor: border, borderLeftColor, color: text }}
-        title={`${subjectName}\n${start} - ${end}${event.note ? `\nLý do: ${event.note}` : ''}`}
+        title={`${subjectName}\n${start} - ${end}`}
         onClick={() => onClick?.(event)}
       >
         {start} {subjectName}
@@ -192,18 +192,33 @@ export default function Calendar({
     return ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'][day === 0 ? 0 : day];
   }
 
+  /** Normalize dayOfWeek from long Vietnamese ('Thứ 2', 'Chủ nhật') to short ('T2', 'CN') */
+  function normalizeDayOfWeek(dow?: string, sessionDate?: string | Date): string | undefined {
+    if (!dow && !sessionDate) return undefined;
+    const longToShort: Record<string, string> = {
+      'Thứ 2': 'T2', 'Thứ 3': 'T3', 'Thứ 4': 'T4',
+      'Thứ 5': 'T5', 'Thứ 6': 'T6', 'Thứ 7': 'T7',
+      'Chủ nhật': 'CN', 'Chủ Nhật': 'CN',
+    };
+    if (dow && longToShort[dow]) return longToShort[dow];
+    if (dow && DAY_LABELS.includes(dow)) return dow;
+    return deriveDayOfWeek(sessionDate) || dow;
+  }
+
   /** Normalize events from various API response shapes to CalendarEvent */
   const normalizeEvents = (raw: any[]): CalendarEvent[] => {
     if (!Array.isArray(raw)) return [];
     return raw.map((ev: any) => {
-      // If already in CalendarEvent shape (has id + class.subject), use as-is
-      if (ev?.class?.subject?.name) return ev as CalendarEvent;
+      const normalizedDow = normalizeDayOfWeek(ev.dayOfWeek, ev.sessionDate);
+
+      // If already in CalendarEvent shape (has id + class.subject), normalize dayOfWeek
+      if (ev?.class?.subject?.name) return { ...ev, dayOfWeek: normalizedDow } as CalendarEvent;
 
       // If in tutor API shape: flat fields like time, subject, student, status
       const timeParts = ev.time?.split(' - ') || [];
       return {
         id: ev.id || '',
-        dayOfWeek: ev.dayOfWeek || deriveDayOfWeek(ev.date || ev.sessionDate),
+        dayOfWeek: normalizedDow || deriveDayOfWeek(ev.date || ev.sessionDate),
         startTime: ev.startTime || timeParts[0] || '',
         endTime: ev.endTime || timeParts[1] || '',
         sessionStatus: ev.sessionStatus || ev.status || 'scheduled',
@@ -396,9 +411,8 @@ export default function Calendar({
         {/* ═══ WEEK VIEW ═══ */}
         {viewMode === 'week' && (
           <div className="bg-white border border-[#e2e8f0] rounded-xl overflow-hidden shadow-sm">
-            <div className="overflow-auto" style={{ maxHeight: 'calc(100vh - 250px)' }}>
-              {/* Header - Sticky */}
-              <div className="grid border-b border-[#e2e8f0] sticky top-0 z-20 shadow-sm" style={{ gridTemplateColumns: '70px repeat(7, 1fr)' }}>
+            <div className="overflow-auto" style={{ maxHeight: 'calc(100vh - 320px)' }}>
+              <div className="grid border-b border-[#e2e8f0] sticky top-0 z-20 bg-[#f8fafc]" style={{ gridTemplateColumns: '70px repeat(7, 1fr)' }}>
                 <div className="border-r border-[#e2e8f0] bg-[#f8fafc]" />
                 {weekGrid.dayCols.map((col, i) => (
                   <div
@@ -412,7 +426,6 @@ export default function Calendar({
                   </div>
                 ))}
               </div>
-              {/* Body */}
               <div className="relative" style={{ gridTemplateColumns: '70px repeat(7, 1fr)', display: 'grid' }}>
                 <div className="border-r border-[#e2e8f0] relative">
                   {weekGrid.timeSlots.map((slot, i) => (
@@ -442,20 +455,11 @@ export default function Calendar({
                             borderLeftColor: isCancelled ? '#ef4444' : isCompleted ? '#22c55e' : '#3b82f6',
                             color: text, opacity: isCancelled ? 0.7 : 1,
                           }}
-                          title={`${e.class?.subject?.name || 'Môn học'}\n${e.class?.tutor?.user?.fullName || e.class?.student?.user?.fullName || 'Học viên'}\n${e.startTime?.slice(0, 5)} - ${e.endTime?.slice(0, 5)}${e.note ? `\nLý do: ${e.note}` : ''}`}
+                          title={`${e.class?.subject?.name || 'Môn học'}\n${e.startTime?.slice(0, 5)} - ${e.endTime?.slice(0, 5)}`}
                           onClick={() => onEventClick?.(e)}
                         >
                           <div className="font-bold truncate">{e.startTime?.slice(0, 5)}</div>
                           <div className={`truncate ${isCancelled ? 'line-through' : ''}`}>{e.class?.subject?.name || 'Môn'}</div>
-                          <div className="text-[10px] font-normal truncate opacity-90 mt-0.5">
-                            <Icon icon="lucide:user" className="inline mr-0.5 text-[9px]" />
-                            {e.class?.tutor?.user?.fullName || e.class?.student?.user?.fullName || ''}
-                          </div>
-                          {isCancelled && e.note && (
-                            <div className="text-[9px] font-normal opacity-90 mt-0.5 truncate bg-white/50 rounded px-1" style={{ color: text }}>
-                              Nghỉ: {e.note}
-                            </div>
-                          )}
                         </div>
                       );
                     })}
@@ -580,8 +584,8 @@ export default function Calendar({
   return (
     <>
       {headerComponent}
-      <div className="flex-1 w-full bg-transparent text-[#0f172a]">
-        <div className="w-full p-6 sm:p-8">
+      <div className="min-h-screen bg-[#f8fafc] text-[#0f172a]">
+        <div className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
           {/* Header */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
             <div>

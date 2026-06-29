@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import Calendar from '@/components/common/Calendar';
 import { getStudentMySchedule, getStudentScheduleReport } from '@/lib/api/classes.api';
 import LearningReportPopup, { LearningReport } from '@/components/common/LearningReportPopup';

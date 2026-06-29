@@ -7,12 +7,11 @@ import {
   CheckCircle2,
   XCircle,
   BookOpen,
-  User,
   Calendar,
   ChevronLeft,
   ChevronRight,
-  Loader2,
 } from "lucide-react";
+import { Skeleton } from "./Skeleton";
 
 export interface LearningReport {
   id: string;
@@ -209,9 +208,23 @@ export default function LearningReportPopup({
         {/* Content */}
         <div className="overflow-y-auto p-5 flex-1 space-y-3">
           {isLoading ? (
-            <div className="flex flex-col items-center justify-center py-16">
-              <Loader2 size={36} className="text-[#0b5fff] animate-spin mb-3" />
-              <p className="text-sm text-[#64748b]">Đang tải báo cáo...</p>
+            <div className="space-y-4">
+              {Array.from({ length: 2 }).map((_, index) => (
+                <div key={index} className="rounded-xl border border-slate-200 bg-white p-4">
+                  <div className="mb-4 flex items-start justify-between gap-3">
+                    <div className="flex-1 space-y-2">
+                      <Skeleton className="h-4 w-40" />
+                      <Skeleton className="h-3.5 w-28" />
+                    </div>
+                    <Skeleton className="h-6 w-20 rounded-full" />
+                  </div>
+                  <div className="space-y-3">
+                    <Skeleton className="h-4 w-full" />
+                    <Skeleton className="h-4 w-5/6" />
+                    <Skeleton className="h-4 w-2/3" />
+                  </div>
+                </div>
+              ))}
             </div>
           ) : error ? (
             <div className="flex flex-col items-center justify-center py-16 text-center">

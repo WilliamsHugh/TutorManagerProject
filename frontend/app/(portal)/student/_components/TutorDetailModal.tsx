@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 
 import type { TutorSuggestion } from "../types";
+import { Skeleton } from "@/components/common/Skeleton";
 
 type TutorDetailModalProps = {
   tutor: TutorSuggestion | null;
@@ -164,7 +165,14 @@ export function TutorDetailModal({ tutor, onClose, onRecommend, isRecommended = 
               Lịch giảng dạy / Lịch bận
             </h4>
             {loadingSchedule ? (
-              <div className="text-xs text-[#64748b] animate-pulse py-2">Đang tải lịch bận...</div>
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                {Array.from({ length: 4 }).map((_, index) => (
+                  <div key={index} className="rounded-md border border-slate-100 bg-slate-50 p-2">
+                    <Skeleton className="mb-2 h-3.5 w-20" />
+                    <Skeleton className="h-3 w-32" />
+                  </div>
+                ))}
+              </div>
             ) : schedules.length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[160px] overflow-y-auto pr-1">
                 {Object.entries(

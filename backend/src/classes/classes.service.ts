@@ -18,6 +18,8 @@ import { CreateClassDto } from './dto/create-class.dto';
 import { CreateReviewDto } from './dto/create-review.dto';
 import { CreateScheduleDto } from './dto/create-schedule.dto';
 import { UpdateScheduleDto } from './dto/update-schedule.dto';
+import { NotificationsService } from '../notifications/notifications.service';
+import { NotificationType } from '../notifications/notification.entity';
 
 type ClassesQuery = {
   status?: ClassStatus;
@@ -38,6 +40,9 @@ export class ClassesService {
     private readonly reviewsRepository: Repository<Review>,
     @InjectRepository(Schedule)
     private readonly scheduleRepository: Repository<Schedule>,
+    @InjectRepository(User)
+    private readonly userRepository: Repository<User>,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   async create(dto: CreateClassDto, createdBy?: User) {
@@ -56,6 +61,10 @@ export class ClassesService {
     });
     if (existingClass) {
       throw new ConflictException('Yêu cầu này đã được tạo lớp');
+    }
+
+    if (request.status !== RequestStatus.MATCHED) {
+      throw new BadRequestException('Yêu cầu này chưa được thống nhất ghép lớp giữa gia sư và học viên');
     }
 
     const tutor = await this.tutorsRepository.findOne({
@@ -154,7 +163,158 @@ export class ClassesService {
     if (createdBy) request.handledBy = createdBy;
     await this.classRequestsRepository.save(request);
 
+    // Automatically generate weekly session schedules
+    console.log('[createClass] request.preferredSchedule:', request.preferredSchedule, '| totalSessions:', savedClass.totalSessions, '| startDate:', savedClass.startDate);
+    if (request.preferredSchedule) {
+      await this.generateSchedulesForClass(
+        savedClass,
+        request.preferredSchedule,
+        savedClass.totalSessions || 24,
+        savedClass.startDate || new Date(),
+      );
+    } else {
+      console.log('[createClass] No preferredSchedule found on request - skipping schedule generation');
+    }
+
+    if (request.student?.user?.id) {
+      await this.notificationsService.createNotification(
+        request.student.user.id,
+        'Lớp học mới đã được tạo',
+        `Lớp học môn ${request.subject?.name} của bạn với gia sư ${tutor.user?.fullName || 'Gia sư'} đã được thiết lập thành công.`,
+        NotificationType.CLASS_CONFIRMED,
+      );
+    }
+    if (tutor.user?.id) {
+      await this.notificationsService.createNotification(
+        tutor.user.id,
+        'Lớp học mới đã được tạo',
+        `Lớp học môn ${request.subject?.name} của bạn với học viên ${request.student?.user?.fullName || 'Học viên'} đã được thiết lập thành công.`,
+        NotificationType.CLASS_CONFIRMED,
+      );
+    }
+
     return savedClass;
+  }
+
+  async generateSchedulesForClass(classEntity: Class, scheduleStr: string, totalSessions: number, startDate: Date) {
+    console.log('[generateSchedules] Called with:', { scheduleStr, totalSessions, startDate: startDate?.toISOString() });
+    if (!scheduleStr || scheduleStr === 'Linh hoạt') {
+      console.log('[generateSchedules] Skipped: empty or flexible schedule');
+      return;
+    }
+
+    try {
+      const dayMap: Record<string, number> = {
+        'thứ 2': 1,
+        'thứ 3': 2,
+        'thứ 4': 3,
+        'thứ 5': 4,
+        'thứ 6': 5,
+        'thứ 7': 6,
+        'chủ nhật': 0,
+        'cn': 0
+      };
+
+      const dayNames = ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'Chủ nhật'];
+      const parsedSchedules: { dayVal: number; dayName: string; startTime: string; endTime: string }[] = [];
+
+      // Helper: normalize time string to HH:MM:SS
+      const normalizeTime = (t: string): string => {
+        const clean = t.trim();
+        if (/^\d{1,2}:\d{2}:\d{2}$/.test(clean)) return clean; // already HH:MM:SS
+        if (/^\d{1,2}:\d{2}$/.test(clean)) return clean + ':00'; // HH:MM -> HH:MM:00
+        return clean;
+      };
+
+      // Check for middle dot separator (·)
+      if (scheduleStr.includes('·')) {
+        const parts = scheduleStr.split('·');
+        if (parts.length === 2) {
+          const daysPart = parts[0].trim();
+          const timePart = parts[1].trim();
+          const timeParts = timePart.split('-');
+          if (timeParts.length === 2) {
+            const startTimeStr = normalizeTime(timeParts[0]);
+            const endTimeStr = normalizeTime(timeParts[1]);
+            
+            Object.keys(dayMap).forEach((dayKey) => {
+              if (daysPart.toLowerCase().includes(dayKey)) {
+                const dayVal = dayMap[dayKey];
+                const dayName = dayNames.find(d => d.toLowerCase() === dayKey) || 'Thứ 2';
+                parsedSchedules.push({ dayVal, dayName, startTime: startTimeStr, endTime: endTimeStr });
+              }
+            });
+          }
+        }
+      }
+      
+      // Check for parentheses format: "Thứ 3 (19:00-21:00), Thứ 6 (19:00-21:00)"
+      if (parsedSchedules.length === 0 && scheduleStr.includes('(')) {
+        const items = scheduleStr.split(',');
+        items.forEach(item => {
+          const trimmedItem = item.trim().toLowerCase();
+          const timeMatch = trimmedItem.match(/\(([^)]+)\)/);
+          if (timeMatch) {
+            const timeStr = timeMatch[1].trim();
+            const timeParts = timeStr.split('-');
+            if (timeParts.length === 2) {
+              const startTimeStr = normalizeTime(timeParts[0]);
+              const endTimeStr = normalizeTime(timeParts[1]);
+
+              Object.keys(dayMap).forEach((dayKey) => {
+                const dayTextOnly = trimmedItem.split('(')[0];
+                if (dayTextOnly.includes(dayKey)) {
+                  const dayVal = dayMap[dayKey];
+                  const dayName = dayNames.find(d => d.toLowerCase() === dayKey) || 'Thứ 2';
+                  parsedSchedules.push({ dayVal, dayName, startTime: startTimeStr, endTime: endTimeStr });
+                }
+              });
+            }
+          }
+        });
+      }
+
+      console.log('[generateSchedules] Parsed schedules:', JSON.stringify(parsedSchedules));
+
+      if (parsedSchedules.length === 0) {
+        console.log('[generateSchedules] No schedules parsed from:', scheduleStr);
+        return;
+      }
+
+      let currentDate = new Date(startDate);
+      currentDate.setHours(0, 0, 0, 0);
+
+      let sessionsCreated = 0;
+      const targetDays = parsedSchedules.map(p => p.dayVal);
+
+      // Safety: prevent infinite loop (max 365 days lookahead)
+      let maxIterations = 365;
+      while (sessionsCreated < totalSessions && maxIterations > 0) {
+        maxIterations--;
+        const dayOfWeekVal = currentDate.getDay(); // 0-6
+        if (targetDays.includes(dayOfWeekVal)) {
+          const matchedItem = parsedSchedules.find(p => p.dayVal === dayOfWeekVal);
+          if (matchedItem) {
+            const schedule = this.scheduleRepository.create({
+              class: classEntity,
+              dayOfWeek: matchedItem.dayName,
+              startTime: matchedItem.startTime,
+              endTime: matchedItem.endTime,
+              sessionDate: new Date(currentDate),
+              sessionStatus: SessionStatus.SCHEDULED,
+              note: `Buổi học số ${sessionsCreated + 1}`,
+            });
+
+            await this.scheduleRepository.save(schedule);
+            sessionsCreated++;
+          }
+        }
+        currentDate.setDate(currentDate.getDate() + 1);
+      }
+      console.log(`[generateSchedules] Created ${sessionsCreated} sessions for class ${classEntity.id}`);
+    } catch (err) {
+      console.error('Failed to generate schedules for class:', err);
+    }
   }
 
   async findAll(query: ClassesQuery = {}) {
@@ -196,7 +356,55 @@ export class ClassesService {
     const classEntity = await this.findOne(id);
     classEntity.status = status;
     classEntity.suspendedBy = status === ClassStatus.SUSPENDED ? user : null;
-    return this.classesRepository.save(classEntity);
+    const saved = await this.classesRepository.save(classEntity);
+
+    // Cancel remaining scheduled sessions if class is cancelled
+    if (status === ClassStatus.CANCELLED) {
+      await this.scheduleRepository.update(
+        { class: { id: classEntity.id }, sessionStatus: SessionStatus.SCHEDULED },
+        { sessionStatus: SessionStatus.CANCELLED },
+      );
+    }
+
+    // Send notifications to Tutor & Student
+    let title = '';
+    let message = '';
+    const subjectName = classEntity.subject?.name || 'môn học';
+
+    if (status === ClassStatus.SUSPENDED) {
+      title = 'Lớp học tạm dừng';
+      message = `Lớp học môn ${subjectName} của bạn đã bị tạm dừng bởi trung tâm.`;
+    } else if (status === ClassStatus.COMPLETED) {
+      title = 'Lớp học hoàn thành';
+      message = `Lớp học môn ${subjectName} của bạn đã hoàn thành / kết thúc.`;
+    } else if (status === ClassStatus.CANCELLED) {
+      title = 'Lớp học bị hủy';
+      message = `Lớp học môn ${subjectName} của bạn đã bị hủy bởi trung tâm.`;
+    } else if (status === ClassStatus.ACTIVE) {
+      title = 'Lớp học hoạt động lại';
+      message = `Lớp học môn ${subjectName} của bạn đã hoạt động trở lại bình thường.`;
+    }
+
+    if (title && message) {
+      if (classEntity.student?.user?.id) {
+        await this.notificationsService.createNotification(
+          classEntity.student.user.id,
+          title,
+          message,
+          NotificationType.SCHEDULE_CHANGED,
+        );
+      }
+      if (classEntity.tutor?.user?.id) {
+        await this.notificationsService.createNotification(
+          classEntity.tutor.user.id,
+          title,
+          message,
+          NotificationType.SCHEDULE_CHANGED,
+        );
+      }
+    }
+
+    return saved;
   }
 
   async findStudentSchedule(userId: string) {
@@ -442,6 +650,7 @@ export class ClassesService {
   async createSchedule(classId: string, dto: CreateScheduleDto) {
     const classEntity = await this.classesRepository.findOne({
       where: { id: classId },
+      relations: { tutor: { user: true }, student: { user: true }, subject: true },
     });
     if (!classEntity) throw new NotFoundException('Không tìm thấy lớp học');
 
@@ -455,7 +664,26 @@ export class ClassesService {
       note: dto.note,
     });
 
-    return this.scheduleRepository.save(schedule);
+    const savedSchedule = await this.scheduleRepository.save(schedule);
+
+    if (classEntity.student?.user?.id) {
+      await this.notificationsService.createNotification(
+        classEntity.student.user.id,
+        'Lịch học mới được thêm',
+        `Một buổi học mới cho môn ${classEntity.subject?.name || 'môn học'} đã được thêm vào ngày ${schedule.sessionDate ? new Date(schedule.sessionDate).toLocaleDateString('vi-VN') : schedule.dayOfWeek} lúc ${schedule.startTime.slice(0, 5)}.`,
+        NotificationType.SCHEDULE_CHANGED,
+      );
+    }
+    if (classEntity.tutor?.user?.id) {
+      await this.notificationsService.createNotification(
+        classEntity.tutor.user.id,
+        'Lịch học mới được thêm',
+        `Một buổi học mới cho môn ${classEntity.subject?.name || 'môn học'} đã được thêm vào ngày ${schedule.sessionDate ? new Date(schedule.sessionDate).toLocaleDateString('vi-VN') : schedule.dayOfWeek} lúc ${schedule.startTime.slice(0, 5)}.`,
+        NotificationType.SCHEDULE_CHANGED,
+      );
+    }
+
+    return savedSchedule;
   }
 
   async updateSchedule(
@@ -465,6 +693,7 @@ export class ClassesService {
   ) {
     const schedule = await this.scheduleRepository.findOne({
       where: { id: scheduleId, class: { id: classId } },
+      relations: { class: { tutor: { user: true }, student: { user: true }, subject: true } },
     });
     if (!schedule)
       throw new NotFoundException(
@@ -482,19 +711,63 @@ export class ClassesService {
       schedule.sessionStatus = dto.sessionStatus;
     if (dto.note !== undefined) schedule.note = dto.note;
 
-    return this.scheduleRepository.save(schedule);
+    const savedSchedule = await this.scheduleRepository.save(schedule);
+    const classEntity = schedule.class;
+
+    if (classEntity) {
+      if (classEntity.student?.user?.id) {
+        await this.notificationsService.createNotification(
+          classEntity.student.user.id,
+          'Lịch học thay đổi',
+          `Lịch học môn ${classEntity.subject?.name || 'môn học'} đã được cập nhật vào ngày ${schedule.sessionDate ? new Date(schedule.sessionDate).toLocaleDateString('vi-VN') : schedule.dayOfWeek} lúc ${schedule.startTime.slice(0, 5)}.`,
+          NotificationType.SCHEDULE_CHANGED,
+        );
+      }
+      if (classEntity.tutor?.user?.id) {
+        await this.notificationsService.createNotification(
+          classEntity.tutor.user.id,
+          'Lịch học thay đổi',
+          `Lịch học môn ${classEntity.subject?.name || 'môn học'} đã được cập nhật vào ngày ${schedule.sessionDate ? new Date(schedule.sessionDate).toLocaleDateString('vi-VN') : schedule.dayOfWeek} lúc ${schedule.startTime.slice(0, 5)}.`,
+          NotificationType.SCHEDULE_CHANGED,
+        );
+      }
+    }
+
+    return savedSchedule;
   }
 
   async deleteSchedule(classId: string, scheduleId: string) {
     const schedule = await this.scheduleRepository.findOne({
       where: { id: scheduleId, class: { id: classId } },
+      relations: { class: { tutor: { user: true }, student: { user: true }, subject: true } },
     });
     if (!schedule)
       throw new NotFoundException(
         'Không tìm thấy buổi học tương ứng trong lớp này',
       );
 
+    const classEntity = schedule.class;
     await this.scheduleRepository.remove(schedule);
+
+    if (classEntity) {
+      if (classEntity.student?.user?.id) {
+        await this.notificationsService.createNotification(
+          classEntity.student.user.id,
+          'Lịch học bị hủy',
+          `Một buổi học môn ${classEntity.subject?.name || 'môn học'} vào ngày ${schedule.sessionDate ? new Date(schedule.sessionDate).toLocaleDateString('vi-VN') : schedule.dayOfWeek} đã bị hủy.`,
+          NotificationType.SCHEDULE_CHANGED,
+        );
+      }
+      if (classEntity.tutor?.user?.id) {
+        await this.notificationsService.createNotification(
+          classEntity.tutor.user.id,
+          'Lịch học bị hủy',
+          `Một buổi học môn ${classEntity.subject?.name || 'môn học'} vào ngày ${schedule.sessionDate ? new Date(schedule.sessionDate).toLocaleDateString('vi-VN') : schedule.dayOfWeek} đã bị hủy.`,
+          NotificationType.SCHEDULE_CHANGED,
+        );
+      }
+    }
+
     return { success: true };
   }
 
@@ -536,7 +809,7 @@ export class ClassesService {
 
     const request = await this.classRequestsRepository.findOne({
       where: { id: requestId },
-      relations: { student: { user: true } },
+      relations: { student: { user: true }, preferredTutor: { user: true }, subject: true },
     });
 
     if (!request) throw new NotFoundException('Không tìm thấy yêu cầu');
@@ -547,8 +820,12 @@ export class ClassesService {
       throw new BadRequestException('Yêu cầu này không ở trạng thái chờ xác nhận');
     }
 
+    const tutor = request.preferredTutor;
     request.preferredTutor = null as any;
-    request.status = RequestStatus.DECLINED;
+    request.proposedFee = null as any;
+    request.proposedSessions = null as any;
+    request.proposedAt = null as any;
+    request.status = RequestStatus.PENDING;
     request.requirements = [
       request.requirements || '',
       '[Học viên đã từ chối đề xuất từ gia sư này. Yêu cầu mở lại cho tất cả gia sư.]',
@@ -557,10 +834,26 @@ export class ClassesService {
       .join('\n');
     await this.classRequestsRepository.save(request);
 
+    if (tutor && tutor.user?.id) {
+      await this.notificationsService.createNotification(
+        tutor.user.id,
+        'Đề xuất bị từ chối',
+        `Học viên ${student.user?.fullName || 'Ẩn danh'} đã từ chối đề xuất của bạn cho môn ${request.subject?.name || 'môn học'}.`,
+        NotificationType.TUTOR_REJECTED,
+      );
+    }
+
     return { message: 'Bạn đã từ chối đề xuất của gia sư.' };
   }
 
-  async counterProposal(requestId: string, userId: string, note: string) {
+  async counterProposal(
+    requestId: string,
+    userId: string,
+    note: string,
+    feePerSession?: number,
+    totalSessions?: number,
+    schedule?: string,
+  ) {
     const student = await this.studentsRepository.findOne({
       where: { user: { id: userId } },
     });
@@ -570,7 +863,7 @@ export class ClassesService {
 
     const request = await this.classRequestsRepository.findOne({
       where: { id: requestId },
-      relations: { student: { user: true } },
+      relations: { student: { user: true }, preferredTutor: { user: true }, subject: true },
     });
 
     if (!request) throw new NotFoundException('Không tìm thấy yêu cầu');
@@ -581,14 +874,36 @@ export class ClassesService {
       throw new BadRequestException('Yêu cầu này không ở trạng thái chờ xác nhận');
     }
 
+    if (feePerSession) request.proposedFee = feePerSession;
+    if (totalSessions) request.proposedSessions = totalSessions;
+    if (schedule) request.preferredSchedule = schedule;
+
     request.status = RequestStatus.NEGOTIATING;
+
+    const adjustText = [
+      note ? `Lời nhắn: ${note}` : '',
+      feePerSession ? `Học phí: ${feePerSession.toLocaleString('vi-VN')}đ/buổi` : '',
+      totalSessions ? `Số buổi: ${totalSessions} buổi` : '',
+      schedule ? `Lịch học: ${schedule}` : '',
+    ].filter(Boolean).join(', ');
+
     request.requirements = [
       request.requirements || '',
-      `[Học viên yêu cầu điều chỉnh: ${note}]`,
+      `[Học viên yêu cầu điều chỉnh - ${adjustText}]`,
     ]
       .filter(Boolean)
       .join('\n');
     await this.classRequestsRepository.save(request);
+
+    if (request.preferredTutor && request.preferredTutor.user?.id) {
+      const msg = `Học viên ${student.user?.fullName || 'Ẩn danh'} yêu cầu điều chỉnh đề xuất môn ${request.subject?.name || 'môn học'}: ${adjustText}.`;
+      await this.notificationsService.createNotification(
+        request.preferredTutor.user.id,
+        'Yêu cầu điều chỉnh đề xuất',
+        msg,
+        NotificationType.SCHEDULE_CHANGED,
+      );
+    }
 
     return {
       message:
@@ -631,6 +946,22 @@ export class ClassesService {
     classEntity.cancellationReason = reason;
     classEntity.cancellationRequestedAt = new Date();
     await this.classesRepository.save(classEntity);
+
+    if (role === 'student' && classEntity.tutor?.user?.id) {
+      await this.notificationsService.createNotification(
+        classEntity.tutor.user.id,
+        'Yêu cầu hủy lớp học',
+        `Học viên ${classEntity.student?.user?.fullName || 'Ẩn danh'} đã yêu cầu hủy lớp học môn ${classEntity.subject?.name || 'môn học'}. Lý do: "${reason}".`,
+        NotificationType.SCHEDULE_CHANGED,
+      );
+    } else if (role === 'tutor' && classEntity.student?.user?.id) {
+      await this.notificationsService.createNotification(
+        classEntity.student.user.id,
+        'Yêu cầu hủy lớp học',
+        `Gia sư ${classEntity.tutor?.user?.fullName || 'Gia sư'} đã yêu cầu hủy lớp học môn ${classEntity.subject?.name || 'môn học'}. Lý do: "${reason}".`,
+        NotificationType.SCHEDULE_CHANGED,
+      );
+    }
 
     const roleName = role === 'tutor' ? 'Gia sư' : 'Học viên';
     return {
@@ -697,6 +1028,23 @@ export class ClassesService {
         .andWhere('session_status = :status', { status: SessionStatus.SCHEDULED })
         .execute();
 
+      if (classEntity.student?.user?.id) {
+        await this.notificationsService.createNotification(
+          classEntity.student.user.id,
+          'Lớp học đã bị hủy',
+          `Yêu cầu hủy lớp học môn ${classEntity.subject?.name || 'môn học'} đã được đồng ý. Lớp học đã được đóng.`,
+          NotificationType.SCHEDULE_CHANGED,
+        );
+      }
+      if (classEntity.tutor?.user?.id) {
+        await this.notificationsService.createNotification(
+          classEntity.tutor.user.id,
+          'Lớp học đã bị hủy',
+          `Yêu cầu hủy lớp học môn ${classEntity.subject?.name || 'môn học'} đã được đồng ý. Lớp học đã được đóng.`,
+          NotificationType.SCHEDULE_CHANGED,
+        );
+      }
+
       return { message: 'Đã đồng ý hủy lớp. Lớp học đã được hủy.' };
     } else {
       classEntity.status = ClassStatus.ACTIVE;
@@ -704,6 +1052,23 @@ export class ClassesService {
       classEntity.cancellationReason = null as any;
       classEntity.cancellationRequestedAt = null as any;
       await this.classesRepository.save(classEntity);
+
+      if (classEntity.student?.user?.id) {
+        await this.notificationsService.createNotification(
+          classEntity.student.user.id,
+          'Từ chối yêu cầu hủy lớp',
+          `Yêu cầu hủy lớp học môn ${classEntity.subject?.name || 'môn học'} đã bị từ chối. Lớp học tiếp tục hoạt động.`,
+          NotificationType.SCHEDULE_CHANGED,
+        );
+      }
+      if (classEntity.tutor?.user?.id) {
+        await this.notificationsService.createNotification(
+          classEntity.tutor.user.id,
+          'Từ chối yêu cầu hủy lớp',
+          `Yêu cầu hủy lớp học môn ${classEntity.subject?.name || 'môn học'} đã bị từ chối. Lớp học tiếp tục hoạt động.`,
+          NotificationType.SCHEDULE_CHANGED,
+        );
+      }
 
       return { message: 'Đã từ chối hủy lớp. Lớp học tiếp tục hoạt động.' };
     }
@@ -749,37 +1114,45 @@ export class ClassesService {
 
     const tutor = request.preferredTutor;
 
-    // Check existing class
-    const existingClass = await this.classesRepository.findOne({
-      where: { request: { id: requestId } },
-    });
-    if (existingClass) {
-      throw new ConflictException('Yêu cầu này đã được tạo lớp');
-    }
-
-    // Tạo lớp học mới
-    const classEntity = this.classesRepository.create({
-      tutor,
-      student: request.student,
-      subject: request.subject,
-      request,
-      location: request.preferredArea,
-      feePerSession: request.proposedFee,
-      totalSessions: request.proposedSessions,
-      status: ClassStatus.ACTIVE,
-      startDate: new Date(),
-      notes: request.requirements,
-    });
-
-    const savedClass = await this.classesRepository.save(classEntity);
-
     // Cập nhật trạng thái request
     request.status = RequestStatus.MATCHED;
     await this.classRequestsRepository.save(request);
 
+    // Thông báo cho Gia sư
+    if (tutor.user?.id) {
+      await this.notificationsService.createNotification(
+        tutor.user.id,
+        'Học viên đã đồng ý ghép lớp',
+        `Học viên ${request.student?.user?.fullName || 'Ẩn danh'} đã đồng ý đề xuất ghép lớp môn ${request.subject?.name}. Vui lòng chờ nhân viên trung tâm duyệt tạo lớp.`,
+        NotificationType.CLASS_CONFIRMED,
+      );
+    }
+    // Thông báo cho Học viên
+    if (request.student?.user?.id) {
+      await this.notificationsService.createNotification(
+        request.student.user.id,
+        'Gửi xác nhận thành công',
+        `Bạn đã đồng ý đề xuất dạy môn ${request.subject?.name} của gia sư ${tutor.user?.fullName || 'Gia sư'}. Yêu cầu đã được gửi lên hệ thống chờ nhân viên duyệt tạo lớp.`,
+        NotificationType.CLASS_CONFIRMED,
+      );
+    }
+    // Thông báo cho tất cả Staff
+    const staffUsers = await this.userRepository.find({
+      relations: { role: true },
+    });
+    for (const staff of staffUsers) {
+      if (staff.role?.name === 'staff') {
+        await this.notificationsService.createNotification(
+          staff.id,
+          'Yêu cầu ghép lớp đã hoàn tất đàm phán',
+          `Học viên và gia sư đã thống nhất thông tin ghép lớp cho yêu cầu môn ${request.subject?.name || 'môn học'}. Vui lòng tạo lớp học.`,
+          NotificationType.NEW_REQUEST,
+        );
+      }
+    }
+
     return {
-      message: 'Bạn đã xác nhận đề xuất của gia sư thành công! Lớp học đã được tạo.',
-      class: savedClass,
+      message: 'Bạn đã xác nhận đề xuất của gia sư thành công! Yêu cầu đã được gửi tới nhân viên trung tâm để duyệt tạo lớp.',
     };
   }
 
@@ -912,5 +1285,77 @@ export class ClassesService {
     });
 
     return reports;
+  }
+
+  async recreateClassRequest(classId: string, userId: string) {
+    const student = await this.studentsRepository.findOne({
+      where: { user: { id: userId } },
+      relations: { user: true },
+    });
+    if (!student) {
+      throw new NotFoundException('Không tìm thấy học viên tương ứng với tài khoản này');
+    }
+
+    const classEntity = await this.classesRepository.findOne({
+      where: { id: classId, student: { id: student.id } },
+      relations: {
+        tutor: { user: true },
+        subject: true,
+      },
+    });
+
+    if (!classEntity) {
+      throw new NotFoundException('Không tìm thấy lớp học cũ của bạn');
+    }
+
+    if (classEntity.status !== ClassStatus.CANCELLED && classEntity.status !== ClassStatus.COMPLETED) {
+      throw new BadRequestException('Chỉ có thể đăng ký học lại từ lớp học đã kết thúc hoặc bị hủy');
+    }
+
+    // Check if there is already a pending class request with this tutor for this student and subject
+    const existingRequest = await this.classRequestsRepository.findOne({
+      where: {
+        student: { id: student.id },
+        preferredTutor: { id: classEntity.tutor.id },
+        subject: { id: classEntity.subject.id },
+        status: In([RequestStatus.PENDING, RequestStatus.PROCESSING, RequestStatus.PROPOSED, RequestStatus.NEGOTIATING, RequestStatus.MATCHED]),
+      },
+    });
+
+    if (existingRequest) {
+      throw new ConflictException('Đã tồn tại một yêu cầu đang xử lý với gia sư này cho môn học này');
+    }
+
+    // Create a new ClassRequest with MATCHED status
+    const classRequest = this.classRequestsRepository.create({
+      student,
+      subject: classEntity.subject,
+      preferredTutor: classEntity.tutor,
+      preferredArea: classEntity.location || student.user.phone || 'Chưa cập nhật',
+      preferredSchedule: classEntity.notes || 'Linh hoạt',
+      requirements: `Đăng ký học lại với gia sư ${classEntity.tutor.user?.fullName || 'Gia sư'} từ lớp cũ (Mã lớp: CLASS-${classEntity.id.replace(/-/g, '').slice(0, 6).toUpperCase()})`,
+      status: RequestStatus.MATCHED,
+      proposedFee: classEntity.feePerSession,
+      proposedSessions: classEntity.totalSessions || 24,
+    });
+
+    const savedRequest = await this.classRequestsRepository.save(classRequest);
+
+    // Notify all Staff
+    const staffUsers = await this.userRepository.find({
+      relations: { role: true },
+    });
+    for (const staff of staffUsers) {
+      if (staff.role?.name === 'staff') {
+        await this.notificationsService.createNotification(
+          staff.id,
+          'Yêu cầu học lại từ lớp cũ',
+          `Học viên ${student.user?.fullName} đã đăng ký học lại môn ${classEntity.subject?.name} với gia sư ${classEntity.tutor.user?.fullName}. Vui lòng duyệt tạo lớp học.`,
+          NotificationType.NEW_REQUEST,
+        );
+      }
+    }
+
+    return savedRequest;
   }
 }

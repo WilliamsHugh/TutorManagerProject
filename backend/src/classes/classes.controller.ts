@@ -66,11 +66,18 @@ export class ClassesController {
   @Roles(RoleType.STUDENT)
   async counterProposal(
     @Param('requestId') requestId: string,
-    @Body('note') note: string,
+    @Body() body: { note: string; feePerSession?: number; totalSessions?: number; schedule?: string },
     @Request() req,
   ) {
     const userId = req.user.id || req.user.sub;
-    return this.classesService.counterProposal(requestId, userId, note);
+    return this.classesService.counterProposal(
+      requestId,
+      userId,
+      body.note,
+      body.feePerSession,
+      body.totalSessions,
+      body.schedule,
+    );
   }
 
   // Student: yêu cầu hủy lớp học
@@ -110,6 +117,14 @@ export class ClassesController {
   findMyClasses(@Request() req) {
     const userId = req.user.id || req.user.sub;
     return this.classesService.findStudentClasses(userId);
+  }
+
+  // Student: đăng ký học lại từ lớp cũ bị hủy hoặc hoàn thành
+  @Post('student/recreate/:classId')
+  @Roles(RoleType.STUDENT)
+  async recreateClassRequest(@Param('classId') classId: string, @Request() req) {
+    const userId = req.user.id || req.user.sub;
+    return this.classesService.recreateClassRequest(classId, userId);
   }
 
   @Get('my-schedule')

@@ -142,7 +142,7 @@ export async function getMyRecommendations() {
 }
 
 // Gửi đề xuất học phí & số buổi cho học sinh
-export async function proposeToStudent(id: string, feePerSession: number, totalSessions: number) {
+export async function proposeToStudent(id: string, feePerSession: number, totalSessions: number, schedule?: string) {
   const token = getToken();
   return apiFetch<any>(`${API_URL}/tutor/recommendations/${id}/propose`, {
     method: 'POST',
@@ -150,7 +150,7 @@ export async function proposeToStudent(id: string, feePerSession: number, totalS
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${token}`,
     },
-    body: JSON.stringify({ feePerSession, totalSessions }),
+    body: JSON.stringify({ feePerSession, totalSessions, schedule }),
   });
 }
 
@@ -172,7 +172,7 @@ export async function getMyPendingProposals() {
 }
 
 // Điều chỉnh đề xuất (khi học sinh yêu cầu sửa)
-export async function modifyProposal(id: string, feePerSession: number, totalSessions: number) {
+export async function modifyProposal(id: string, feePerSession: number, totalSessions: number, schedule?: string) {
   const token = getToken();
   return apiFetch<any>(`${API_URL}/tutor/recommendations/${id}/modify`, {
     method: 'POST',
@@ -180,8 +180,23 @@ export async function modifyProposal(id: string, feePerSession: number, totalSes
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${token}`,
     },
-    body: JSON.stringify({ feePerSession, totalSessions }),
+    body: JSON.stringify({ feePerSession, totalSessions, schedule }),
   });
+}
+
+export async function confirmProposalByTutor(id: string) {
+  const token = getToken();
+  const res = await fetch(`${API_URL}/tutor/recommendations/${id}/confirm`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+    },
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || 'Không thể đồng ý đề xuất');
+  }
+  return res.json();
 }
 
 // Rút đề xuất

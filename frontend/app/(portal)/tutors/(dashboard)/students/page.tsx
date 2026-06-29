@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Icon } from '@iconify/react';
 import { getTutorStudents } from '@/lib/api';
@@ -77,15 +77,15 @@ export default function MyStudentsPage() {
 
   return (
     <>
-      <Header title="Học viên của tôi" userProfile={profile} />
+      <Header title="Lớp học của tôi" userProfile={profile} />
       
       <main className="p-8 flex flex-col gap-8 animate-in fade-in duration-300">
         
         {/* Page Title & Subtitle */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">Danh sách học viên</h1>
-            <p className="text-sm text-slate-500 mt-1">Theo dõi tiến trình, nộp báo cáo giảng dạy và quản lý học tập của học viên bạn phụ trách.</p>
+            <h1 className="text-2xl font-bold text-slate-900">Danh sách lớp học</h1>
+            <p className="text-sm text-slate-500 mt-1">Theo dõi tiến trình, nộp báo cáo giảng dạy và quản lý các lớp học bạn phụ trách.</p>
           </div>
           <div className="flex items-center gap-2 text-xs bg-blue-50 text-blue-700 font-semibold px-3.5 py-2 rounded-full border border-blue-100 shadow-sm self-start md:self-auto">
             <span className="relative flex h-2 w-2">
@@ -101,18 +101,18 @@ export default function MyStudentsPage() {
           {/* Card 1: Total Students */}
           <div className="bg-white rounded-2xl border border-slate-100 p-6 flex items-center justify-between shadow-[0_8px_30px_rgb(0,0,0,0.015)] hover:shadow-[0_8px_30px_rgb(0,0,0,0.04)] transition-all duration-300 group">
             <div className="flex flex-col gap-1">
-              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Tổng số học viên</span>
+              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Tổng số lớp học</span>
               <span className="text-3xl font-black text-slate-800">{loading ? '...' : stats.total}</span>
             </div>
             <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-              <Icon icon="lucide:users" fontSize={24} />
+              <Icon icon="lucide:book-open" fontSize={24} />
             </div>
           </div>
 
           {/* Card 2: Active Students */}
           <div className="bg-white rounded-2xl border border-slate-100 p-6 flex items-center justify-between shadow-[0_8px_30px_rgb(0,0,0,0.015)] hover:shadow-[0_8px_30px_rgb(0,0,0,0.04)] transition-all duration-300 group">
             <div className="flex flex-col gap-1">
-              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Đang học tích cực</span>
+              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Lớp đang dạy</span>
               <span className="text-3xl font-black text-emerald-600">{loading ? '...' : stats.active}</span>
             </div>
             <div className="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
@@ -123,7 +123,7 @@ export default function MyStudentsPage() {
           {/* Card 3: Paused Students */}
           <div className="bg-white rounded-2xl border border-slate-100 p-6 flex items-center justify-between shadow-[0_8px_30px_rgb(0,0,0,0.015)] hover:shadow-[0_8px_30px_rgb(0,0,0,0.04)] transition-all duration-300 group">
             <div className="flex flex-col gap-1">
-              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Tạm dừng / Đã xong</span>
+              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Tạm dừng / Hoàn thành</span>
               <span className="text-3xl font-black text-amber-600">{loading ? '...' : stats.paused}</span>
             </div>
             <div className="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
@@ -144,7 +144,7 @@ export default function MyStudentsPage() {
               </span>
               <input 
                 type="text" 
-                placeholder="Tìm học viên theo tên, môn học, lớp..."
+                placeholder="Tìm lớp học theo mã lớp, tên học viên, môn học..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-800 placeholder-slate-450 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200"
@@ -171,7 +171,7 @@ export default function MyStudentsPage() {
                       : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
                   }`}
                 >
-                  {status === 'ALL' ? 'Tất cả học viên' : status}
+                  {status === 'ALL' ? 'Tất cả lớp học' : status}
                 </button>
               ))}
             </div>
@@ -188,9 +188,11 @@ export default function MyStudentsPage() {
               <table className="w-full border-collapse text-left">
                 <thead>
                   <tr className="bg-slate-50/50 border-b border-slate-100 text-xs font-bold text-slate-400 uppercase tracking-wider">
+                    <th className="py-4 px-6">Mã Lớp</th>
                     <th className="py-4 px-6">Học viên</th>
-                    <th className="py-4 px-6">Cấp học</th>
-                    <th className="py-4 px-6">Môn học gần nhất</th>
+                    <th className="py-4 px-6">Môn học</th>
+                    <th className="py-4 px-6">Số buổi</th>
+                    <th className="py-4 px-6">Học phí</th>
                     <th className="py-4 px-6">Trạng thái</th>
                     <th className="py-4 px-6 text-right">Thao tác</th>
                   </tr>
@@ -201,6 +203,11 @@ export default function MyStudentsPage() {
                       key={student.id} 
                       className="hover:bg-blue-50/10 transition-colors duration-150 group"
                     >
+                      {/* Class Code */}
+                      <td className="py-4 px-6 font-mono text-xs font-bold text-slate-600">
+                        {student.classCode}
+                      </td>
+
                       {/* Name & Email Info */}
                       <td className="py-4 px-6">
                         <div className="flex items-center gap-4">
@@ -221,19 +228,30 @@ export default function MyStudentsPage() {
                         </div>
                       </td>
 
-                      {/* Grade Level */}
+                      {/* Subject */}
+                      <td className="py-4 px-6">
+                        <div className="flex flex-col gap-0.5">
+                          <span className="text-sm font-semibold text-slate-700 flex items-center gap-1">
+                            <Icon icon="lucide:book-open" className="text-blue-500" fontSize={16} />
+                            {student.lastSubject}
+                          </span>
+                          <span className="text-xs font-bold text-slate-400">Cấp học: {student.gradeLevel}</span>
+                        </div>
+                      </td>
+
+                      {/* Sessions Progress */}
                       <td className="py-4 px-6">
                         <span className="text-xs font-bold text-slate-655 bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200/30">
-                          {student.gradeLevel}
+                          {student.completedSessions ?? 0} / {student.totalSessions ?? 24} buổi
                         </span>
                       </td>
 
-                      {/* Last Subject */}
+                      {/* Fee Per Session */}
                       <td className="py-4 px-6">
-                        <div className="flex items-center gap-1.5 text-sm font-semibold text-slate-700">
-                          <Icon icon="lucide:book-open" className="text-blue-500" fontSize={16} />
-                          {student.lastSubject}
-                        </div>
+                        <span className="text-sm font-bold text-[#0b5fff]">
+                          {student.feePerSession ? `${student.feePerSession.toLocaleString("vi-VN")}đ` : "Chưa cập nhật"}
+                        </span>
+                        <span className="text-[10px] text-slate-400 block mt-0.5">/ buổi</span>
                       </td>
 
                       {/* Status Badge */}
@@ -241,10 +259,12 @@ export default function MyStudentsPage() {
                         <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ring-1 ${
                           student.status === 'Đang học' 
                             ? 'bg-emerald-50 text-emerald-700 ring-emerald-600/10' 
+                            : student.status === 'Tạm dừng'
+                            ? 'bg-amber-50 text-amber-700 ring-amber-600/10'
                             : 'bg-slate-50 text-slate-500 ring-slate-650/10'
                         }`}>
                           <span className={`h-1.5 w-1.5 rounded-full ${
-                            student.status === 'Đang học' ? 'bg-emerald-600 animate-pulse' : 'bg-slate-400'
+                            student.status === 'Đang học' ? 'bg-emerald-600 animate-pulse' : student.status === 'Tạm dừng' ? 'bg-amber-500' : 'bg-slate-400'
                           }`} />
                           {student.status}
                         </span>
@@ -306,14 +326,14 @@ export default function MyStudentsPage() {
           ) : (
             <div className="py-24 px-6 text-center flex flex-col items-center justify-center gap-4 max-w-md mx-auto">
               <div className="w-16 h-16 rounded-2xl bg-slate-50 text-slate-400 flex items-center justify-center border border-slate-100 shadow-sm">
-                <Icon icon="lucide:users" fontSize={32} />
+                <Icon icon="lucide:book-open" fontSize={32} />
               </div>
               <div className="flex flex-col gap-1.5">
-                <h3 className="text-lg font-bold text-slate-800">Không tìm thấy học viên</h3>
+                <h3 className="text-lg font-bold text-slate-800">Không tìm thấy lớp học</h3>
                 <p className="text-slate-400 text-sm leading-relaxed">
                   {searchQuery || statusFilter !== 'ALL' 
-                    ? "Chúng tôi không tìm thấy học viên nào khớp với bộ lọc tìm kiếm hiện tại của bạn. Hãy thử thay đổi từ khóa."
-                    : "Hiện tại hệ thống chưa ghi nhận học viên nào trong danh sách quản lý trực tiếp của bạn."
+                    ? "Chúng tôi không tìm thấy lớp học nào khớp với bộ lọc tìm kiếm hiện tại của bạn. Hãy thử thay đổi từ khóa."
+                    : "Hiện tại hệ thống chưa ghi nhận lớp học nào trong danh sách quản lý trực tiếp của bạn."
                   }
                 </p>
               </div>

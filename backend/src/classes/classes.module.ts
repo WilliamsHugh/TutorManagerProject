@@ -17,6 +17,8 @@ import { ClassesController } from './classes.controller';
 import { ClassesService } from './classes.service';
 import { ReviewsController } from './reviews.controller';
 
+import { NotificationsModule } from '../notifications/notifications.module';
+
 @Module({
   imports: [
     TypeOrmModule.forFeature([
@@ -31,6 +33,7 @@ import { ReviewsController } from './reviews.controller';
       User,
       TutorSubject,
     ]),
+    NotificationsModule,
   ],
   controllers: [
     ClassRequestsController,

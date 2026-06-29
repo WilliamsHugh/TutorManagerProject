@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
@@ -10,13 +11,18 @@ export default function PublicLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const [mounted, setMounted] = useState(false);
 
-  // usePathname() trả về đúng pathname cả server lẫn client, nên không cần mounted state
-  const isAuthPage = pathname === "/login" || pathname === "/register" || pathname === "/forgot-password";
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Ẩn Header trên các trang xác thực (login, register, forgot-password)
+  const hideHeader = pathname === "/login" || pathname === "/register" || pathname === "/forgot-password";
 
   return (
     <>
-      {!isAuthPage && <Header />}
+      {!hideHeader && <Header />}
       {children}
       <Footer />
     </>

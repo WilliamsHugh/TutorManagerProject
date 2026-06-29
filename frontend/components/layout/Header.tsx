@@ -3,10 +3,12 @@
 import { GraduationCap, Menu, X, Bell, ChevronDown, LogOut, Shield, LayoutDashboard } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
-import { useState, useEffect, useLayoutEffect } from "react";
+import { useState, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { clearAuth, getAuthUser, isLoggedIn as checkLoginStatus } from "@/lib/auth";
 import { apiFetch } from "@/lib/api/interceptor";
+
+import { getNotifications, markNotificationAsRead, markAllNotificationsAsRead } from "@/lib/api";
 
 interface NavLink {
   label: string;
@@ -26,45 +28,73 @@ const defaultNavLinks: NavLink[] = [
   { label: "Giới thiệu", href: "/about" },
 ];
 
-export default function Header({ 
-  customLinks, 
+export default function Header({
+  customLinks,
   showNotifications = true,
-  maxWidth = "1328px" 
+  maxWidth = "1328px"
 }: HeaderProps) {
   const [isOpen, setIsOpen] = useState(false);
-  // Khởi tạo false/null — khớp với SSR, không hydration error
-  // useLayoutEffect chạy đồng bộ TRƯỚC khi browser paint
-  // => DOM chỉ được paint 1 lần với state đúng, không nhấp nháy
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [showUserMenu, setShowUserMenu] = useState(false);
-  
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [isNotiOpen, setIsNotiOpen] = useState(false);
+
   const pathname = usePathname();
   const router = useRouter();
   const navLinks = customLinks || defaultNavLinks;
 
-  // useLayoutEffect chạy đồng bộ trước paint → cập nhật auth state đúng
-  // ngay từ lần render đầu tiên, không gây hydration error
-  useLayoutEffect(() => {
-    setIsLoggedIn(checkLoginStatus());
+  useEffect(() => {
+    const logged = checkLoginStatus();
+    setIsLoggedIn(logged);
     setUser(getAuthUser());
+
+    if (logged) {
+      getNotifications()
+        .then((data) => {
+          if (Array.isArray(data)) setNotifications(data);
+        })
+        .catch((err) => console.error("Error loading notifications:", err));
+    }
   }, []);
 
-  // useEffect cho event listeners (pageshow/popstate) — không cần đồng bộ
-  useEffect(() => {
-    const checkAuth = () => {
-      setIsLoggedIn(checkLoginStatus());
-      setUser(getAuthUser());
-    };
+  const unreadCount = Array.isArray(notifications)
+    ? notifications.filter((n) => !n.isRead).length
+    : 0;
 
-    window.addEventListener('pageshow', checkAuth);
-    window.addEventListener('popstate', checkAuth);
+  const handleNotificationClick = async (noti: any) => {
+    try {
+      await markNotificationAsRead(noti.id);
+      setNotifications((prev) =>
+        prev.map((n) => (n.id === noti.id ? { ...n, isRead: true } : n))
+      );
+      setIsNotiOpen(false);
 
-    return () => {
-      window.removeEventListener('pageshow', checkAuth);
-      window.removeEventListener('popstate', checkAuth);
-    };
-  }, [pathname]);
+      const msg = noti.message?.toLowerCase() || '';
+      const title = noti.title?.toLowerCase() || '';
+
+      if (title.includes('lịch') || msg.includes('lịch học') || msg.includes('lịch dạy')) {
+        router.push('/student/calendar');
+      } else if (title.includes('lớp học') || msg.includes('lớp học')) {
+        router.push('/student/classes');
+      } else if (title.includes('đề xuất') || title.includes('yêu cầu ghép') || msg.includes('đề xuất') || msg.includes('yêu cầu ghép') || msg.includes('thương lượng')) {
+        router.push('/student');
+      } else if (title.includes('hồ sơ') || msg.includes('hồ sơ')) {
+        router.push('/student/profile');
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleMarkAllAsRead = async () => {
+    try {
+      await markAllNotificationsAsRead();
+      setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   // Kiểm tra token ngầm qua API khi load trang
   useEffect(() => {
@@ -88,24 +118,29 @@ export default function Header({
   }, [pathname]);
 
   const handleLogout = async () => {
+    try {
+      await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:3001/api"}/auth/logout`, {
+        method: "POST",
+        credentials: "include",
+      });
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
+    try {
+      await fetch("/api/logout", {
+        method: "POST",
+      });
+    } catch (error) {
+      console.error("Local logout error:", error);
+    }
     clearAuth();
     setIsLoggedIn(false);
     setUser(null);
-
-    const targetUrl = (pathname.startsWith("/hub") || pathname.startsWith("/staff")) ? "/hub/login" : "/";
-
-    // PHẢI await để trình duyệt nhận Set-Cookie xóa httpOnly cookie TRƯỚC KHI chuyển trang
-    // Nếu không await, cookie httpOnly vẫn còn → middleware redirect về dashboard thay vì /login
-    try {
-      await Promise.race([
-        fetch("/api/logout", { method: "POST" }),
-        new Promise((_, reject) => setTimeout(() => reject(new Error("timeout")), 2000)),
-      ]);
-    } catch (err) {
-      console.error("Logout error:", err);
+    if (pathname.startsWith("/hub") || pathname.startsWith("/staff")) {
+      router.push("/hub/login");
+    } else {
+      router.push("/");
     }
-
-    window.location.href = targetUrl;
   };
 
   return (
@@ -116,7 +151,7 @@ export default function Header({
         backgroundColor: "rgba(255, 255, 255, 0.8)",
       }}
     >
-      <div 
+      <div
         className="w-full mx-auto px-4 sm:px-6 flex items-center justify-between gap-4"
         style={{ maxWidth }}
       >
@@ -160,14 +195,72 @@ export default function Header({
           {isLoggedIn && user ? (
             <div className="flex items-center gap-2 sm:gap-4">
               {showNotifications && (
-                <button
-                  aria-label="Thông báo"
-                  className="relative flex h-10 w-10 items-center justify-center rounded-full border border-black/5 bg-white text-[#687185] cursor-pointer hover:bg-gray-50 transition-all hover:scale-105 active:scale-95"
-                  type="button"
-                >
-                  <Bell size={20} />
-                  <span className="absolute right-2 top-2 flex h-2 w-2 rounded-full bg-[#ef4444]" />
-                </button>
+                <div className="relative">
+                  <button
+                    aria-label="Thông báo"
+                    className="relative flex h-10 w-10 items-center justify-center rounded-full border border-black/5 bg-white text-[#687185] cursor-pointer hover:bg-gray-50 transition-all hover:scale-105 active:scale-95"
+                    type="button"
+                    onClick={() => setIsNotiOpen(!isNotiOpen)}
+                  >
+                    <Bell size={20} />
+                    {unreadCount > 0 && (
+                      <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-[#ef4444] text-[10px] font-bold text-white shadow-sm">
+                        {unreadCount}
+                      </span>
+                    )}
+                  </button>
+
+                  {isNotiOpen && (
+                    <>
+                      <div className="fixed inset-0 z-40" onClick={() => setIsNotiOpen(false)} />
+                      <div className="absolute right-0 mt-3 w-80 rounded-2xl border shadow-2xl py-3 z-50 overflow-hidden bg-white animate-in fade-in slide-in-from-top-2" style={{ borderColor: "var(--border)" }}>
+                        <div className="px-4 pb-2 border-b flex justify-between items-center" style={{ borderColor: "var(--border)" }}>
+                          <span className="font-bold text-sm" style={{ color: "var(--foreground)" }}>Thông báo</span>
+                          {unreadCount > 0 && (
+                            <button
+                              onClick={handleMarkAllAsRead}
+                              className="text-xs text-indigo-600 hover:text-indigo-800 bg-transparent border-none cursor-pointer font-medium"
+                            >
+                              Đọc tất cả
+                            </button>
+                          )}
+                        </div>
+
+                        <div className="max-h-64 overflow-y-auto">
+                          {notifications.length > 0 ? (
+                            notifications.map((noti: any) => (
+                              <div
+                                key={noti.id}
+                                onClick={() => handleNotificationClick(noti)}
+                                className={`px-4 py-3 hover:bg-gray-50 border-b cursor-pointer transition-colors flex gap-2.5 items-start ${!noti.isRead ? 'bg-indigo-50/30' : ''}`}
+                                style={{ borderColor: "var(--border)" }}
+                              >
+                                <div className="flex-1 text-left min-w-0">
+                                  <span className={`block text-xs font-bold ${!noti.isRead ? 'text-indigo-600' : 'text-gray-500'}`}>
+                                    {noti.title}
+                                  </span>
+                                  <span className="block text-[13px] text-gray-600 mt-0.5 leading-snug break-words">
+                                    {noti.message}
+                                  </span>
+                                  <span className="block text-[10px] text-gray-400 mt-1">
+                                    {new Date(noti.createdAt).toLocaleDateString('vi-VN')}
+                                  </span>
+                                </div>
+                                {!noti.isRead && (
+                                  <span className="h-2 w-2 rounded-full bg-indigo-600 shrink-0 mt-1" />
+                                )}
+                              </div>
+                            ))
+                          ) : (
+                            <div className="px-4 py-8 text-center text-xs text-gray-400">
+                              Không có thông báo nào
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
               )}
 
               {/* User Dropdown */}
@@ -197,7 +290,7 @@ export default function Header({
                     <div className="fixed inset-0 z-40" onClick={() => setShowUserMenu(false)} />
                     <div className="absolute right-0 mt-3 w-56 rounded-2xl border shadow-2xl py-2 z-50 overflow-hidden animate-in fade-in slide-in-from-top-2"
                       style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}>
-                      
+
                       <div className="px-4 py-3 border-b mb-1" style={{ borderColor: "var(--border)" }}>
                         <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Tài khoản</p>
                         <p className="text-sm font-bold truncate" style={{ color: "var(--foreground)" }}>{user.fullName}</p>
@@ -205,16 +298,16 @@ export default function Header({
                       </div>
 
                       <Link href={
-                        user.role?.name === 'student' 
-                          ? '/student' 
-                          : user.role?.name === 'tutor' 
-                            ? '/tutors/dashboard' 
-                            : user.role?.name === 'admin' 
-                              ? '/hub/dashboard' 
-                              : user.role?.name === 'staff' 
-                                ? '/staff/request-management' 
+                        user.role?.name === 'student'
+                          ? '/student'
+                          : user.role?.name === 'tutor'
+                            ? '/tutors/dashboard'
+                            : user.role?.name === 'admin'
+                              ? '/hub/dashboard'
+                              : user.role?.name === 'staff'
+                                ? '/staff/request-management'
                                 : '/'
-                      } 
+                      }
                         onClick={() => setShowUserMenu(false)}
                         className="flex items-center gap-3 px-4 py-2.5 text-sm no-underline hover:bg-indigo-50 hover:text-indigo-600 transition-colors"
                         style={{ color: "var(--foreground)" }}>
@@ -222,19 +315,19 @@ export default function Header({
                         Trang Dashboard
                       </Link>
                       <Link href={
-                        user.role?.name === 'student' 
-                          ? '/student/profile' 
+                        user.role?.name === 'student'
+                          ? '/student/profile'
                           : '/tutors/profile'
-                      } 
+                      }
                         onClick={() => setShowUserMenu(false)}
                         className="flex items-center gap-3 px-4 py-2.5 text-sm no-underline hover:bg-indigo-50 hover:text-indigo-600 transition-colors"
                         style={{ color: "var(--foreground)" }}>
                         <Shield size={18} className="opacity-70" />
                         Cài đặt hồ sơ
                       </Link>
-                      
+
                       <div className="h-px w-full my-1" style={{ backgroundColor: "var(--border)" }} />
-                      
+
                       <button
                         onClick={handleLogout}
                         className="w-full flex items-center gap-3 px-4 py-2.5 text-sm border-none bg-transparent cursor-pointer text-red-600 hover:bg-red-50 transition-colors font-medium"
@@ -309,7 +402,7 @@ export default function Header({
                 </Link>
               ))}
             </nav>
-            
+
             {!isLoggedIn && (
               <div className="flex flex-col gap-3 border-t pt-6" style={{ borderColor: "var(--border)" }}>
                 <Link

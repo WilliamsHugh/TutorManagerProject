@@ -19,6 +19,8 @@ import { Notification } from '../notifications/notification.entity';
 import { TutorSubject } from './tutor-subject.entity';
 import { Review } from '../classes/entities/review.entity';
 
+import { NotificationsModule } from '../notifications/notifications.module';
+
 @Module({
   imports: [
     TypeOrmModule.forFeature([
@@ -36,6 +38,7 @@ import { Review } from '../classes/entities/review.entity';
       Review,
     ]),
     forwardRef(() => ClassesModule),
+    NotificationsModule,
   ],
   controllers: [TutorController, PublicTutorController],
   providers: [TutorsService],

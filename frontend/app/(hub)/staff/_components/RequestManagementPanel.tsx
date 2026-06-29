@@ -16,6 +16,7 @@ type RequestManagementPanelProps = {
   onSearchChange: (value: string) => void
   onStatusFilterChange: (value: string) => void
   onSelectRequest: (request: RequestItem) => void
+  onRefresh?: () => void
 }
 
 export function RequestManagementPanel({
@@ -29,6 +30,7 @@ export function RequestManagementPanel({
   onSearchChange,
   onStatusFilterChange,
   onSelectRequest,
+  onRefresh,
 }: RequestManagementPanelProps) {
   return (
     <Card className="rounded-md border-border shadow-none">
@@ -48,6 +50,7 @@ export function RequestManagementPanel({
           statusFilter={statusFilter}
           onSearchChange={onSearchChange}
           onStatusFilterChange={onStatusFilterChange}
+          onRefresh={onRefresh}
         />
         <RequestTable requests={requests} onSelectRequest={onSelectRequest} />
         

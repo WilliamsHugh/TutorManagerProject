@@ -1,16 +1,20 @@
-"use client";
+import { Suspense } from "react";
+import RegisterPageClient from "./RegisterPageClient";
 
-import RegisterSidebar from "./_components/RegisterSidebar";
-import RegisterForm from "./_components/RegisterForm";
+import PageLoader from "@/components/common/PageLoader";
 
-export default function RegisterPage() {
+export default async function RegisterPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
+  if (searchParams) {
+    await searchParams;
+  }
+
   return (
-    <div className="h-screen flex overflow-hidden" style={{ backgroundColor: "var(--background)" }}>
-      {/* Left Sidebar */}
-      <RegisterSidebar />
-
-      {/* Right Form Area */}
-      <RegisterForm />
-    </div>
+    <Suspense fallback={<PageLoader />}>
+      <RegisterPageClient />
+    </Suspense>
   );
 }

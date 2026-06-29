@@ -1,6 +1,5 @@
-import { ChevronDown, Search } from "lucide-react"
+import { ChevronDown, Search, RotateCw } from "lucide-react"
 
-import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 
 type RequestToolbarProps = {
@@ -8,6 +7,7 @@ type RequestToolbarProps = {
   statusFilter: string
   onSearchChange: (value: string) => void
   onStatusFilterChange: (value: string) => void
+  onRefresh?: () => void
 }
 
 export function RequestToolbar({
@@ -15,6 +15,7 @@ export function RequestToolbar({
   statusFilter,
   onSearchChange,
   onStatusFilterChange,
+  onRefresh,
 }: RequestToolbarProps) {
   return (
     <div className="flex max-w-[620px] gap-2">
@@ -47,6 +48,16 @@ export function RequestToolbar({
           size={12}
         />
       </div>
+      {onRefresh && (
+        <button
+          type="button"
+          onClick={onRefresh}
+          className="h-8 px-2.5 flex items-center justify-center rounded border border-border bg-white hover:bg-muted text-muted-foreground transition-colors cursor-pointer"
+          title="Làm mới"
+        >
+          <RotateCw size={14} />
+        </button>
+      )}
     </div>
   )
 }

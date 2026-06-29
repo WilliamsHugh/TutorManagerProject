@@ -89,8 +89,13 @@ export default function SessionTimeoutHandler() {
   }, [clearAllTimers, handleLogout]);
 
   // Global fetch interceptor to detect locked accounts
+  // Dùng ref để đảm bảo chỉ có đúng 1 interceptor tại 1 thời điểm,
+  // tránh tình trạng nhiều interceptor chồng lên nhau khi tab được restore từ BFCache
+  const fetchInterceptorRef = useRef(false);
   useEffect(() => {
     if (typeof window === "undefined") return;
+    if (fetchInterceptorRef.current) return; // Đã có interceptor rồi, không thêm nữa
+    fetchInterceptorRef.current = true;
 
     const originalFetch = window.fetch;
     window.fetch = async function (...args) {
@@ -117,7 +122,7 @@ export default function SessionTimeoutHandler() {
             window.location.replace('/login?locked=true');
           }
         } catch (e) {
-          // Ignore
+          // Ignore parse errors
         }
       }
       return response;
@@ -125,6 +130,7 @@ export default function SessionTimeoutHandler() {
 
     return () => {
       window.fetch = originalFetch;
+      fetchInterceptorRef.current = false;
     };
   }, []);
 

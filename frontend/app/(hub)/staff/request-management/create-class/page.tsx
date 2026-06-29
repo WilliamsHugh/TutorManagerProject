@@ -23,6 +23,54 @@ type ClassForm = {
   notes: string
 }
 
+function calculateEndDate(startDateStr: string, scheduleStr: string, totalSessions: number): string {
+  if (!startDateStr || !scheduleStr || !totalSessions || totalSessions <= 0) return "";
+
+  try {
+    const startDate = new Date(startDateStr);
+    if (isNaN(startDate.getTime())) return "";
+
+    const dayMap: Record<string, number> = {
+      "thứ 2": 1,
+      "thứ 3": 2,
+      "thứ 4": 3,
+      "thứ 5": 4,
+      "thứ 6": 5,
+      "thứ 7": 6,
+      "chủ nhật": 0,
+      "cn": 0
+    };
+
+    const targetDays: number[] = [];
+    const normalizedSchedule = scheduleStr.toLowerCase();
+    Object.keys(dayMap).forEach((dayKey) => {
+      if (normalizedSchedule.includes(dayKey)) {
+        targetDays.push(dayMap[dayKey]);
+      }
+    });
+
+    if (targetDays.length === 0) return "";
+
+    let currentDate = new Date(startDate);
+    let sessionsFound = 0;
+    let finalDate = new Date(startDate);
+
+    while (sessionsFound < totalSessions) {
+      const dayOfWeek = currentDate.getDay();
+      if (targetDays.includes(dayOfWeek)) {
+        finalDate = new Date(currentDate);
+        sessionsFound++;
+      }
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+
+    return finalDate.toISOString().split("T")[0];
+  } catch (err) {
+    console.error("Error calculating end date:", err);
+    return "";
+  }
+}
+
 export default function CreateClassPage() {
   return (
     <Suspense fallback={<CreateClassLoading />}>
@@ -104,6 +152,20 @@ function CreateClassContent() {
     }
   }, [form, requestId, tutorId])
 
+  // Auto-calculate End Date based on startDate, schedule, and totalSessions
+  useEffect(() => {
+    if (form.startDate && request?.schedule && form.totalSessions) {
+      const calculated = calculateEndDate(
+        form.startDate,
+        request.schedule,
+        Number(form.totalSessions)
+      );
+      if (calculated) {
+        setForm((prev) => ({ ...prev, endDate: calculated }));
+      }
+    }
+  }, [form.startDate, form.totalSessions, request?.schedule]);
+
   useEffect(() => {
     async function loadRequest() {
       if (!requestId) {
@@ -117,8 +179,16 @@ function CreateClassContent() {
         const mapped = mapClassRequest(data)
         setRequest(mapped)
         setForm((current) => {
-          if (current.location) return current // keep localStorage location if exists
-          return { ...current, location: mapped.area }
+          return {
+            ...current,
+            location: current.location || mapped.area,
+            feePerSession: current.feePerSession && current.feePerSession !== "200000"
+              ? current.feePerSession
+              : (mapped.proposedFee ? String(Math.round(mapped.proposedFee)) : "200000"),
+            totalSessions: current.totalSessions && current.totalSessions !== "24"
+              ? current.totalSessions
+              : (mapped.proposedSessions ? String(mapped.proposedSessions) : "24"),
+          };
         })
       } catch (err) {
         setError(err instanceof Error ? err.message : "Không thể tải thông tin yêu cầu")

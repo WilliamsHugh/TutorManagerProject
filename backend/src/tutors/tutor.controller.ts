@@ -10,7 +10,6 @@ import {
   Request,
   Query,
   Param,
-  ForbiddenException,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard'; // Bảo mật bằng JWT
 import { TutorsService } from './tutors.service';
@@ -91,16 +90,6 @@ export class TutorController {
     return this.tutorsService.cancelLeaveSchedule(tutorId, id);
   }
 
-  // Hủy hàng loạt lịch nghỉ theo khoảng thời gian
-  @Post('schedule/cancel-leave-range')
-  async cancelLeaveScheduleRange(
-    @Request() req,
-    @Body() data: { startDate: string; endDate: string },
-  ) {
-    const tutorId = req.user.id || req.user.sub;
-    return this.tutorsService.cancelLeaveScheduleRange(tutorId, data);
-  }
-
   // Lấy danh sách học viên của tôi
   @Get('students')
   async getMyStudents(@Request() req) {
@@ -133,13 +122,6 @@ export class TutorController {
   async getNotifications(@Request() req) {
     const tutorId = req.user.id || req.user.sub;
     return this.tutorsService.getNotifications(tutorId);
-  }
-
-  // Đánh dấu tất cả thông báo đã đọc
-  @Patch('notifications/read-all')
-  async markAllNotificationsRead(@Request() req) {
-    const tutorId = req.user.id || req.user.sub;
-    return this.tutorsService.markAllNotificationsRead(tutorId);
   }
 
   // Cập nhật hồ sơ chuyên môn
@@ -203,7 +185,7 @@ export class TutorController {
   @Post('recommendations/:id/propose')
   async proposeRecommendation(
     @Param('id') id: string,
-    @Body() body: { feePerSession: number; totalSessions: number },
+    @Body() body: { feePerSession: number; totalSessions: number; schedule?: string },
     @Request() req,
   ) {
     const tutorId = req.user.id || req.user.sub;
@@ -212,6 +194,7 @@ export class TutorController {
       tutorId,
       body.feePerSession,
       body.totalSessions,
+      body.schedule,
     );
   }
 
@@ -226,7 +209,7 @@ export class TutorController {
   @Post('recommendations/:id/modify')
   async modifyProposal(
     @Param('id') id: string,
-    @Body() body: { feePerSession: number; totalSessions: number },
+    @Body() body: { feePerSession: number; totalSessions: number; schedule?: string },
     @Request() req,
   ) {
     const tutorId = req.user.id || req.user.sub;
@@ -235,7 +218,15 @@ export class TutorController {
       tutorId,
       body.feePerSession,
       body.totalSessions,
+      body.schedule,
     );
+  }
+
+  // Gia sư đồng ý đề xuất điều chỉnh của học sinh
+  @Post('recommendations/:id/confirm')
+  async confirmProposal(@Param('id') id: string, @Request() req) {
+    const tutorId = req.user.id || req.user.sub;
+    return this.tutorsService.confirmProposalByTutor(id, tutorId);
   }
 
   // Rút đề xuất
@@ -284,9 +275,6 @@ export class TutorController {
   // API Endpoint sinh dữ liệu mẫu
   @Post('seed')
   async seedData() {
-    if (process.env.NODE_ENV === 'production') {
-      throw new ForbiddenException('Cannot seed in production');
-    }
     return this.tutorsService.seedMockData();
   }
 }

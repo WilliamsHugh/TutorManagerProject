@@ -28,17 +28,9 @@ function LevelBadge({ label }: { label: string }) {
   );
 }
 
-interface ClassCardProps {
-  cls: ClassListing;
-  priority?: boolean;
-  onAccept?: () => void;
-  onViewDetail?: () => void;
-  accepting?: boolean;
-}
-
-export default function ClassCard({ cls, priority, onAccept, onViewDetail, accepting }: ClassCardProps) {
+export default function ClassCard({ cls, priority, onViewDetail }: { cls: ClassListing; priority?: boolean; onViewDetail?: () => void }) {
   return (
-    <div className="bg-white rounded-xl border border-gray-100 p-6 flex flex-col gap-4 hover:shadow-lg hover:shadow-blue-900/5 hover:border-blue-100 transition-all duration-300">
+    <div className="group bg-white rounded-xl border border-gray-100 p-6 flex flex-col gap-4 hover:shadow-lg hover:shadow-blue-900/5 hover:border-blue-100 transition-all duration-300">
       {/* Top */}
       <div className="flex justify-between items-start gap-4">
         <div className="flex-1 min-w-0">
@@ -100,26 +92,14 @@ export default function ClassCard({ cls, priority, onAccept, onViewDetail, accep
           <Clock size={13} />
           <span>{cls.postedAt}</span>
         </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={onViewDetail}
-            className="text-sm font-semibold px-4 py-2 rounded-xl transition-all hover:bg-slate-100 border border-slate-200 bg-white text-slate-700"
-          >
-            Xem chi tiết
-          </button>
-          {onAccept && (
-            <button
-              onClick={onAccept}
-              disabled={accepting}
-              className="text-sm font-semibold px-4 py-2 rounded-xl text-white transition-all hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
-              style={{ backgroundColor: "var(--primary, #2563eb)" }}
-            >
-              {accepting ? 'Đang xử lý...' : 'Nhận lớp'}
-            </button>
-          )}
-        </div>
+        <button
+          onClick={onViewDetail}
+          className="text-sm font-semibold px-4 py-2 rounded-xl text-white transition-opacity hover:opacity-90 cursor-pointer"
+          style={{ backgroundColor: "var(--primary)" }}
+        >
+          Xem chi tiết
+        </button>
       </div>
     </div>
   );
 }
-

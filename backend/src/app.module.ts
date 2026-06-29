@@ -28,6 +28,11 @@ import { Notification } from './notifications/notification.entity';
 import { Otp } from './auth/entities/otp.entity';
 import { RefreshToken } from './auth/entities/refresh-token.entity';
 import { Setting } from './settings/setting.entity';
+import { SystemLog } from './system-logs/system-log.entity';
+import { SystemLogsModule } from './system-logs/system-logs.module';
+
+import { APP_INTERCEPTOR } from '@nestjs/core';
+import { AuditLogInterceptor } from './system-logs/audit-log.interceptor';
 
 @Module({
   imports: [
@@ -63,6 +68,7 @@ import { Setting } from './settings/setting.entity';
             Otp,
             RefreshToken,
             Setting,
+            SystemLog,
           ],
           synchronize: true,
           autoLoadEntities: true,
@@ -79,6 +85,13 @@ import { Setting } from './settings/setting.entity';
     UploadModule,
     SettingsModule,
     MailModule,
+    SystemLogsModule,
+  ],
+  providers: [
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: AuditLogInterceptor,
+    },
   ],
 })
 export class AppModule {}

@@ -35,6 +35,8 @@ export type ApiClassRequest = {
   student?: ApiStudent
   subject?: ApiSubject
   handledBy?: ApiUser | null
+  proposedFee?: number | null
+  proposedSessions?: number | null
   preferredTutor?: {
     id: string
     educationLevel?: string | null
@@ -61,6 +63,8 @@ export type RequestItem = {
   note: string
   status: RequestStatus
   studentId?: string
+  proposedFee?: number
+  proposedSessions?: number
   preferredTutor?: {
     id: string
     name: string

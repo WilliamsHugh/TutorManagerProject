@@ -1,20 +1,19 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Icon } from '@iconify/react';
 import { 
   getTutorDashboard, 
+  getNewClasses,
   getClassRequestDetail, 
   getLearningReports, 
   submitLearningReport, 
   updateLearningReport, 
-  deleteLearningReport,
-  getTutorCancellations
+  deleteLearningReport
 } from '@/lib/api';
 import Link from 'next/link';
 import Header from '@/components/tutor/Header';
-import { useToast } from '@/components/common/Toast';
-import ConfirmModal from '@/components/common/ConfirmModal';
+import { Skeleton } from '@/components/common/Skeleton';
 
 export default function TutorDashboard() {
   // 1. Khởi tạo State rỗng để đợi dữ liệu từ backend
@@ -26,22 +25,26 @@ export default function TutorDashboard() {
   const [isUpdating, setIsUpdating] = useState(false);
   const [profile, setProfile] = useState<any>(null);
   const [currentDate, setCurrentDate] = useState(new Date());
-  
-  // Danh sách yêu cầu hủy lớp
-  const [cancellations, setCancellations] = useState<any[]>([]);
 
-  // Toast & Confirm Modal (shared components)
-  const { showToast, ToastComponent } = useToast();
+  // State cho custom toast notification
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
 
+  // State cho custom confirm modal
   const [confirmModal, setConfirmModal] = useState<{
     isOpen: boolean;
     message: string;
     onConfirm: () => void;
-  }>({ isOpen: false, message: '', onConfirm: () => {} });
+  } | null>(null);
+
+  const showToast = (message: string, type: 'success' | 'error' | 'info' = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => {
+      setToast(null);
+    }, 4000);
+  };
 
   // State cho Modals
-  const [selectedEvent, setSelectedEvent] = useState<any>(null);
-  const [selectedSuggestedClass, setSelectedSuggestedClass] = useState<any>(null);
+
   
   // Quản lý Report
   const [reportingClass, setReportingClass] = useState<any>(null);
@@ -73,18 +76,7 @@ export default function TutorDashboard() {
         setCurrentClasses(data.currentClasses || []);
         setProfile(data.profile);
 
-        // Dùng suggestedClasses từ dashboard response
-        if (data.suggestedClasses) {
-          setSuggestedClasses(data.suggestedClasses);
-        }
-
-        // Lấy danh sách yêu cầu hủy lớp
-        try {
-          const cancelData = await getTutorCancellations();
-          setCancellations(cancelData);
-        } catch (e) {
-          console.error("Lỗi lấy danh sách hủy lớp", e);
-        }
+        // Suggested classes được fetch riêng ở useEffect dưới — không ghi đè ở đây
       } catch (error) {
         console.error("Lỗi tải dữ liệu dashboard:", error);
       } finally {
@@ -95,6 +87,28 @@ export default function TutorDashboard() {
 
     fetchDashboardData();
   }, [currentDate]);
+
+  // Fetch suggested classes từ cùng API với trang /tutors/new-classes
+  useEffect(() => {
+    const fetchSuggestedClasses = async () => {
+      try {
+        const newClassesData = await getNewClasses();
+        const mapped = (newClassesData.classes || []).map((cls: any) => ({
+          id: cls.id,
+          subject: cls.title?.replace('Tìm gia sư ', '') || 'Môn học mới',
+          location: cls.location || 'Toàn quốc',
+          schedule: cls.schedule || 'Linh hoạt',
+          price: cls.salary || 'Thỏa thuận',
+          isNew: true
+        }));
+        setSuggestedClasses(mapped);
+      } catch (error) {
+        console.error("Lỗi tải lớp học mới gợi ý:", error);
+        // Giữ nguyên dữ liệu fallback từ dashboard nếu fetch thất bại
+      }
+    };
+    fetchSuggestedClasses();
+  }, []);
 
   // Tải danh sách báo cáo khi chọn lớp
   useEffect(() => {
@@ -155,8 +169,7 @@ export default function TutorDashboard() {
 
   const handleShowClassDetail = async (id: string) => {
     try {
-      const detail = await getClassRequestDetail(id);
-      setSelectedSuggestedClass(detail);
+      await getClassRequestDetail(id);
     } catch (error) {
       showToast("Không thể lấy chi tiết lớp học này.", "error");
     }
@@ -201,9 +214,7 @@ export default function TutorDashboard() {
         </div>
         
         {loading ? (
-          <div style={{ textAlign: 'center', padding: '48px', color: '#64748b' }}>
-            <Icon icon="lucide:loader-2" className="animate-spin inline-block mr-2" /> Đang tải dữ liệu...
-          </div>
+          <TutorDashboardSkeleton />
         ) : (
           <>
             {/* Stats Row */}
@@ -266,18 +277,16 @@ export default function TutorDashboard() {
                             <div style={{ fontSize: '12px', color: '#64748b' }}>{item.day}</div>
                             <div style={{ fontSize: '18px', fontWeight: 600 }}>{item.date}</div>
                           </div>
-                          {item.events && item.events.map((evt: any, idx: number) => (
+                          {item.event && (
                             <div 
-                              key={idx}
-                              className={`event ${evt.color}`} 
-                              style={{ padding: '8px', borderRadius: '4px', fontSize: '11px', background: '#dbeafe', borderLeft: '3px solid #3b82f6', cursor: 'pointer', marginBottom: '8px' }}
-                              onClick={() => setSelectedEvent(evt)}
+                              className={`event ${item.event.color}`} 
+                              style={{ padding: '8px', borderRadius: '4px', fontSize: '11px', background: '#dbeafe', borderLeft: '3px solid #3b82f6', cursor: 'pointer' }}
                             >
-                              <div style={{ fontWeight: 700 }}>{evt.time}</div>
-                              <div style={{ fontWeight: 600 }}>{evt.title}</div>
-                              <div style={{ marginTop: '4px' }}>{evt.student}</div>
+                              <div style={{ fontWeight: 700 }}>{item.event.time}</div>
+                              <div style={{ fontWeight: 600 }}>{item.event.title}</div>
+                              <div style={{ marginTop: '4px' }}>{item.event.student}</div>
                             </div>
-                          ))}
+                          )}
                         </div>
                       ))}
                     </div>
@@ -316,38 +325,6 @@ export default function TutorDashboard() {
                 </div>
               </div>
             </div>
-
-            {/* Cancellations Alert List (if any) */}
-            {cancellations.length > 0 && (
-              <div className="card" style={{ background: '#fff', border: '1px solid #fca5a5', borderRadius: '8px', overflow: 'hidden' }}>
-                <div className="card-header" style={{ padding: '16px 24px', background: '#fef2f2', borderBottom: '1px solid #fca5a5', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <Icon icon="lucide:alert-triangle" style={{ color: '#ef4444', fontSize: '20px' }} />
-                  <h2 className="card-title" style={{ fontSize: '16px', fontWeight: 600, color: '#991b1b', margin: 0 }}>
-                    Yêu cầu hủy lớp chờ xử lý ({cancellations.length})
-                  </h2>
-                </div>
-                <div style={{ padding: '16px 24px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  {cancellations.map((c: any, i: number) => (
-                    <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px', border: '1px solid #fecaca', borderRadius: '8px', background: '#fffaf8' }}>
-                      <div>
-                        <div style={{ fontWeight: 600, color: '#7f1d1d' }}>{c.subject?.name || 'Môn học'}</div>
-                        <div style={{ fontSize: '13px', color: '#991b1b', marginTop: '4px' }}>
-                          <span style={{ fontWeight: 500 }}>Học viên:</span> {c.student?.user?.fullName} 
-                          <span style={{ margin: '0 8px' }}>|</span> 
-                          <span style={{ fontWeight: 500 }}>Người yêu cầu:</span> {c.cancellationRequestedBy === 'student' ? 'Học viên' : 'Bạn (Gia sư)'}
-                        </div>
-                      </div>
-                      <Link 
-                        href={`/tutors/students/${c.student?.id}`}
-                        style={{ padding: '8px 16px', background: '#ef4444', color: 'white', borderRadius: '6px', fontSize: '13px', fontWeight: 600, textDecoration: 'none' }}
-                      >
-                        Xử lý ngay
-                      </Link>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
 
             {/* Current Classes Table */}
             <div className="card" style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px' }}>
@@ -480,85 +457,166 @@ export default function TutorDashboard() {
             </div>
           </div>
         )}
+      </div>
 
-        {/* Event Details Modal */}
-        {selectedEvent && (
-          <div style={{
-            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-            backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 100,
-            display: 'flex', alignItems: 'center', justifyContent: 'center'
-          }} onClick={() => setSelectedEvent(null)}>
-            <div style={{
-              background: '#fff', borderRadius: '12px', padding: '24px',
-              width: '100%', maxWidth: '400px',
-              boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)'
-            }} onClick={e => e.stopPropagation()}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 600 }}>Chi tiết buổi học</h3>
-                <button onClick={() => setSelectedEvent(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }}>
-                  <Icon icon="lucide:x" fontSize={20} />
-                </button>
-              </div>
-              
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                  <div style={{ width: '40px', height: '40px', borderRadius: '8px', background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#3b82f6' }}>
-                    <Icon icon="lucide:clock" fontSize={20} />
-                  </div>
-                  <div>
-                    <div style={{ fontSize: '12px', color: '#64748b' }}>Thời gian</div>
-                    <div style={{ fontWeight: 600 }}>{selectedEvent.time}</div>
-                  </div>
-                </div>
-                
-                <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                  <div style={{ width: '40px', height: '40px', borderRadius: '8px', background: '#f0fdf4', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#22c55e' }}>
-                    <Icon icon="lucide:book-open" fontSize={20} />
-                  </div>
-                  <div>
-                    <div style={{ fontSize: '12px', color: '#64748b' }}>Môn học</div>
-                    <div style={{ fontWeight: 600 }}>{selectedEvent.title}</div>
-                  </div>
-                </div>
+      {/* Toast Notification */}
+      {toast && (
+        <div 
+          style={{
+            position: 'fixed',
+            bottom: '24px',
+            right: '24px',
+            zIndex: 9999,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px',
+            padding: '14px 20px',
+            borderRadius: '12px',
+            boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+            border: toast.type === 'success' ? '1px solid #bbf7d0' : toast.type === 'error' ? '1px solid #fecaca' : '1px solid #bfdbfe',
+            background: toast.type === 'success' ? '#f0fdf4' : toast.type === 'error' ? '#fef2f2' : '#eff6ff',
+            color: toast.type === 'success' ? '#166534' : toast.type === 'error' ? '#991b1b' : '#1e40af',
+            animation: 'slideIn 0.3s ease-out forwards',
+            maxWidth: '350px',
+          }}
+        >
+          <Icon 
+            icon={toast.type === 'success' ? 'lucide:check-circle' : toast.type === 'error' ? 'lucide:alert-circle' : 'lucide:info'} 
+            fontSize={20} 
+            color={toast.type === 'success' ? '#15803d' : toast.type === 'error' ? '#dc2626' : '#2563eb'}
+          />
+          <div style={{ fontSize: '13.5px', fontWeight: 550, lineHeight: 1.4 }}>{toast.message}</div>
+          <button 
+            onClick={() => setToast(null)}
+            style={{ 
+              background: 'transparent', 
+              border: 'none', 
+              cursor: 'pointer', 
+              padding: 0, 
+              marginLeft: 'auto',
+              color: toast.type === 'success' ? '#166534' : toast.type === 'error' ? '#991b1b' : '#1e40af',
+              opacity: 0.6,
+            }}
+          >
+            <Icon icon="lucide:x" fontSize={16} />
+          </button>
+        </div>
+      )}
 
-                <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                  <div style={{ width: '40px', height: '40px', borderRadius: '8px', background: '#fef2f2', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ef4444' }}>
-                    <Icon icon="lucide:user" fontSize={20} />
-                  </div>
-                  <div>
-                    <div style={{ fontSize: '12px', color: '#64748b' }}>Học viên</div>
-                    <div style={{ fontWeight: 600 }}>{selectedEvent.student}</div>
-                  </div>
-                </div>
+      {/* Custom Confirm Modal */}
+      {confirmModal && confirmModal.isOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-[110] flex items-center justify-center p-4"
+          onClick={() => setConfirmModal(null)}
+        >
+          <div 
+            className="bg-white rounded-xl w-full max-w-sm overflow-hidden flex flex-col shadow-2xl animate-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-5 flex flex-col items-center text-center gap-3">
+              <div style={{ width: 48, height: 48, borderRadius: 24, background: '#fee2e2', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Icon icon="lucide:alert-triangle" fontSize={24} color="#ef4444" style={{ margin: 'auto' }} />
               </div>
-              
+              <div>
+                <h3 className="text-base font-bold text-slate-900" style={{ margin: 0 }}>Xác nhận</h3>
+                <p className="text-sm text-slate-500 mt-1" style={{ margin: 0 }}>{confirmModal.message}</p>
+              </div>
+            </div>
+            <div className="p-4 bg-slate-50 border-t flex gap-3 justify-end">
               <button 
-                onClick={() => setSelectedEvent(null)}
-                style={{
-                  width: '100%', marginTop: '24px', padding: '12px',
-                  background: '#f1f5f9', color: '#475569', border: 'none', borderRadius: '8px',
-                  fontWeight: 600, cursor: 'pointer'
-                }}
+                onClick={() => setConfirmModal(null)}
+                className="border border-slate-200 hover:bg-slate-100 text-slate-700 px-4 py-2 rounded-lg font-medium transition-colors bg-white cursor-pointer text-xs"
               >
-                Đóng
+                Hủy bỏ
+              </button>
+              <button 
+                onClick={() => {
+                  confirmModal.onConfirm();
+                  setConfirmModal(null);
+                }}
+                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-semibold transition-colors cursor-pointer border-none text-xs"
+              >
+                Xác nhận
               </button>
             </div>
           </div>
-        )}
+        </div>
+      )}
+
+      <style>{`
+        @keyframes slideIn {
+          from {
+            transform: translateY(100px) scale(0.9);
+            opacity: 0;
+          }
+          to {
+            transform: translateY(0) scale(1);
+            opacity: 1;
+          }
+        }
+      `}</style>
+    </>
+  );
+}
+
+function TutorDashboardSkeleton() {
+  return (
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-4">
+        {Array.from({ length: 4 }).map((_, index) => (
+          <div key={index} className="flex items-center gap-4 rounded-lg border border-slate-200 bg-white p-6">
+            <Skeleton className="size-14 rounded-2xl" />
+            <div className="flex-1 space-y-3">
+              <Skeleton className="h-3.5 w-28" />
+              <Skeleton className="h-7 w-20" />
+            </div>
+          </div>
+        ))}
       </div>
 
-      {/* Confirm Modal */}
-      <ConfirmModal
-        isOpen={confirmModal.isOpen}
-        message={confirmModal.message}
-        onConfirm={confirmModal.onConfirm}
-        onCancel={() => setConfirmModal({ ...confirmModal, isOpen: false })}
-      />
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[2fr_1fr]">
+        <div className="rounded-lg border border-slate-200 bg-white">
+          <div className="flex items-center justify-between border-b border-slate-200 p-5">
+            <Skeleton className="h-5 w-40" />
+            <div className="flex gap-2">
+              <Skeleton className="h-8 w-8 rounded" />
+              <Skeleton className="h-8 w-24 rounded" />
+              <Skeleton className="h-8 w-8 rounded" />
+            </div>
+          </div>
+          <div className="grid grid-cols-7 gap-3 p-6">
+            {Array.from({ length: 7 }).map((_, index) => (
+              <Skeleton key={index} className="h-44 rounded-md" />
+            ))}
+          </div>
+        </div>
 
-      {/* Toast Notification */}
-      {ToastComponent}
+        <div className="rounded-lg border border-slate-200 bg-white p-5">
+          <Skeleton className="mb-5 h-5 w-36" />
+          <div className="space-y-3">
+            {Array.from({ length: 3 }).map((_, index) => (
+              <div key={index} className="rounded-lg border border-slate-100 p-3">
+                <Skeleton className="mb-2 h-4 w-2/3" />
+                <Skeleton className="mb-3 h-3.5 w-1/2" />
+                <Skeleton className="h-8 w-full rounded" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
 
-
-    </>
+      <div className="rounded-lg border border-slate-200 bg-white p-5">
+        <Skeleton className="mb-5 h-5 w-40" />
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          {Array.from({ length: 4 }).map((_, index) => (
+            <div key={index} className="rounded-lg border border-slate-100 p-4">
+              <Skeleton className="mb-3 h-4 w-1/2" />
+              <Skeleton className="mb-2 h-3.5 w-2/3" />
+              <Skeleton className="h-8 w-28 rounded" />
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
   );
 }

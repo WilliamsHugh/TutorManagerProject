@@ -25,14 +25,9 @@ import {
   getLearningReports, 
   submitLearningReport,
   updateLearningReport,
-  deleteLearningReport,
-  getTutorClassCancellationInfo,
-  tutorRequestCancellation,
-  tutorRespondCancellation
+  deleteLearningReport
 } from '@/lib/api';
 import { useParams } from 'next/navigation';
-import { useToast } from '@/components/common/Toast';
-import ConfirmModal from '@/components/common/ConfirmModal';
 
 export default function StudentDetailPage() {
   const [student, setStudent] = useState<any>(null);
@@ -51,21 +46,22 @@ export default function StudentDetailPage() {
   const [attendanceStatus, setAttendanceStatus] = useState(true); // true = Present, false = Absent
   const [editingReportId, setEditingReportId] = useState<string | null>(null);
 
-  // Cancellation State
-  const [cancellationInfo, setCancellationInfo] = useState<any>(null);
-  const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
-  const [cancelReason, setCancelReason] = useState('');
-  const [processingCancel, setProcessingCancel] = useState(false);
-
   // State cho custom confirm modal
   const [confirmModal, setConfirmModal] = useState<{
     isOpen: boolean;
     message: string;
     onConfirm: () => void;
-  }>({ isOpen: false, message: '', onConfirm: () => {} });
+  } | null>(null);
 
   // State cho custom toast notification
-  const { showToast, ToastComponent } = useToast();
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
+
+  const showToast = (message: string, type: 'success' | 'error' | 'info' = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => {
+      setToast(null);
+    }, 4000);
+  };
 
   const params = useParams();
   const studentId = params.id;
@@ -86,25 +82,31 @@ export default function StudentDetailPage() {
 
       // 2. Fetch tutor dashboard classes to find class details
       const dashboardData = await getTutorDashboard();
+      let foundClass = null;
       if (dashboardData.currentClasses) {
-        const foundClass = dashboardData.currentClasses.find((cls: any) => cls.studentId === studentId);
-        if (foundClass) {
-          setClassDetail(foundClass);
-          
-          // 3. Fetch cancellation info
-          try {
-            const cancelData = await getTutorClassCancellationInfo(foundClass.rawId);
-            setCancellationInfo(cancelData);
-          } catch (e) {
-            console.error("Lỗi tải thông tin hủy lớp:", e);
-          }
-          
-          // 4. Fetch actual learning reports for this class from database
-          setLoadingReports(true);
-          const reportsData = await getLearningReports(foundClass.rawId);
-          if (Array.isArray(reportsData)) {
-            setReports(reportsData);
-          }
+        foundClass = dashboardData.currentClasses.find((cls: any) => cls.rawId === studentId);
+      }
+      
+      if (!foundClass && foundStudent) {
+        foundClass = {
+          rawId: foundStudent.id,
+          studentId: foundStudent.studentId,
+          subject: foundStudent.lastSubject,
+          student: foundStudent.fullName,
+          totalSessions: foundStudent.totalSessions,
+          completedSessions: foundStudent.completedSessions,
+          progress: Math.round(((foundStudent.completedSessions || 0) / (foundStudent.totalSessions || 24)) * 100),
+        };
+      }
+
+      if (foundClass) {
+        setClassDetail(foundClass);
+        
+        // 3. Fetch actual learning reports for this class from database
+        setLoadingReports(true);
+        const reportsData = await getLearningReports(foundClass.rawId);
+        if (Array.isArray(reportsData)) {
+          setReports(reportsData);
         }
       }
     } catch (error) {
@@ -233,43 +235,10 @@ export default function StudentDetailPage() {
     });
   };
 
-  const handleRequestCancellation = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!cancelReason.trim()) {
-      showToast("Vui lòng nhập lý do hủy lớp.", "error");
-      return;
-    }
-    if (!classDetail?.rawId) return;
-
-    try {
-      setProcessingCancel(true);
-      await tutorRequestCancellation(classDetail.rawId, cancelReason.trim());
-      showToast("Đã gửi yêu cầu hủy lớp thành công.", "success");
-      setIsCancelModalOpen(false);
-      setCancelReason('');
-      await fetchStudentDetail();
-    } catch (err: any) {
-      showToast(err.message || "Lỗi khi gửi yêu cầu hủy lớp", "error");
-    } finally {
-      setProcessingCancel(false);
-    }
-  };
-
-  const handleRespondCancellation = async (agree: boolean) => {
-    if (!classDetail?.rawId) return;
-    try {
-      await tutorRespondCancellation(classDetail.rawId, agree);
-      showToast(agree ? "Đã xác nhận đồng ý hủy lớp." : "Đã từ chối yêu cầu hủy lớp.", "success");
-      await fetchStudentDetail();
-    } catch (err: any) {
-      showToast(err.message || "Lỗi khi phản hồi yêu cầu", "error");
-    }
-  };
-
   if (loading) {
     return (
       <>
-        <Header title="Chi tiết học viên" userProfile={profile} />
+        <Header title="Chi tiết lớp học" userProfile={profile} />
         <div className="flex-grow flex flex-col items-center justify-center py-24 gap-3">
           <Icon icon="lucide:loader-2" className="animate-spin text-blue-600" fontSize={40} />
           <p className="text-slate-500 font-medium text-sm">Đang tải thông tin từ database...</p>
@@ -281,7 +250,7 @@ export default function StudentDetailPage() {
   if (!student) {
     return (
       <>
-        <Header title="Chi tiết học viên" userProfile={profile} />
+        <Header title="Chi tiết lớp học" userProfile={profile} />
         <div className="flex-grow flex flex-col items-center justify-center py-24 px-4 text-center max-w-md mx-auto gap-4">
           <div className="w-16 h-16 rounded-full bg-red-50 text-red-500 flex items-center justify-center border border-red-100">
             <Icon icon="lucide:alert-circle" fontSize={32} />
@@ -300,15 +269,15 @@ export default function StudentDetailPage() {
 
   return (
     <>
-      <Header title="Chi tiết học viên" userProfile={profile} />
+      <Header title="Chi tiết lớp học" userProfile={profile} />
       
       <div className="flex-grow w-full max-w-7xl mx-auto px-8 py-8 flex flex-col gap-6 animate-in fade-in duration-300">
         
         {/* Breadcrumb Navigation */}
         <div className="flex items-center gap-2 text-sm text-slate-500 self-start font-medium">
-          <Link href="/tutors/students" className="text-slate-400 hover:text-blue-600 no-underline transition-colors">Học viên của tôi</Link>
+          <Link href="/tutors/students" className="text-slate-400 hover:text-blue-600 no-underline transition-colors">Lớp học của tôi</Link>
           <ChevronRight size={14} className="text-slate-350" />
-          <span className="text-slate-700 font-semibold">{student.fullName}</span>
+          <span className="text-slate-700 font-semibold">{student.fullName} ({student.classCode})</span>
         </div>
 
         {/* Profile Card Header */}
@@ -343,75 +312,15 @@ export default function StudentDetailPage() {
               <MessageSquare size={16} /> Nhắn tin
             </button>
             {classDetail && (
-              <div className="flex gap-2">
-                {cancellationInfo?.hasCancellationRequest ? (
-                  <button 
-                    disabled
-                    className="px-4 py-2.5 rounded-xl border border-amber-200 text-amber-700 bg-amber-50 text-sm font-bold flex items-center gap-2 shadow-sm cursor-not-allowed"
-                  >
-                    <Icon icon="lucide:clock" fontSize={16} /> Đang chờ duyệt
-                  </button>
-                ) : (
-                  <button 
-                    onClick={() => setIsCancelModalOpen(true)}
-                    className="px-4 py-2.5 rounded-xl border border-red-200 text-red-600 bg-red-50 hover:bg-red-100 hover:border-red-300 text-sm font-bold flex items-center gap-2 transition-all duration-205 cursor-pointer shadow-sm active:scale-95"
-                  >
-                    <Icon icon="lucide:x-circle" fontSize={16} /> Hủy lớp
-                  </button>
-                )}
-                <button 
-                  onClick={() => setIsModalOpen(true)} 
-                  className="px-5 py-2.5 rounded-xl bg-blue-600 text-white hover:bg-blue-700 text-sm font-bold flex items-center gap-2 transition-all duration-205 shadow-[0_4px_14px_rgba(37,99,235,0.15)] hover:shadow-[0_6px_20px_rgba(37,99,235,0.25)] active:scale-95 cursor-pointer border-none"
-                >
-                  <ClipboardEdit size={16} /> Nộp báo cáo học tập
-                </button>
-              </div>
+              <button 
+                onClick={() => setIsModalOpen(true)} 
+                className="px-5 py-2.5 rounded-xl bg-blue-600 text-white hover:bg-blue-700 text-sm font-bold flex items-center gap-2 transition-all duration-205 shadow-[0_4px_14px_rgba(37,99,235,0.15)] hover:shadow-[0_6px_20px_rgba(37,99,235,0.25)] active:scale-95 cursor-pointer border-none"
+              >
+                <ClipboardEdit size={16} /> Nộp báo cáo học tập
+              </button>
             )}
           </div>
         </div>
-
-        {/* Cancellation Banner */}
-        {cancellationInfo?.hasCancellationRequest && (
-          <div className={`rounded-2xl p-5 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border shadow-sm animate-in fade-in slide-in-from-top-4 ${cancellationInfo.isMyRequest ? 'bg-amber-50 border-amber-200' : 'bg-red-50 border-red-200'}`}>
-            <div className="flex gap-4 items-start">
-              <div className={`mt-1 p-2 rounded-full ${cancellationInfo.isMyRequest ? 'bg-amber-100 text-amber-600' : 'bg-red-100 text-red-600'}`}>
-                <Icon icon="lucide:alert-triangle" fontSize={24} />
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <h3 className={`font-bold text-base ${cancellationInfo.isMyRequest ? 'text-amber-800' : 'text-red-800'}`}>
-                  {cancellationInfo.isMyRequest 
-                    ? 'Bạn đã gửi yêu cầu hủy lớp học này'
-                    : `Học viên ${cancellationInfo.requestedByName} đã yêu cầu hủy lớp`}
-                </h3>
-                <p className={`text-sm leading-relaxed ${cancellationInfo.isMyRequest ? 'text-amber-700/80' : 'text-red-700/80'}`}>
-                  <strong>Lý do:</strong> {cancellationInfo.reason || 'Không có lý do'}
-                </p>
-                {cancellationInfo.isMyRequest && (
-                  <p className="text-xs font-medium text-amber-600 mt-1">
-                    Vui lòng chờ học viên phản hồi xác nhận yêu cầu của bạn.
-                  </p>
-                )}
-              </div>
-            </div>
-            
-            {!cancellationInfo.isMyRequest && (
-              <div className="flex gap-2 w-full sm:w-auto shrink-0 mt-2 sm:mt-0">
-                <button 
-                  onClick={() => handleRespondCancellation(false)}
-                  className="flex-1 sm:flex-none px-4 py-2 bg-white border border-red-200 text-red-600 hover:bg-red-50 rounded-xl text-sm font-bold transition-colors cursor-pointer"
-                >
-                  Từ chối
-                </button>
-                <button 
-                  onClick={() => handleRespondCancellation(true)}
-                  className="flex-1 sm:flex-none px-4 py-2 bg-red-600 border border-red-600 text-white hover:bg-red-700 rounded-xl text-sm font-bold shadow-sm transition-colors cursor-pointer"
-                >
-                  Đồng ý hủy
-                </button>
-              </div>
-            )}
-          </div>
-        )}
 
         {/* Main Details Grid Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
@@ -619,76 +528,100 @@ export default function StudentDetailPage() {
         </div>
       )}
 
-      {/* --- REQUEST CANCELLATION MODAL --- */}
-      {isCancelModalOpen && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-in fade-in duration-200" onClick={() => !processingCancel && setIsCancelModalOpen(false)}>
+      {/* Custom Confirm Modal */}
+      {confirmModal && confirmModal.isOpen && (
+        <div className="fixed inset-0 bg-black/50 z-[110] flex items-center justify-center p-4" onClick={() => setConfirmModal(null)}>
           <div 
             className="bg-white rounded-2xl w-full max-w-md overflow-hidden flex flex-col shadow-2xl animate-in zoom-in-95 duration-200"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="p-5 border-b border-slate-100 flex items-center gap-3 bg-red-50/50">
-              <div className="w-10 h-10 rounded-full bg-red-100 text-red-600 flex items-center justify-center shrink-0">
-                <Icon icon="lucide:alert-triangle" fontSize={20} />
+            <div className="p-6 flex gap-4 items-start">
+              <div className="w-10 h-10 rounded-full bg-red-50 text-red-500 flex items-center justify-center shrink-0 border border-red-100">
+                <Icon icon="lucide:alert-triangle" fontSize={24} />
               </div>
-              <div className="flex-1">
-                <h3 className="text-lg font-bold text-red-900">Yêu cầu hủy lớp</h3>
-                <p className="text-xs text-red-600 font-medium">Hành động này cần sự đồng ý của học viên</p>
+              <div className="flex-grow">
+                <h3 className="text-base font-bold text-slate-900" style={{ margin: 0 }}>Xác nhận</h3>
+                <p className="text-sm text-slate-500 mt-1" style={{ margin: 0 }}>{confirmModal.message}</p>
               </div>
-              <button onClick={() => !processingCancel && setIsCancelModalOpen(false)} className="text-slate-400 hover:text-slate-600 bg-transparent border-none cursor-pointer self-start">
-                <Icon icon="lucide:x" fontSize={20} />
+            </div>
+            <div className="p-4 bg-slate-50 border-t flex gap-3 justify-end">
+              <button 
+                onClick={() => setConfirmModal(null)}
+                className="border border-slate-200 hover:bg-slate-100 text-slate-700 px-4 py-2 rounded-lg font-medium transition-colors bg-white cursor-pointer text-xs"
+              >
+                Hủy bỏ
+              </button>
+              <button 
+                onClick={() => {
+                  confirmModal.onConfirm();
+                  setConfirmModal(null);
+                }}
+                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-semibold transition-colors cursor-pointer border-none text-xs"
+              >
+                Xác nhận
               </button>
             </div>
-            
-            <form onSubmit={handleRequestCancellation} className="p-6">
-              <div className="flex flex-col gap-4">
-                <p className="text-sm text-slate-600 leading-relaxed font-medium">
-                  Bạn đang chuẩn bị gửi yêu cầu hủy lớp học với <strong className="text-slate-900">{student.fullName}</strong>. Xin lưu ý hệ thống có thể xem xét lý do hủy lớp để đánh giá điểm tín nhiệm gia sư.
-                </p>
-                <div className="flex flex-col gap-2">
-                  <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">Lý do hủy lớp <span className="text-red-500">*</span></label>
-                  <textarea
-                    value={cancelReason}
-                    onChange={(e) => setCancelReason(e.target.value)}
-                    placeholder="Vui lòng nêu rõ lý do bạn không thể tiếp tục giảng dạy lớp học này..."
-                    className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl min-h-[120px] text-sm text-slate-800 placeholder:text-slate-400 outline-none focus:border-red-500 focus:bg-white transition-all font-medium resize-none"
-                    required
-                  />
-                </div>
-              </div>
-              
-              <div className="flex justify-end gap-3 mt-8">
-                <button 
-                  type="button" 
-                  onClick={() => setIsCancelModalOpen(false)}
-                  disabled={processingCancel}
-                  className="px-5 py-2.5 rounded-xl border border-slate-200 text-slate-700 font-bold hover:bg-slate-50 text-sm transition-colors cursor-pointer bg-white disabled:opacity-50"
-                >
-                  Đóng
-                </button>
-                <button 
-                  type="submit" 
-                  disabled={processingCancel || !cancelReason.trim()}
-                  className="px-5 py-2.5 rounded-xl bg-red-600 text-white font-bold hover:bg-red-700 text-sm transition-colors shadow-sm cursor-pointer border-none disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                >
-                  {processingCancel && <Icon icon="lucide:loader-2" className="animate-spin" />}
-                  {processingCancel ? 'Đang gửi...' : 'Gửi yêu cầu'}
-                </button>
-              </div>
-            </form>
           </div>
         </div>
       )}
 
-      {/* Custom Confirm Modal */}
-      <ConfirmModal
-        isOpen={confirmModal.isOpen}
-        message={confirmModal.message}
-        onConfirm={confirmModal.onConfirm}
-        onCancel={() => setConfirmModal({ ...confirmModal, isOpen: false })}
-      />
 
       {/* Toast Notification */}
-      {ToastComponent}
+      {toast && (
+        <div 
+          style={{
+            position: 'fixed',
+            bottom: '24px',
+            right: '24px',
+            zIndex: 9999,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px',
+            padding: '14px 20px',
+            borderRadius: '12px',
+            boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+            border: toast.type === 'success' ? '1px solid #bbf7d0' : toast.type === 'error' ? '1px solid #fecaca' : '1px solid #bfdbfe',
+            background: toast.type === 'success' ? '#f0fdf4' : toast.type === 'error' ? '#fef2f2' : '#eff6ff',
+            color: toast.type === 'success' ? '#166534' : toast.type === 'error' ? '#991b1b' : '#1e40af',
+            animation: 'slideIn 0.3s ease-out forwards',
+            maxWidth: '350px',
+          }}
+        >
+          <Icon 
+            icon={toast.type === 'success' ? 'lucide:check-circle' : toast.type === 'error' ? 'lucide:alert-circle' : 'lucide:info'} 
+            fontSize={20} 
+            color={toast.type === 'success' ? '#15803d' : toast.type === 'error' ? '#dc2626' : '#2563eb'}
+          />
+          <div style={{ fontSize: '13.5px', fontWeight: 550, lineHeight: 1.4 }}>{toast.message}</div>
+          <button 
+            onClick={() => setToast(null)}
+            style={{ 
+              background: 'transparent', 
+              border: 'none', 
+              cursor: 'pointer', 
+              padding: 0, 
+              marginLeft: 'auto',
+              color: toast.type === 'success' ? '#166534' : toast.type === 'error' ? '#991b1b' : '#1e40af',
+              opacity: 0.6,
+            }}
+          >
+            <Icon icon="lucide:x" fontSize={16} />
+          </button>
+        </div>
+      )}
+
+      <style>{`
+        @keyframes slideIn {
+          from {
+            transform: translateY(100px) scale(0.9);
+            opacity: 0;
+          }
+          to {
+            transform: translateY(0) scale(1);
+            opacity: 1;
+          }
+        }
+      `}</style>
     </>
   );
 }

@@ -45,10 +45,6 @@ export class Class {
   @JoinColumn({ name: 'created_by' })
   createdBy!: User; // Staff tạo lớp
 
-  @ManyToOne(() => User, { nullable: true })
-  @JoinColumn({ name: 'suspended_by' })
-  suspendedBy!: User | null;
-
   @Column({ type: 'varchar', length: 255, nullable: true })
   location!: string;
 
@@ -64,7 +60,7 @@ export class Class {
   @Column({ name: 'total_sessions', type: 'int', nullable: true })
   totalSessions!: number;
 
-  @Column({ type: 'varchar', length: 50, default: ClassStatus.ACTIVE })
+  @Column({ type: 'varchar', length: 20, default: ClassStatus.ACTIVE })
   status!: ClassStatus;
 
   @Column({ name: 'start_date', type: 'date', nullable: true })
@@ -97,4 +93,8 @@ export class Class {
     nullable: true,
   })
   cancellationRequestedAt!: Date;
+
+  @ManyToOne(() => User, { nullable: true })
+  @JoinColumn({ name: 'suspended_by' })
+  suspendedBy!: User;
 }

@@ -205,12 +205,12 @@ export function MatchTutorDialog({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/35 p-7"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/35 p-4"
       onClick={onClose}
     >
       <section
         aria-modal="true"
-        className="max-h-[85vh] w-full max-w-170 rounded-md bg-white shadow-xl flex flex-col"
+        className="max-h-[92vh] w-full max-w-5xl rounded-md bg-white shadow-xl flex flex-col"
         role="dialog"
         onClick={(event) => event.stopPropagation()}
       >
@@ -268,7 +268,7 @@ export function MatchTutorDialog({
           </div>
         </div>
 
-        <div className="flex-1 flex flex-col space-y-3 p-5 overflow-hidden">
+        <div className="flex-1 min-h-0 flex flex-col space-y-3 p-5 overflow-y-auto">
           {(status === "Đã ghép" || status === "Đã hủy") && (
             <div className={`rounded-lg p-3.5 text-xs font-semibold border ${
               status === "Đã ghép" 
@@ -289,9 +289,9 @@ export function MatchTutorDialog({
             <RequestDetailCard request={request} />
           </div>
 
-          <div className="rounded border border-border p-3 flex flex-col flex-1 min-h-0">
+          <div className="rounded border border-border p-4 flex flex-col min-h-[430px]">
             <div className="flex items-center justify-between gap-3 mb-3">
-              <h3 className="text-xs font-bold">Gia sư được đề xuất</h3>
+              <h3 className="text-sm font-bold">Gia sư được đề xuất</h3>
               <Button
                 className="h-7 rounded text-[11px] px-2.5"
                 type="button"
@@ -415,7 +415,7 @@ export function MatchTutorDialog({
                 </label>
               </div>
 
-            <div className="mt-3 grid gap-3 md:grid-cols-2 overflow-y-auto flex-1 min-h-0 pr-1.5 py-0.5">
+            <div className="mt-4 grid gap-3 md:grid-cols-2 pr-1 py-0.5">
               {loadingTutors ? (
                 <>
                   {Array.from({ length: 4 }).map((_, idx) => (
@@ -445,21 +445,21 @@ export function MatchTutorDialog({
               ) : (filteredTutors.length || preferredTutorRec) ? (
                 <>
                   {preferredTutorRec && (
-                    <div className="col-span-full border-2 border-amber-300 rounded-lg p-3 bg-amber-50/20 relative overflow-hidden flex flex-col gap-2">
+                    <div className="col-span-full border-2 border-amber-300 rounded-lg p-4 bg-amber-50/20 relative flex flex-col gap-3">
                       <div className="flex items-center justify-between mb-1.5">
                         <span className="text-[10px] font-bold text-amber-800 bg-amber-200/60 px-2.5 py-0.5 rounded-md uppercase tracking-wider">
                           ⭐ Gia sư được học viên đề xuất
                         </span>
                       </div>
                       <TutorRecommendationCard
-                        actionLabel={status === "Đã ghép" ? "Đã ghép" : status === "Đã hủy" ? "Bị hủy" : "Ghép lớp"}
-                        href={(status === "Đã ghép" || status === "Đã hủy")
-                          ? undefined
-                          : `/staff/request-management/create-class?requestId=${encodeURIComponent(
+                        actionLabel={status === "Đã ghép" ? "Tạo lớp học" : "Chờ đồng ý"}
+                        href={status === "Đã ghép"
+                          ? `/staff/request-management/create-class?requestId=${encodeURIComponent(
                               request.rawId
                             )}&tutorId=${encodeURIComponent(preferredTutorRec.rawTutorId)}&tutorName=${encodeURIComponent(
                               preferredTutorRec.name
-                            )}`}
+                            )}`
+                          : undefined}
                         tutor={preferredTutorRec}
                         onViewSchedule={() => setActiveScheduleModal({ id: preferredTutorRec.rawTutorId, name: preferredTutorRec.name, role: "tutor" })}
                         onViewDetail={() => handleOpenTutorDetail(preferredTutorRec)}
@@ -470,14 +470,14 @@ export function MatchTutorDialog({
                   {filteredTutors.map((tutor) => {
                   const isMatched = status === "Đã ghép"
                   const isCancelled = status === "Đã hủy"
-                  const actionLabel = isMatched ? "Đã ghép" : isCancelled ? "Bị hủy" : "Ghép lớp"
-                  const href = (isMatched || isCancelled)
-                    ? undefined
-                    : `/staff/request-management/create-class?requestId=${encodeURIComponent(
+                  const actionLabel = isMatched ? "Tạo lớp học" : isCancelled ? "Bị hủy" : "Chờ đồng ý"
+                  const href = isMatched
+                    ? `/staff/request-management/create-class?requestId=${encodeURIComponent(
                         request.rawId
                       )}&tutorId=${encodeURIComponent(tutor.rawTutorId)}&tutorName=${encodeURIComponent(
                         tutor.name
                       )}`
+                    : undefined
                   return (
                     <TutorRecommendationCard
                       key={tutor.rawTutorId}

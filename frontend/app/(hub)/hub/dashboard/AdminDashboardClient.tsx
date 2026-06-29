@@ -171,6 +171,13 @@ export default function AdminDashboardClient() {
     } catch (error) {
       console.error("Logout error:", error);
     }
+    try {
+      await fetch("/api/logout", {
+        method: "POST",
+      });
+    } catch (error) {
+      console.error("Local logout error:", error);
+    }
     clearAuth();
     router.push("/hub/login");
   };

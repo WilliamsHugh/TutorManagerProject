@@ -52,6 +52,16 @@ export class AdminController {
   @Get('users')
   async getAllUsers() {
     return this.usersRepo.find({
+      select: {
+        id: true,
+        fullName: true,
+        email: true,
+        phone: true,
+        address: true,
+        avatarUrl: true,
+        isActive: true,
+        createdAt: true,
+      },
       relations: ['role'],
       order: { createdAt: 'DESC' },
     });

@@ -5,6 +5,7 @@ import {
   CreateDateColumn,
   ManyToOne,
   JoinColumn,
+  Index,
 } from 'typeorm';
 import { User } from '../users/entities/user.entity';
 
@@ -13,6 +14,7 @@ export class SystemLog {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
+  @Index()
   @Column({ name: 'user_id', type: 'uuid', nullable: true })
   userId!: string | null;
 
@@ -20,6 +22,7 @@ export class SystemLog {
   @JoinColumn({ name: 'user_id' })
   user!: User | null;
 
+  @Index()
   @Column({ type: 'varchar', length: 100 })
   action!: string;
 
@@ -38,6 +41,7 @@ export class SystemLog {
   @Column({ type: 'jsonb', nullable: true })
   details!: any | null;
 
+  @Index()
   @CreateDateColumn({ name: 'created_at' })
   createdAt!: Date;
 }

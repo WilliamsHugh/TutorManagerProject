@@ -11,6 +11,7 @@ import { TutorRecommendationCard } from "./TutorRecommendationCard"
 import { getTutorScheduleForStaff, getStudentScheduleForStaff } from "@/lib/api"
 import type { RequestItem, RequestStatus, TutorRecommendation } from "@/types/class_request"
 import { TutorDetailModal } from "../../../(portal)/student/_components/TutorDetailModal"
+import { TablePagination } from "./TablePagination"
 
 const statusOptions: RequestStatus[] = ["Chờ xử lý", "Đang xử lý", "Đã ghép", "Đã hủy"]
 
@@ -202,6 +203,17 @@ export function MatchTutorDialog({
 
     return result
   }, [tutors, approvedOnly, selectedSubject, selectedArea, matchSchedule])
+
+  const [currentTutorPage, setCurrentTutorPage] = useState(1)
+  const tutorPageSize = 4
+
+  useEffect(() => {
+    setCurrentTutorPage(1)
+  }, [approvedOnly, selectedSubject, selectedArea, matchSchedule, tutors])
+
+  const paginatedTutors = useMemo(() => {
+    return filteredTutors.slice((currentTutorPage - 1) * tutorPageSize, currentTutorPage * tutorPageSize)
+  }, [filteredTutors, currentTutorPage])
 
   return (
     <div
@@ -467,7 +479,7 @@ export function MatchTutorDialog({
                     </div>
                   )}
 
-                  {filteredTutors.map((tutor) => {
+                  {paginatedTutors.map((tutor) => {
                   const isMatched = status === "Đã ghép"
                   const isCancelled = status === "Đã hủy"
                   const actionLabel = isMatched ? "Tạo lớp học" : isCancelled ? "Bị hủy" : "Chờ đồng ý"
@@ -489,6 +501,17 @@ export function MatchTutorDialog({
                     />
                   )
                 })}
+                {filteredTutors.length > tutorPageSize && (
+                  <div className="col-span-full mt-2">
+                    <TablePagination
+                      currentPage={currentTutorPage}
+                      totalItems={filteredTutors.length}
+                      pageSize={tutorPageSize}
+                      onPageChange={setCurrentTutorPage}
+                      itemName="gia sư đề xuất"
+                    />
+                  </div>
+                )}
                 </>
               ) : (
                 <div className="col-span-full rounded border border-dashed border-border p-4 text-xs text-muted-foreground">

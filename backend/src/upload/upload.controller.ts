@@ -42,6 +42,12 @@ export class UploadController {
       throw new BadRequestException('Vui lòng chọn file ảnh');
     }
 
+    // Bypass if Cloudinary is not configured (for local dev)
+    if (!process.env.CLOUDINARY_CLOUD_NAME) {
+      console.warn('Cloudinary is not configured. Returning mock avatar URL.');
+      return { url: 'https://via.placeholder.com/400x400.png?text=Mock+Avatar' };
+    }
+
     // Upload buffer to Cloudinary
     const result = await new Promise<{ secure_url: string }>(
       (resolve, reject) => {
@@ -98,6 +104,16 @@ export class UploadController {
       throw new BadRequestException('Vui lòng chọn file CV');
     }
 
+    // Bypass if Cloudinary is not configured (for local dev)
+    if (!process.env.CLOUDINARY_CLOUD_NAME) {
+      console.warn('Cloudinary is not configured. Returning mock CV URL.');
+      return {
+        url: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
+        fileName: file.originalname,
+        fileSize: file.size,
+      };
+    }
+
     const resourceType = file.mimetype.startsWith('image') ? 'image' : 'raw';
 
     const result = await new Promise<{ public_id: string; secure_url: string }>(
@@ -120,17 +136,11 @@ export class UploadController {
       },
     );
 
-    // Generate signed URL for raw files (Cloudinary authenticated delivery)
-    const signedUrl = this.cloudinary.url(result.public_id, {
-      resource_type: resourceType,
-      type: 'upload',
-      secure: true,
-      sign_url: true,
-      expires_at: Math.floor(Date.now() / 1000) + 365 * 24 * 60 * 60, // 365 days
-    });
-
+    // Trả về trực tiếp secure_url (URL public) do Cloudinary cung cấp.
+    // Việc ký (sign_url) thủ công một file dạng 'upload' (public) có thể gây lỗi 
+    // không xem được do cấu hình tài khoản Cloudinary (Strict Delivery / Restrict PDF).
     return {
-      url: signedUrl,
+      url: result.secure_url,
       fileName: file.originalname,
       fileSize: file.size,
     };

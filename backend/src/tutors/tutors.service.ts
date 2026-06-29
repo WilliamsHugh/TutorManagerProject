@@ -1449,18 +1449,32 @@ export class TutorsService implements OnModuleInit {
       where: { name: 'tutor' },
     });
     if (!tutorRole) {
-      tutorRole = await this.roleRepository.save(
-        this.roleRepository.create({ name: 'tutor' }),
-      );
+      try {
+        tutorRole = await this.roleRepository.save(
+          this.roleRepository.create({ name: 'tutor' }),
+        );
+      } catch (err) {
+        tutorRole = await this.roleRepository.findOne({
+          where: { name: 'tutor' },
+        });
+        if (!tutorRole) throw err;
+      }
     }
 
     let studentRole = await this.roleRepository.findOne({
       where: { name: 'student' },
     });
     if (!studentRole) {
-      studentRole = await this.roleRepository.save(
-        this.roleRepository.create({ name: 'student' }),
-      );
+      try {
+        studentRole = await this.roleRepository.save(
+          this.roleRepository.create({ name: 'student' }),
+        );
+      } catch (err) {
+        studentRole = await this.roleRepository.findOne({
+          where: { name: 'student' },
+        });
+        if (!studentRole) throw err;
+      }
     }
 
     // 2. Tạo hoặc lấy User & Tutor/Student mẫu
@@ -1468,48 +1482,76 @@ export class TutorsService implements OnModuleInit {
       where: { email: 'tutor@test.com' },
     });
     if (!tutorUser) {
-      tutorUser = await this.userRepository.save(
-        this.userRepository.create({
-          id: TEST_TUTOR_ID,
-          fullName: 'Gia sư Mẫu',
-          email: 'tutor@test.com',
-          passwordHash: '123456',
-          role: tutorRole,
-        }),
-      );
+      try {
+        tutorUser = await this.userRepository.save(
+          this.userRepository.create({
+            id: TEST_TUTOR_ID,
+            fullName: 'Gia sư Mẫu',
+            email: 'tutor@test.com',
+            passwordHash: '123456',
+            role: tutorRole,
+          }),
+        );
+      } catch (err) {
+        tutorUser = await this.userRepository.findOne({
+          where: { email: 'tutor@test.com' },
+        });
+        if (!tutorUser) throw err;
+      }
     }
     let tutor = await this.tutorRepository.findOne({
       where: { user: { id: tutorUser.id } },
     });
     if (!tutor) {
-      tutor = await this.tutorRepository.save(
-        this.tutorRepository.create({ user: tutorUser }),
-      );
+      try {
+        tutor = await this.tutorRepository.save(
+          this.tutorRepository.create({ user: tutorUser }),
+        );
+      } catch (err) {
+        tutor = await this.tutorRepository.findOne({
+          where: { user: { id: tutorUser.id } },
+        });
+        if (!tutor) throw err;
+      }
     }
 
     let studentUser = await this.userRepository.findOne({
       where: { email: 'student@test.com' },
     });
     if (!studentUser) {
-      studentUser = await this.userRepository.save(
-        this.userRepository.create({
-          fullName: 'Học viên Mẫu',
-          email: 'student@test.com',
-          passwordHash: '123456',
-          role: studentRole,
-        }),
-      );
+      try {
+        studentUser = await this.userRepository.save(
+          this.userRepository.create({
+            fullName: 'Học viên Mẫu',
+            email: 'student@test.com',
+            passwordHash: '123456',
+            role: studentRole,
+          }),
+        );
+      } catch (err) {
+        studentUser = await this.userRepository.findOne({
+          where: { email: 'student@test.com' },
+        });
+        if (!studentUser) throw err;
+      }
     }
     let student = await this.studentRepository.findOne({
       where: { user: { id: studentUser.id } },
     });
     if (!student) {
-      student = await this.studentRepository.save(
-        this.studentRepository.create({
-          user: studentUser,
-          gradeLevel: 'Lớp 12',
-        }),
-      );
+      try {
+        student = await this.studentRepository.save(
+          this.studentRepository.create({
+            user: studentUser,
+            gradeLevel: 'Lớp 12',
+          }),
+        );
+      } catch (err) {
+        student = await this.studentRepository.findOne({
+          where: { user: { id: studentUser.id } },
+        });
+        if (!student) throw err;
+      }
     }
 
     // 3. Tạo hoặc lấy Subject

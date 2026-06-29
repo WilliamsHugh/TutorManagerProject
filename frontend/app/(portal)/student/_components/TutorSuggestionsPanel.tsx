@@ -172,11 +172,9 @@ export function TutorSuggestionsPanel({
         <h2 className="text-lg font-semibold text-[#0f172a]">
           Gia sư gợi ý theo yêu cầu
         </h2>
-        {!loading && (
-          <span className="rounded-full bg-[#f1f5f9] px-3 py-1 text-xs font-medium text-[#64748b]">
-            Trang {currentPage} / {totalPages}
-          </span>
-        )}
+        <span className="rounded-full bg-[#f1f5f9] px-3 py-1 text-xs font-medium text-[#64748b]">
+          Trang {currentPage} / {totalPages}
+        </span>
       </div>
 
       <div className="mb-6 flex flex-wrap gap-2">
@@ -213,11 +211,11 @@ export function TutorSuggestionsPanel({
       </div>
 
       {/* Pagination Controls */}
-      {!loading && totalPages > 1 && (
+      {totalPages > 1 && (
         <div className="mt-6 flex items-center justify-between border-t border-[#e2e8f0] pt-4">
           <button
             type="button"
-            disabled={currentPage <= 1}
+            disabled={currentPage <= 1 || loading}
             onClick={() => onPageChange(currentPage - 1)}
             className="inline-flex h-8 items-center justify-center rounded-md border border-[#e2e8f0] bg-white px-3 text-xs font-semibold text-[#334155] transition-colors hover:bg-[#f8fafc] disabled:opacity-50 disabled:pointer-events-none"
           >
@@ -230,7 +228,7 @@ export function TutorSuggestionsPanel({
           
           <button
             type="button"
-            disabled={currentPage >= totalPages}
+            disabled={currentPage >= totalPages || loading}
             onClick={() => onPageChange(currentPage + 1)}
             className="inline-flex h-8 items-center justify-center rounded-md border border-[#e2e8f0] bg-white px-3 text-xs font-semibold text-[#334155] transition-colors hover:bg-[#f8fafc] disabled:opacity-50 disabled:pointer-events-none"
           >

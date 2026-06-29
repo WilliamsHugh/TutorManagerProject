@@ -12,6 +12,8 @@ type TutorRecommendationCardProps = {
   tutor: TutorRecommendation
   onViewSchedule?: () => void
   onViewDetail?: () => void
+  selected?: boolean
+  onSelectToggle?: () => void
 }
 
 export function TutorRecommendationCard({
@@ -20,12 +22,22 @@ export function TutorRecommendationCard({
   tutor,
   onViewSchedule,
   onViewDetail,
+  selected = false,
+  onSelectToggle,
 }: TutorRecommendationCardProps) {
   return (
-    <div className="rounded border border-border bg-white p-3 flex flex-col justify-between h-[230px]">
+    <div className="rounded border border-border bg-white p-3 flex min-h-[230px] flex-col justify-between">
       <div>
         <div className="flex items-start justify-between gap-3">
           <div className="flex min-w-0 gap-3">
+            {onSelectToggle && (
+              <input
+                type="checkbox"
+                checked={selected}
+                onChange={onSelectToggle}
+                className="mt-1 size-4 accent-primary cursor-pointer shrink-0"
+              />
+            )}
             <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-secondary text-xs font-bold text-secondary-foreground">
               {tutor.avatar}
             </div>

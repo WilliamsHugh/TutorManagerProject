@@ -1,6 +1,8 @@
 import { Suspense } from "react";
 import PublicClassesClient from "./PublicClassesClient";
 
+import PageLoader from "@/components/common/PageLoader";
+
 export default async function ClassesPage({
   searchParams,
 }: {
@@ -11,7 +13,7 @@ export default async function ClassesPage({
   }
 
   return (
-    <Suspense fallback={null}>
+    <Suspense fallback={<PageLoader />}>
       <PublicClassesClient />
     </Suspense>
   );

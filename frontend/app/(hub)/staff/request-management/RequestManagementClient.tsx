@@ -121,6 +121,10 @@ export default function RequestManagementClient() {
           setCurrentPage(1)
         }}
         onSelectRequest={setSelectedRequest}
+        onRefresh={() => {
+          setLoading(true)
+          loadRequests()
+        }}
       />
 
       {selectedRequest ? (
@@ -137,7 +141,7 @@ export default function RequestManagementClient() {
   )
 }
 
-function RequestTableSkeleton() {
+export function RequestTableSkeleton() {
   return (
     <div className="rounded border border-border bg-white p-5 space-y-4 shadow-sm">
       {/* Title skeleton */}

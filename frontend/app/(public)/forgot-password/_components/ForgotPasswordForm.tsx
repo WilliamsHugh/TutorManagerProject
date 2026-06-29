@@ -3,7 +3,10 @@
 import { ArrowLeft, ArrowRight, Loader2, KeyRound, Mail, CheckCircle2, Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:3001";
+
+const API_URL =
+    process.env.NEXT_PUBLIC_API_URL ??
+    `${(process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:3001").replace(/\/+$/, "")}/api`;
 
 export default function ForgotPasswordForm() {
     const [step, setStep] = useState(1); // 1: Email, 2: OTP & New Password, 3: Success
@@ -32,7 +35,7 @@ export default function ForgotPasswordForm() {
         setErrorMsg(null);
 
         try {
-            const res = await fetch(`${BACKEND_URL}/auth/forgot-password`, {
+            const res = await fetch(`${API_URL}/auth/forgot-password`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ email: formData.email }),
@@ -59,7 +62,7 @@ export default function ForgotPasswordForm() {
         setErrorMsg(null);
 
         try {
-            const res = await fetch(`${BACKEND_URL}/auth/reset-password`, {
+            const res = await fetch(`${API_URL}/auth/reset-password`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({

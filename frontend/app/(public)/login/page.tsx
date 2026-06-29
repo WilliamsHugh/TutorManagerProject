@@ -1,6 +1,8 @@
 import { Suspense } from "react";
 import LoginPageClient from "./LoginPageClient";
 
+import PageLoader from "@/components/common/PageLoader";
+
 export default async function LoginPage({
   searchParams,
 }: {
@@ -11,7 +13,7 @@ export default async function LoginPage({
   }
 
   return (
-    <Suspense fallback={null}>
+    <Suspense fallback={<PageLoader />}>
       <LoginPageClient />
     </Suspense>
   );

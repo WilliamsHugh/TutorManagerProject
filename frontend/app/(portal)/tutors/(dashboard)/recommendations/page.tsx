@@ -1,6 +1,8 @@
 import { Suspense } from "react";
 import TutorRecommendationsClient from "./TutorRecommendationsClient";
 
+import PageLoader from "@/components/common/PageLoader";
+
 export default async function TutorRecommendationsPage({
   searchParams,
 }: {
@@ -11,7 +13,7 @@ export default async function TutorRecommendationsPage({
   }
 
   return (
-    <Suspense fallback={null}>
+    <Suspense fallback={<PageLoader />}>
       <TutorRecommendationsClient />
     </Suspense>
   );

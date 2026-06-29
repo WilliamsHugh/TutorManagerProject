@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Icon } from '@iconify/react';
 import { getTutorEarnings } from '@/lib/api';
 import Header from '@/components/tutor/Header';
+import { Skeleton, SkeletonTable } from '@/components/common/Skeleton';
 
 export default function TutorEarnings() {
   const [earnings, setEarnings] = useState<any>(null);
@@ -31,8 +32,33 @@ export default function TutorEarnings() {
     return (
       <>
         <Header title="Thu nhập" />
-        <div className="content" style={{ padding: '32px', textAlign: 'center', color: '#64748b' }}>
-          <Icon icon="lucide:loader-2" className="animate-spin inline-block mr-2" /> Đang tải dữ liệu...
+        <div className="content" style={{ padding: '32px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-4">
+            {Array.from({ length: 4 }).map((_, index) => (
+              <div key={index} className="flex items-center gap-4 rounded-xl border border-slate-200 bg-white p-6">
+                <Skeleton className="size-14 rounded-2xl" />
+                <div className="flex-1 space-y-3">
+                  <Skeleton className="h-3.5 w-28" />
+                  <Skeleton className="h-7 w-32" />
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="rounded-xl border border-slate-200 bg-white p-6">
+            <Skeleton className="mb-6 h-5 w-48" />
+            <div className="space-y-4">
+              {Array.from({ length: 5 }).map((_, index) => (
+                <div key={index} className="space-y-2">
+                  <div className="flex justify-between">
+                    <Skeleton className="h-4 w-24" />
+                    <Skeleton className="h-4 w-28" />
+                  </div>
+                  <Skeleton className="h-2 w-full rounded-full" />
+                </div>
+              ))}
+            </div>
+          </div>
+          <SkeletonTable rows={5} columns={5} />
         </div>
       </>
     );

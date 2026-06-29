@@ -1,6 +1,8 @@
 import { Suspense } from "react";
 import StaffStudentsClient from "./StaffStudentsClient";
 
+import PageLoader from "@/components/common/PageLoader";
+
 export default async function StaffStudentsPage({
   searchParams,
 }: {
@@ -11,7 +13,7 @@ export default async function StaffStudentsPage({
   }
 
   return (
-    <Suspense fallback={null}>
+    <Suspense fallback={<PageLoader />}>
       <StaffStudentsClient />
     </Suspense>
   );

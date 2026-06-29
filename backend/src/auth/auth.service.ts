@@ -4,6 +4,7 @@ import {
   ConflictException,
   NotFoundException,
   BadRequestException,
+  ServiceUnavailableException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -182,6 +183,10 @@ export class AuthService {
       );
     } catch (error) {
       console.error(`[MAILER ERROR] Lỗi khi gửi mail tới ${email}:`, error);
+      await this.otpRepository.delete({ id: otp.id });
+      throw new ServiceUnavailableException(
+        'Không thể gửi email OTP. Vui lòng kiểm tra cấu hình SMTP hoặc thử lại sau.',
+      );
     }
 
     return { message: 'Mã OTP đã được gửi tới email của bạn' };

@@ -1,6 +1,8 @@
 import { Suspense } from "react";
 import StaffDashboardClient from "./StaffDashboardClient";
 
+import PageLoader from "@/components/common/PageLoader";
+
 export default async function StaffDashboardPage({
   searchParams,
 }: {
@@ -11,7 +13,7 @@ export default async function StaffDashboardPage({
   }
 
   return (
-    <Suspense fallback={null}>
+    <Suspense fallback={<PageLoader />}>
       <StaffDashboardClient />
     </Suspense>
   );

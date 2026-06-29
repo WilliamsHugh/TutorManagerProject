@@ -3,6 +3,7 @@
 import { useEffect, useState, useMemo } from "react"
 import { X, Mail, Phone, MapPin, UserRound, Calendar } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
+import { Skeleton } from "@/components/common/Skeleton"
 import { getClasses, getStudentScheduleForStaff, toggleUserStatusForStaff, deleteUserForStaff } from "@/lib/api"
 
 export interface StudentData {
@@ -341,7 +342,17 @@ export function StudentProfileDialog({ student, onClose, onRefresh, showToast }:
           {/* Classes list */}
           <div className="space-y-4">
             {loadingClasses ? (
-              <div className="h-10 bg-muted rounded animate-pulse" />
+              <div className="space-y-3">
+                {Array.from({ length: 3 }).map((_, index) => (
+                  <div key={index} className="rounded-lg border border-slate-100 bg-slate-50 p-3">
+                    <div className="mb-2 flex items-center justify-between gap-3">
+                      <Skeleton className="h-4 w-32" />
+                      <Skeleton className="h-5 w-16 rounded" />
+                    </div>
+                    <Skeleton className="h-3.5 w-3/4" />
+                  </div>
+                ))}
+              </div>
             ) : (
               <>
                 {/* Active classes */}
@@ -460,8 +471,21 @@ export function StudentProfileDialog({ student, onClose, onRefresh, showToast }:
                   </div>
 
                   {loadingSchedule ? (
-                    <div className="h-20 w-full bg-slate-50 border border-slate-100 rounded-lg animate-pulse flex items-center justify-center text-slate-400">
-                      Đang tải lịch biểu bận...
+                    <div className="rounded-lg border border-slate-100 bg-white p-2">
+                      <div className="mb-2 grid grid-cols-7 gap-1.5">
+                        {Array.from({ length: 7 }).map((_, index) => (
+                          <Skeleton key={index} className="h-7 rounded" />
+                        ))}
+                      </div>
+                      <div className="space-y-1.5">
+                        {Array.from({ length: 3 }).map((_, row) => (
+                          <div key={row} className="grid grid-cols-7 gap-1.5">
+                            {Array.from({ length: 7 }).map((__, col) => (
+                              <Skeleton key={col} className="h-10 rounded" />
+                            ))}
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   ) : schedules.length > 0 ? (
                     <div className="overflow-x-auto border border-slate-150 rounded-lg bg-white">

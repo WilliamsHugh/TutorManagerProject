@@ -145,3 +145,10 @@ export function updateClassStatusForStaff(classId: string, status: string) {
     body: JSON.stringify({ status }),
   });
 }
+
+export function proposeTutorsForRequest(requestId: string, tutorIds: string[]) {
+  return request<any>(`/class-requests/${requestId}/propose-tutors`, {
+    method: 'POST',
+    body: JSON.stringify({ tutorIds }),
+  });
+}

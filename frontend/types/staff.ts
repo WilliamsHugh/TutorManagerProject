@@ -108,6 +108,8 @@ export function mapClassRequest(request: ApiClassRequest): RequestItem {
     note: request.requirements ?? "Không có yêu cầu đặc biệt",
     status: requestStatusLabels[request.status],
     studentId: request.student?.id,
+    proposedFee: request.proposedFee ?? undefined,
+    proposedSessions: request.proposedSessions ?? undefined,
     preferredTutor: request.preferredTutor ? {
       id: request.preferredTutor.id,
       name: request.preferredTutor.user?.fullName || "Gia sư",

@@ -1,6 +1,8 @@
 import { Suspense } from "react";
 import ForgotPasswordClient from "./ForgotPasswordClient";
 
+import PageLoader from "@/components/common/PageLoader";
+
 export default async function ForgotPasswordPage({
   searchParams,
 }: {
@@ -11,7 +13,7 @@ export default async function ForgotPasswordPage({
   }
 
   return (
-    <Suspense fallback={null}>
+    <Suspense fallback={<PageLoader />}>
       <ForgotPasswordClient />
     </Suspense>
   );

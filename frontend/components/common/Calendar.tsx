@@ -192,18 +192,33 @@ export default function Calendar({
     return ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'][day === 0 ? 0 : day];
   }
 
+  /** Normalize dayOfWeek from long Vietnamese ('Thứ 2', 'Chủ nhật') to short ('T2', 'CN') */
+  function normalizeDayOfWeek(dow?: string, sessionDate?: string | Date): string | undefined {
+    if (!dow && !sessionDate) return undefined;
+    const longToShort: Record<string, string> = {
+      'Thứ 2': 'T2', 'Thứ 3': 'T3', 'Thứ 4': 'T4',
+      'Thứ 5': 'T5', 'Thứ 6': 'T6', 'Thứ 7': 'T7',
+      'Chủ nhật': 'CN', 'Chủ Nhật': 'CN',
+    };
+    if (dow && longToShort[dow]) return longToShort[dow];
+    if (dow && DAY_LABELS.includes(dow)) return dow;
+    return deriveDayOfWeek(sessionDate) || dow;
+  }
+
   /** Normalize events from various API response shapes to CalendarEvent */
   const normalizeEvents = (raw: any[]): CalendarEvent[] => {
     if (!Array.isArray(raw)) return [];
     return raw.map((ev: any) => {
-      // If already in CalendarEvent shape (has id + class.subject), use as-is
-      if (ev?.class?.subject?.name) return ev as CalendarEvent;
+      const normalizedDow = normalizeDayOfWeek(ev.dayOfWeek, ev.sessionDate);
+
+      // If already in CalendarEvent shape (has id + class.subject), normalize dayOfWeek
+      if (ev?.class?.subject?.name) return { ...ev, dayOfWeek: normalizedDow } as CalendarEvent;
 
       // If in tutor API shape: flat fields like time, subject, student, status
       const timeParts = ev.time?.split(' - ') || [];
       return {
         id: ev.id || '',
-        dayOfWeek: ev.dayOfWeek || deriveDayOfWeek(ev.date || ev.sessionDate),
+        dayOfWeek: normalizedDow || deriveDayOfWeek(ev.date || ev.sessionDate),
         startTime: ev.startTime || timeParts[0] || '',
         endTime: ev.endTime || timeParts[1] || '',
         sessionStatus: ev.sessionStatus || ev.status || 'scheduled',
@@ -396,21 +411,21 @@ export default function Calendar({
         {/* ═══ WEEK VIEW ═══ */}
         {viewMode === 'week' && (
           <div className="bg-white border border-[#e2e8f0] rounded-xl overflow-hidden shadow-sm">
-            <div className="grid border-b border-[#e2e8f0]" style={{ gridTemplateColumns: '70px repeat(7, 1fr)' }}>
-              <div className="border-r border-[#e2e8f0] bg-[#f8fafc]" />
-              {weekGrid.dayCols.map((col, i) => (
-                <div
-                  key={i}
-                  className={`py-3 px-1 text-center border-r last:border-r-0 ${col.isToday ? 'bg-[#eff6ff]' : 'bg-[#f8fafc]'}`}
-                >
-                  <div className="text-xs font-medium text-[#64748b]">{col.label}</div>
-                  <div className={`text-xl font-bold ${col.isToday ? 'text-white bg-[#2563eb] w-9 h-9 rounded-full flex items-center justify-center mx-auto' : 'text-[#1e293b]'}`}>
-                    {col.date}
-                  </div>
-                </div>
-              ))}
-            </div>
             <div className="overflow-auto" style={{ maxHeight: 'calc(100vh - 320px)' }}>
+              <div className="grid border-b border-[#e2e8f0] sticky top-0 z-20 bg-[#f8fafc]" style={{ gridTemplateColumns: '70px repeat(7, 1fr)' }}>
+                <div className="border-r border-[#e2e8f0] bg-[#f8fafc]" />
+                {weekGrid.dayCols.map((col, i) => (
+                  <div
+                    key={i}
+                    className={`py-3 px-1 text-center border-r last:border-r-0 ${col.isToday ? 'bg-[#eff6ff]' : 'bg-[#f8fafc]'}`}
+                  >
+                    <div className="text-xs font-medium text-[#64748b]">{col.label}</div>
+                    <div className={`text-xl font-bold ${col.isToday ? 'text-white bg-[#2563eb] w-9 h-9 rounded-full flex items-center justify-center mx-auto' : 'text-[#1e293b]'}`}>
+                      {col.date}
+                    </div>
+                  </div>
+                ))}
+              </div>
               <div className="relative" style={{ gridTemplateColumns: '70px repeat(7, 1fr)', display: 'grid' }}>
                 <div className="border-r border-[#e2e8f0] relative">
                   {weekGrid.timeSlots.map((slot, i) => (

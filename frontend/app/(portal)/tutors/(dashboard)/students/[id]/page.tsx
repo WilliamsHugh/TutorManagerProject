@@ -82,17 +82,31 @@ export default function StudentDetailPage() {
 
       // 2. Fetch tutor dashboard classes to find class details
       const dashboardData = await getTutorDashboard();
+      let foundClass = null;
       if (dashboardData.currentClasses) {
-        const foundClass = dashboardData.currentClasses.find((cls: any) => cls.studentId === studentId);
-        if (foundClass) {
-          setClassDetail(foundClass);
-          
-          // 3. Fetch actual learning reports for this class from database
-          setLoadingReports(true);
-          const reportsData = await getLearningReports(foundClass.rawId);
-          if (Array.isArray(reportsData)) {
-            setReports(reportsData);
-          }
+        foundClass = dashboardData.currentClasses.find((cls: any) => cls.rawId === studentId);
+      }
+      
+      if (!foundClass && foundStudent) {
+        foundClass = {
+          rawId: foundStudent.id,
+          studentId: foundStudent.studentId,
+          subject: foundStudent.lastSubject,
+          student: foundStudent.fullName,
+          totalSessions: foundStudent.totalSessions,
+          completedSessions: foundStudent.completedSessions,
+          progress: Math.round(((foundStudent.completedSessions || 0) / (foundStudent.totalSessions || 24)) * 100),
+        };
+      }
+
+      if (foundClass) {
+        setClassDetail(foundClass);
+        
+        // 3. Fetch actual learning reports for this class from database
+        setLoadingReports(true);
+        const reportsData = await getLearningReports(foundClass.rawId);
+        if (Array.isArray(reportsData)) {
+          setReports(reportsData);
         }
       }
     } catch (error) {
@@ -224,7 +238,7 @@ export default function StudentDetailPage() {
   if (loading) {
     return (
       <>
-        <Header title="Chi tiết học viên" userProfile={profile} />
+        <Header title="Chi tiết lớp học" userProfile={profile} />
         <div className="flex-grow flex flex-col items-center justify-center py-24 gap-3">
           <Icon icon="lucide:loader-2" className="animate-spin text-blue-600" fontSize={40} />
           <p className="text-slate-500 font-medium text-sm">Đang tải thông tin từ database...</p>
@@ -236,7 +250,7 @@ export default function StudentDetailPage() {
   if (!student) {
     return (
       <>
-        <Header title="Chi tiết học viên" userProfile={profile} />
+        <Header title="Chi tiết lớp học" userProfile={profile} />
         <div className="flex-grow flex flex-col items-center justify-center py-24 px-4 text-center max-w-md mx-auto gap-4">
           <div className="w-16 h-16 rounded-full bg-red-50 text-red-500 flex items-center justify-center border border-red-100">
             <Icon icon="lucide:alert-circle" fontSize={32} />
@@ -255,15 +269,15 @@ export default function StudentDetailPage() {
 
   return (
     <>
-      <Header title="Chi tiết học viên" userProfile={profile} />
+      <Header title="Chi tiết lớp học" userProfile={profile} />
       
       <div className="flex-grow w-full max-w-7xl mx-auto px-8 py-8 flex flex-col gap-6 animate-in fade-in duration-300">
         
         {/* Breadcrumb Navigation */}
         <div className="flex items-center gap-2 text-sm text-slate-500 self-start font-medium">
-          <Link href="/tutors/students" className="text-slate-400 hover:text-blue-600 no-underline transition-colors">Học viên của tôi</Link>
+          <Link href="/tutors/students" className="text-slate-400 hover:text-blue-600 no-underline transition-colors">Lớp học của tôi</Link>
           <ChevronRight size={14} className="text-slate-350" />
-          <span className="text-slate-700 font-semibold">{student.fullName}</span>
+          <span className="text-slate-700 font-semibold">{student.fullName} ({student.classCode})</span>
         </div>
 
         {/* Profile Card Header */}

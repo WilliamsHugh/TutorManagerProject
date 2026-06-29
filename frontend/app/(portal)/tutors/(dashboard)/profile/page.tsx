@@ -5,6 +5,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Icon } from '@iconify/react';
 import { getTutorProfile, updateTutorProfile, getAllSubjects } from '@/lib/api';
 import Header from '@/components/tutor/Header';
+import { Skeleton } from '@/components/common/Skeleton';
 
 export default function ProfessionalProfilePage() {
   const [profile, setProfile] = useState<any>(null);
@@ -118,9 +119,7 @@ export default function ProfessionalProfilePage() {
     <>
       <Header title="Cập nhật hồ sơ" userProfile={profile} />
       {loading ? (
-        <div className="flex-1 flex justify-center items-center">
-          <Icon icon="lucide:loader-2" className="animate-spin text-3xl text-blue-600" />
-        </div>
+        <TutorProfileSkeleton />
       ) : (
       <main className="p-8 flex flex-col gap-6">
         {/* Content Header */}
@@ -340,6 +339,58 @@ export default function ProfessionalProfilePage() {
       </main>
       )}
     </>
+  );
+}
+
+function TutorProfileSkeleton() {
+  return (
+    <main className="flex flex-col gap-6 p-8">
+      <div className="flex items-end justify-between">
+        <div className="space-y-3">
+          <Skeleton className="h-7 w-48" />
+          <Skeleton className="h-4 w-96 max-w-full" />
+        </div>
+        <div className="flex gap-3">
+          <Skeleton className="h-10 w-20 rounded-md" />
+          <Skeleton className="h-10 w-32 rounded-md" />
+        </div>
+      </div>
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <div className="space-y-6 lg:col-span-2">
+          {Array.from({ length: 3 }).map((_, section) => (
+            <div key={section} className="rounded-xl border border-slate-200 bg-white p-6">
+              <Skeleton className="mb-5 h-5 w-44" />
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                {Array.from({ length: 4 }).map((__, index) => (
+                  <div key={index} className="space-y-2">
+                    <Skeleton className="h-3.5 w-24" />
+                    <Skeleton className="h-11 w-full rounded-md" />
+                  </div>
+                ))}
+              </div>
+              <div className="mt-4 space-y-2">
+                <Skeleton className="h-3.5 w-32" />
+                <Skeleton className="h-24 w-full rounded-md" />
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className="space-y-6">
+          <div className="rounded-xl border border-slate-200 bg-white p-6">
+            <Skeleton className="mx-auto mb-4 size-28 rounded-full" />
+            <Skeleton className="mx-auto mb-2 h-5 w-40" />
+            <Skeleton className="mx-auto h-4 w-28" />
+          </div>
+          <div className="rounded-xl border border-slate-200 bg-white p-6">
+            <Skeleton className="mb-4 h-5 w-36" />
+            <div className="space-y-3">
+              <Skeleton className="h-10 w-full rounded-md" />
+              <Skeleton className="h-10 w-full rounded-md" />
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
   );
 }
 

@@ -1,6 +1,8 @@
 import { Suspense } from "react";
 import ForbiddenClient from "./ForbiddenClient";
 
+import PageLoader from "@/components/common/PageLoader";
+
 export default async function ForbiddenPage({
   searchParams,
 }: {
@@ -11,7 +13,7 @@ export default async function ForbiddenPage({
   }
 
   return (
-    <Suspense fallback={null}>
+    <Suspense fallback={<PageLoader />}>
       <ForbiddenClient />
     </Suspense>
   );

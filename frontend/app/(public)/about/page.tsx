@@ -1,6 +1,8 @@
 import { Suspense } from "react";
 import AboutPageClient from "./AboutPageClient";
 
+import PageLoader from "@/components/common/PageLoader";
+
 export default async function AboutPage({
   searchParams,
 }: {
@@ -11,7 +13,7 @@ export default async function AboutPage({
   }
 
   return (
-    <Suspense fallback={null}>
+    <Suspense fallback={<PageLoader />}>
       <AboutPageClient />
     </Suspense>
   );

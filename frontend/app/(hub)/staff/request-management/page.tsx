@@ -1,6 +1,8 @@
 import { Suspense } from "react";
 import RequestManagementClient from "./RequestManagementClient";
 
+import { RequestTableSkeleton } from "./RequestManagementClient";
+
 export default async function RequestManagementPage({
   searchParams,
 }: {
@@ -11,7 +13,7 @@ export default async function RequestManagementPage({
   }
 
   return (
-    <Suspense fallback={null}>
+    <Suspense fallback={<RequestTableSkeleton />}>
       <RequestManagementClient />
     </Suspense>
   );

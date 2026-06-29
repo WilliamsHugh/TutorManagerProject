@@ -28,9 +28,9 @@ function LevelBadge({ label }: { label: string }) {
   );
 }
 
-export default function ClassCard({ cls, priority }: { cls: ClassListing; priority?: boolean }) {
+export default function ClassCard({ cls, priority, onViewDetail }: { cls: ClassListing; priority?: boolean; onViewDetail?: () => void }) {
   return (
-    <div className="bg-white rounded-xl border border-gray-100 p-6 flex flex-col gap-4 hover:shadow-lg hover:shadow-blue-900/5 hover:border-blue-100 transition-all duration-300">
+    <div className="group bg-white rounded-xl border border-gray-100 p-6 flex flex-col gap-4 hover:shadow-lg hover:shadow-blue-900/5 hover:border-blue-100 transition-all duration-300">
       {/* Top */}
       <div className="flex justify-between items-start gap-4">
         <div className="flex-1 min-w-0">
@@ -93,7 +93,8 @@ export default function ClassCard({ cls, priority }: { cls: ClassListing; priori
           <span>{cls.postedAt}</span>
         </div>
         <button
-          className="text-sm font-semibold px-4 py-2 rounded-xl text-white transition-opacity hover:opacity-90"
+          onClick={onViewDetail}
+          className="text-sm font-semibold px-4 py-2 rounded-xl text-white transition-opacity hover:opacity-90 cursor-pointer"
           style={{ backgroundColor: "var(--primary)" }}
         >
           Xem chi tiết

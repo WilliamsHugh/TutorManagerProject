@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { BookOpen, Clock, Mail, Phone, GraduationCap, X, Calendar, FileText, CheckCircle2, XCircle } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
+import { Skeleton } from "@/components/common/Skeleton"
 import {
   getLearningReports,
   getClassScheduleForStaff,
@@ -283,7 +284,7 @@ export function ClassDetailDialog({ classItem, onClose, onRefresh, showToast }: 
               <div>
                 <span className="text-muted-foreground">Tiến độ buổi học:</span>
                 {loadingReports ? (
-                  <span className="font-bold text-foreground block mt-0.5 animate-pulse">Đang tải...</span>
+                  <Skeleton className="mt-1 h-4 w-20" />
                 ) : (
                   <span className="font-bold text-foreground block mt-0.5">
                     Đã học {reports.length} / {classItem.totalSessions}
@@ -327,8 +328,21 @@ export function ClassDetailDialog({ classItem, onClose, onRefresh, showToast }: 
               </button>
             </div>
             {loadingSchedules ? (
-              <div className="h-20 w-full bg-slate-50 border border-slate-100 rounded-lg animate-pulse flex items-center justify-center text-xs text-slate-400">
-                Đang tải thời khóa biểu...
+              <div className="rounded-lg border border-slate-100 bg-white p-2">
+                <div className="mb-2 grid grid-cols-7 gap-1.5">
+                  {Array.from({ length: 7 }).map((_, index) => (
+                    <Skeleton key={index} className="h-7 rounded" />
+                  ))}
+                </div>
+                <div className="space-y-1.5">
+                  {Array.from({ length: 3 }).map((_, row) => (
+                    <div key={row} className="grid grid-cols-7 gap-1.5">
+                      {Array.from({ length: 7 }).map((__, col) => (
+                        <Skeleton key={col} className="h-10 rounded" />
+                      ))}
+                    </div>
+                  ))}
+                </div>
               </div>
             ) : schedules.length > 0 ? (
               <div className="overflow-x-auto border border-slate-150 rounded-lg">
@@ -463,9 +477,17 @@ export function ClassDetailDialog({ classItem, onClose, onRefresh, showToast }: 
               <span>Báo cáo học tập ({reports.length})</span>
             </div>
             {loadingReports ? (
-              <div className="flex items-center gap-2 py-3 text-xs text-muted-foreground">
-                <div className="size-3 border-2 border-slate-300 border-t-primary rounded-full animate-spin" />
-                Đang tải báo cáo...
+              <div className="space-y-2">
+                {Array.from({ length: 2 }).map((_, index) => (
+                  <div key={index} className="rounded-lg border border-slate-200 bg-white p-3.5">
+                    <div className="mb-3 flex items-center justify-between gap-3">
+                      <Skeleton className="h-4 w-32" />
+                      <Skeleton className="h-5 w-16 rounded-full" />
+                    </div>
+                    <Skeleton className="mb-2 h-3.5 w-full" />
+                    <Skeleton className="h-3.5 w-3/4" />
+                  </div>
+                ))}
               </div>
             ) : reports.length > 0 ? (
               <div className="space-y-3 max-h-[320px] overflow-y-auto pr-1">

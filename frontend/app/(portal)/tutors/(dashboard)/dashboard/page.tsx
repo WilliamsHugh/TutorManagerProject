@@ -13,6 +13,7 @@ import {
 } from '@/lib/api';
 import Link from 'next/link';
 import Header from '@/components/tutor/Header';
+import { Skeleton } from '@/components/common/Skeleton';
 
 export default function TutorDashboard() {
   // 1. Khởi tạo State rỗng để đợi dữ liệu từ backend
@@ -213,9 +214,7 @@ export default function TutorDashboard() {
         </div>
         
         {loading ? (
-          <div style={{ textAlign: 'center', padding: '48px', color: '#64748b' }}>
-            <Icon icon="lucide:loader-2" className="animate-spin inline-block mr-2" /> Đang tải dữ liệu...
-          </div>
+          <TutorDashboardSkeleton />
         ) : (
           <>
             {/* Stats Row */}
@@ -557,5 +556,67 @@ export default function TutorDashboard() {
         }
       `}</style>
     </>
+  );
+}
+
+function TutorDashboardSkeleton() {
+  return (
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-4">
+        {Array.from({ length: 4 }).map((_, index) => (
+          <div key={index} className="flex items-center gap-4 rounded-lg border border-slate-200 bg-white p-6">
+            <Skeleton className="size-14 rounded-2xl" />
+            <div className="flex-1 space-y-3">
+              <Skeleton className="h-3.5 w-28" />
+              <Skeleton className="h-7 w-20" />
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[2fr_1fr]">
+        <div className="rounded-lg border border-slate-200 bg-white">
+          <div className="flex items-center justify-between border-b border-slate-200 p-5">
+            <Skeleton className="h-5 w-40" />
+            <div className="flex gap-2">
+              <Skeleton className="h-8 w-8 rounded" />
+              <Skeleton className="h-8 w-24 rounded" />
+              <Skeleton className="h-8 w-8 rounded" />
+            </div>
+          </div>
+          <div className="grid grid-cols-7 gap-3 p-6">
+            {Array.from({ length: 7 }).map((_, index) => (
+              <Skeleton key={index} className="h-44 rounded-md" />
+            ))}
+          </div>
+        </div>
+
+        <div className="rounded-lg border border-slate-200 bg-white p-5">
+          <Skeleton className="mb-5 h-5 w-36" />
+          <div className="space-y-3">
+            {Array.from({ length: 3 }).map((_, index) => (
+              <div key={index} className="rounded-lg border border-slate-100 p-3">
+                <Skeleton className="mb-2 h-4 w-2/3" />
+                <Skeleton className="mb-3 h-3.5 w-1/2" />
+                <Skeleton className="h-8 w-full rounded" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div className="rounded-lg border border-slate-200 bg-white p-5">
+        <Skeleton className="mb-5 h-5 w-40" />
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          {Array.from({ length: 4 }).map((_, index) => (
+            <div key={index} className="rounded-lg border border-slate-100 p-4">
+              <Skeleton className="mb-3 h-4 w-1/2" />
+              <Skeleton className="mb-2 h-3.5 w-2/3" />
+              <Skeleton className="h-8 w-28 rounded" />
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
   );
 }

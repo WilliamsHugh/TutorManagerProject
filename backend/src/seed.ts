@@ -348,14 +348,15 @@ async function seed() {
   await dataSource.synchronize();
   console.log('   + Schema synced');
 
-  // Dùng queryRunner với transaction để đảm bảo mọi operation chạy trên
-  // CÙNG một database connection — tránh FK violation do connection pool isolation
-  const queryRunner = dataSource.createQueryRunner();
-  await queryRunner.startTransaction();
-
+  // ── Reset database TRƯỚC khi bắt đầu transaction ──
+  // Chạy trên connection riêng với timeout cao để tránh Supabase statement_timeout
+  console.log('\n--- 0. Resetting Database ---');
+  const resetRunner = dataSource.createQueryRunner();
   try {
-    console.log('\n--- 0. Resetting Database ---');
-    // DELETE FROM thay vì TRUNCATE (DML-safe trong transaction với deferred constraints)
+    // Tắt statement_timeout cho phiên reset này
+    await resetRunner.query(`SET statement_timeout = 0`);
+
+    // Xóa từng bảng theo thứ tự (leaf → root) để tránh FK constraint
     const tables = [
       'notifications',
       'reviews',
@@ -374,9 +375,23 @@ async function seed() {
       'settings',
     ];
     for (const table of tables) {
-      await queryRunner.query(`DELETE FROM "${table}"`);
+      try {
+        await resetRunner.query(`DELETE FROM "${table}"`);
+      } catch (e: any) {
+        // Bảng có thể không tồn tại, bỏ qua
+        if (e.code !== '42P01') console.warn(`   ⚠ Warning: ${table}: ${e.message}`);
+      }
     }
     console.log('   + All tables cleared successfully');
+  } finally {
+    await resetRunner.release();
+  }
+
+  // Bắt đầu transaction cho seeding
+  const queryRunner = dataSource.createQueryRunner();
+  await queryRunner.startTransaction();
+
+  try {
 
     // Dùng repositories gắn với queryRunner
     const roleRepo = queryRunner.manager.getRepository(Role);
@@ -808,7 +823,7 @@ async function seed() {
     for (const subName of item.subjects) {
       const subject = subjectMap.get(subName);
       if (subject) {
-        await dataSource.query(
+        await queryRunner.query(
           `INSERT INTO "tutor_subjects" ("id", "proficiency_level", "years_experience", "tutor_id", "subject_id")
            VALUES (gen_random_uuid(), $1, $2, $3, $4)
            ON CONFLICT DO NOTHING`,

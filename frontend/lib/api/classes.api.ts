@@ -120,6 +120,21 @@ export async function getStudentClasses() {
   return res.json();
 }
 
+export async function recreateClassRequest(classId: string) {
+  const token = getToken();
+  const res = await fetch(`${API_URL}/classes/student/recreate/${classId}`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+    },
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || 'Không thể đăng ký học lại lớp này');
+  }
+  return res.json();
+}
+
 // Học viên nộp đánh giá gia sư
 export async function submitReview(data: { classId: string; rating: number; comment?: string }) {
   const token = getToken();
@@ -236,7 +251,13 @@ export async function declineProposal(requestId: string) {
 }
 
 // Học viên yêu cầu gia sư điều chỉnh đề xuất
-export async function counterProposal(requestId: string, note: string) {
+export async function counterProposal(
+  requestId: string,
+  note: string,
+  feePerSession?: number,
+  totalSessions?: number,
+  schedule?: string,
+) {
   const token = getToken();
   const res = await fetch(`${API_URL}/classes/student/counter-proposal/${requestId}`, {
     method: 'POST',
@@ -244,7 +265,7 @@ export async function counterProposal(requestId: string, note: string) {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${token}`,
     },
-    body: JSON.stringify({ note }),
+    body: JSON.stringify({ note, feePerSession, totalSessions, schedule }),
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
@@ -309,6 +330,32 @@ export async function getStudentScheduleReport(classId: string, sessionDate: str
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     throw new Error(err.message || 'Không thể tải báo cáo buổi học');
+  }
+  return res.json();
+}
+
+export async function getStudentRequests() {
+  const token = getToken();
+  const res = await fetch(`${API_URL}/class-requests/student/my-requests`, {
+    headers: { 'Authorization': `Bearer ${token}` },
+  });
+  if (!res.ok) throw new Error('Không thể tải danh sách yêu cầu ghép lớp');
+  return res.json();
+}
+
+export async function selectProposedTutor(requestId: string, tutorId: string) {
+  const token = getToken();
+  const res = await fetch(`${API_URL}/class-requests/${requestId}/select-tutor`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    },
+    body: JSON.stringify({ tutorId }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || 'Không thể chọn gia sư');
   }
   return res.json();
 }

@@ -1,6 +1,8 @@
 import { Suspense } from "react";
 import StudentProfileClient from "./StudentProfileClient";
 
+import { ProfileSkeleton } from "../_components/StudentSkeletons";
+
 export default async function StudentProfilePage({
   searchParams,
 }: {
@@ -11,7 +13,7 @@ export default async function StudentProfilePage({
   }
 
   return (
-    <Suspense fallback={null}>
+    <Suspense fallback={<ProfileSkeleton />}>
       <StudentProfileClient />
     </Suspense>
   );

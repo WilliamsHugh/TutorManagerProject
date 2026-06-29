@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { isLoggedIn, getUserRole, clearAuth } from "@/lib/auth";
-import { getStudentClasses, submitReview, getClassReview, getStudentClassReports } from "@/lib/api/classes.api";
+import { getStudentClasses, submitReview, getClassReview, getStudentClassReports, recreateClassRequest } from "@/lib/api/classes.api";
 import { Star, Calendar, MapPin, Clock, Award, BookOpen, User, CheckCircle2, AlertCircle, RefreshCw, Loader2, X, FileText } from "lucide-react";
 import LearningReportPopup, { LearningReport } from "@/components/common/LearningReportPopup";
 import { ClassListSkeleton } from "../_components/StudentSkeletons";
@@ -68,6 +68,24 @@ export default function StudentClassesClient() {
   const [isReportsOpen, setIsReportsOpen] = useState(false);
   const [isReportsLoading, setIsReportsLoading] = useState(false);
   const [reportsError, setReportsError] = useState<string | null>(null);
+
+  const [recreatingClassId, setRecreatingClassId] = useState<string | null>(null);
+
+  const handleRecreateClass = async (classId: string) => {
+    if (!window.confirm("Bạn có chắc chắn muốn đăng ký học lại lớp học này với gia sư cũ không?")) {
+      return;
+    }
+    setRecreatingClassId(classId);
+    try {
+      await recreateClassRequest(classId);
+      alert("Đăng ký học lại thành công! Yêu cầu ghép lớp học lại của bạn đã được chuyển tới nhân viên duyệt lớp.");
+      router.push("/student"); // redirect to dashboard where request history is tracked
+    } catch (err: any) {
+      alert(err.message || "Đăng ký học lại thất bại. Vui lòng thử lại.");
+    } finally {
+      setRecreatingClassId(null);
+    }
+  };
 
   // Selected tutor for detail modal
   const [selectedTutorForDetail, setSelectedTutorForDetail] = useState<TutorSuggestion | null>(null);
@@ -137,6 +155,12 @@ export default function StudentClassesClient() {
     if (isLoggedIn() && getUserRole() === "student") {
       loadData();
     }
+  }, []);
+
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
   }, []);
 
   const handleOpenReviewModal = (cls: ClassItem) => {
@@ -248,6 +272,8 @@ export default function StudentClassesClient() {
         );
     }
   };
+
+  if (!mounted) return <ClassListSkeleton />;
 
   if (!isLoggedIn() || getUserRole() !== "student") return null;
 
@@ -457,6 +483,26 @@ export default function StudentClassesClient() {
                               Đánh giá gia sư này
                             </button>
                           )
+                        )}
+
+                        {(cls.status === "cancelled" || cls.status === "completed") && (
+                          <button
+                            disabled={recreatingClassId === cls.id}
+                            onClick={() => handleRecreateClass(cls.id)}
+                            className="w-full inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 active:scale-95 shadow-md shadow-emerald-200 transition-all cursor-pointer disabled:opacity-50"
+                          >
+                            {recreatingClassId === cls.id ? (
+                              <>
+                                <Loader2 size={15} className="animate-spin" />
+                                Đang xử lý...
+                              </>
+                            ) : (
+                              <>
+                                <RefreshCw size={15} />
+                                Đăng ký học lại với Gia sư này
+                              </>
+                            )}
+                          </button>
                         )}
                       </>
                     )}

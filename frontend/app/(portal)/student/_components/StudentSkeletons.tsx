@@ -193,3 +193,43 @@ export function CalendarSkeleton() {
     </div>
   );
 }
+
+export function DashboardSkeleton() {
+  return (
+    <div className="min-h-screen bg-[#f8fafc] text-[#0f172a]">
+      <main className="mx-auto w-full max-w-[1300px] px-4 py-6 sm:px-6 lg:px-8 space-y-6">
+        {/* Title skeleton */}
+        <div className="space-y-2 animate-pulse">
+          <div className="h-8 w-48 bg-[#cbd5e1] rounded" />
+          <div className="h-4.5 w-96 bg-[#cbd5e1] rounded" />
+        </div>
+        
+        {/* Tabs skeleton */}
+        <div className="h-10 bg-slate-100 rounded-lg animate-pulse" />
+
+        {/* Form and panel grid skeleton */}
+        <div className="grid grid-cols-1 items-start gap-6 xl:grid-cols-12 animate-pulse">
+          {/* Left Form skeleton */}
+          <div className="xl:col-span-5 bg-white border border-[#e2e8f0] p-6 rounded-2xl space-y-4">
+            <div className="h-5 w-32 bg-[#cbd5e1] rounded" />
+            <div className="space-y-3">
+              <div className="h-9 w-full bg-[#e2e8f0] rounded" />
+              <div className="h-9 w-full bg-[#e2e8f0] rounded" />
+              <div className="h-9 w-full bg-[#e2e8f0] rounded" />
+              <div className="h-9 w-full bg-[#e2e8f0] rounded" />
+            </div>
+          </div>
+          {/* Right Panel skeleton */}
+          <div className="xl:col-span-7 space-y-4">
+            <div className="h-9 w-full bg-[#e2e8f0] rounded" />
+            <div className="space-y-3">
+              <div className="h-28 w-full bg-white border border-[#e2e8f0] rounded-xl" />
+              <div className="h-28 w-full bg-white border border-[#e2e8f0] rounded-xl" />
+              <div className="h-28 w-full bg-white border border-[#e2e8f0] rounded-xl" />
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  );
+}

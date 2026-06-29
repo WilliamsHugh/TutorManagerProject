@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import StudentDashboardClient from "./StudentDashboardClient";
+import { DashboardSkeleton } from "./_components/StudentSkeletons";
 
 export default async function StudentDashboardPage({
   searchParams,
@@ -13,7 +14,7 @@ export default async function StudentDashboardPage({
   }
 
   return (
-    <Suspense fallback={null}>
+    <Suspense fallback={<DashboardSkeleton />}>
       <StudentDashboardClient />
     </Suspense>
   );

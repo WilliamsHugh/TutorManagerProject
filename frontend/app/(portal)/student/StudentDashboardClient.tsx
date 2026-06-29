@@ -18,6 +18,7 @@ import {
 import type { TutorSuggestion } from "./types";
 import { TutorRequestForm } from "./_components/TutorRequestForm";
 import { TutorRequestPageHeader } from "./_components/TutorRequestPageHeader";
+import { DashboardSkeleton } from "./_components/StudentSkeletons";
 import { TutorSuggestionsPanel } from "./_components/TutorSuggestionsPanel";
 import { AlertWindow } from "./_components/AlertWindow";
 
@@ -174,8 +175,11 @@ export default function StudentDashboardClient() {
       }
     }
     fetchTutors();
+  }, [page, search]);
 
-    // Fetch pending proposals
+  // Fetch pending proposals on mount
+  useEffect(() => {
+    if (!isLoggedIn() || getUserRole() !== "student") return;
     async function fetchProposals() {
       try {
         setProposalsLoading(true);
@@ -331,7 +335,7 @@ export default function StudentDashboardClient() {
   // Prevent hydration mismatch: server and client both render nothing initially
   // After mount, the component renders the full UI and handles redirects
   if (!mounted) {
-    return null;
+    return <DashboardSkeleton />;
   }
 
   if (!isLoggedIn() || getUserRole() !== "student") {
@@ -417,32 +421,66 @@ export default function StudentDashboardClient() {
       <main className="mx-auto w-full max-w-332 px-4 py-6 sm:px-6 lg:px-8">
         <TutorRequestPageHeader />
 
-        {/* Tab Navigation */}
-        <div className="mb-6 flex gap-1 rounded-lg bg-slate-100 p-1">
+        {/* Tab Navigation & Refresh Button */}
+        <div className="flex flex-col sm:flex-row justify-between sm:items-center mb-6 gap-3">
+          <div className="flex-1 flex gap-1 rounded-lg bg-slate-100 p-1">
+            <button
+              onClick={() => setActiveTab("request")}
+              className={`flex-1 rounded-md px-4 py-2 text-sm font-medium transition-colors ${
+                activeTab === "request"
+                  ? "bg-white text-slate-900 shadow-sm"
+                  : "text-slate-500 hover:text-slate-700"
+              }`}
+            >
+              Tìm gia sư
+            </button>
+            <button
+              onClick={() => setActiveTab("proposals")}
+              className={`flex-1 rounded-md px-4 py-2 text-sm font-medium transition-colors ${
+                activeTab === "proposals"
+                  ? "bg-white text-slate-900 shadow-sm"
+                  : "text-slate-500 hover:text-slate-700"
+              }`}
+            >
+              Đề xuất từ gia sư
+              {proposals.length > 0 && (
+                <span className="ml-2 inline-flex h-5 w-5 items-center justify-center rounded-full bg-amber-500 text-xs font-bold text-white">
+                  {proposals.length}
+                </span>
+              )}
+            </button>
+          </div>
           <button
-            onClick={() => setActiveTab("request")}
-            className={`flex-1 rounded-md px-4 py-2 text-sm font-medium transition-colors ${
-              activeTab === "request"
-                ? "bg-white text-slate-900 shadow-sm"
-                : "text-slate-500 hover:text-slate-700"
-            }`}
+            onClick={async () => {
+              try {
+                setLoading(true);
+                const result = await getStudentTutors({
+                  page,
+                  limit: LIMIT,
+                  search: search.trim() || undefined
+                });
+                setTutors(result.data);
+                setTotalPages(result.meta?.totalPages || Math.ceil((result.meta?.total || 0) / LIMIT) || 1);
+              } catch (err) {
+                console.error(err);
+              } finally {
+                setLoading(false);
+              }
+
+              try {
+                setProposalsLoading(true);
+                const data = await getStudentProposals();
+                setProposals(data || []);
+              } catch (err) {
+                console.error(err);
+              } finally {
+                setProposalsLoading(false);
+              }
+            }}
+            className="flex items-center justify-center gap-2 px-4 py-2 border border-slate-200 rounded-lg text-sm font-semibold text-slate-700 bg-white hover:bg-slate-50 transition-colors shadow-sm cursor-pointer whitespace-nowrap self-end sm:self-auto"
           >
-            Tìm gia sư
-          </button>
-          <button
-            onClick={() => setActiveTab("proposals")}
-            className={`flex-1 rounded-md px-4 py-2 text-sm font-medium transition-colors ${
-              activeTab === "proposals"
-                ? "bg-white text-slate-900 shadow-sm"
-                : "text-slate-500 hover:text-slate-700"
-            }`}
-          >
-            Đề xuất từ gia sư
-            {proposals.length > 0 && (
-              <span className="ml-2 inline-flex h-5 w-5 items-center justify-center rounded-full bg-amber-500 text-xs font-bold text-white">
-                {proposals.length}
-              </span>
-            )}
+            <Icon icon="lucide:refresh-cw" className={`${loading || proposalsLoading ? 'animate-spin' : ''}`} fontSize={16} />
+            Làm mới
           </button>
         </div>
 

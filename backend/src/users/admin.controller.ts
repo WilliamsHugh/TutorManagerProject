@@ -180,9 +180,9 @@ export class AdminController {
     const user = await this.usersRepo.findOneBy({ id });
     if (!user) throw new NotFoundException('Không tìm thấy người dùng');
     user.isActive = body.isActive;
-    user.lockedBy = body.isActive ? null : req.user;
+    user.lockedBy = body.isActive ? null : (req.user as any);
     const savedUser = await this.usersRepo.save(user);
-
+ 
     // Tự động tạm dừng lớp học đang hoạt động khi tài khoản bị khóa (Lock)
     if (!body.isActive) {
       const roleName = user.role?.name;
@@ -191,7 +191,7 @@ export class AdminController {
         if (tutor) {
           await this.classesRepo.update(
             { tutor: { id: tutor.id }, status: ClassStatus.ACTIVE },
-            { status: ClassStatus.SUSPENDED, suspendedBy: req.user },
+            { status: ClassStatus.SUSPENDED, suspendedBy: req.user as any },
           );
         }
       } else if (roleName === 'student') {
@@ -199,7 +199,7 @@ export class AdminController {
         if (student) {
           await this.classesRepo.update(
             { student: { id: student.id }, status: ClassStatus.ACTIVE },
-            { status: ClassStatus.SUSPENDED, suspendedBy: req.user },
+            { status: ClassStatus.SUSPENDED, suspendedBy: req.user as any },
           );
         }
       }
@@ -365,8 +365,8 @@ export class AdminController {
 
     tutor.approvalStatus = statusEnum;
     tutor.approvedAt = new Date();
-    tutor.approvedBy = req.user;
-
+    tutor.approvedBy = req.user as any;
+ 
     return this.tutorsRepo.save(tutor);
   }
 
@@ -465,13 +465,13 @@ export class AdminController {
       ...monthlyTrendCounts
     ] = await Promise.all([
       this.classesRepo.count({
-        where: { ...classWhere, status: 'active' as const },
+        where: { ...classWhere, status: ClassStatus.ACTIVE },
       }),
       this.classesRepo.count({
-        where: { ...classWhere, status: 'completed' as const },
+        where: { ...classWhere, status: ClassStatus.COMPLETED },
       }),
       this.requestsRepo.count({
-        where: { ...requestWhere, status: 'pending' as const },
+        where: { ...requestWhere, status: 'pending' as any },
       }),
       this.tutorsRepo.count({
         where: {
@@ -480,7 +480,7 @@ export class AdminController {
         },
       }),
       this.classesRepo.find({
-        where: { status: 'active' as const },
+        where: { status: ClassStatus.ACTIVE },
         relations: ['student'],
       }),
 

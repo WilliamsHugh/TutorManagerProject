@@ -1,12 +1,12 @@
 "use client";
 
-import React from "react";
-import { ChevronLeft, FileText } from "lucide-react";
+import React, { useState, useMemo } from "react";
+import { ChevronLeft, FileText, Mail, CheckCircle2, AlertTriangle } from "lucide-react";
 
 interface TutorDetailModalProps {
   tutor: any;
   onClose: () => void;
-  onApprove: (id: string, status: "approved" | "rejected") => void;
+  onApprove: (id: string, status: "approved" | "rejected", systemEmail?: string) => void;
   onDelete: (id: string) => void;
 }
 
@@ -16,7 +16,52 @@ export function TutorDetailModal({
   onApprove,
   onDelete,
 }: TutorDetailModalProps) {
+  const [showApproveForm, setShowApproveForm] = useState(false);
+  const [approving, setApproving] = useState(false);
+
+  // Tự động sinh email hệ thống từ tên
+  const autoSystemEmail = useMemo(() => {
+    if (!tutor?.user?.fullName?.trim()) {
+      return `tutor${Date.now()}@tutoredu.com`;
+    }
+    let name = tutor.user.fullName
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, "")
+      .replace(/\s+/g, ".")
+      .replace(/\.+/g, ".")
+      .replace(/^\.|\.$/g, "");
+    if (!name) {
+      return `tutor${Date.now()}@tutoredu.com`;
+    }
+    return `${name}@tutoredu.com`;
+  }, [tutor]);
+
+  const [systemEmail, setSystemEmail] = useState("");
+
+  // Reset form khi mở modal mới
+  React.useEffect(() => {
+    if (tutor) {
+      setSystemEmail(autoSystemEmail);
+      setShowApproveForm(false);
+      setApproving(false);
+    }
+  }, [tutor, autoSystemEmail]);
+
   if (!tutor) return null;
+
+  const handleApprove = async () => {
+    setApproving(true);
+    try {
+      await onApprove(tutor.id, "approved", systemEmail);
+      // Parent component sẽ đóng modal nếu thành công
+    } catch {
+      // Lỗi đã được handle bởi parent (showToast), modal vẫn mở
+    } finally {
+      setApproving(false); // Luôn reset loading state
+    }
+  };
 
   return (
     <div
@@ -121,7 +166,72 @@ export function TutorDetailModal({
               </div>
             </div>
           )}
+
+          {/* Email cá nhân của gia sư (đã đăng ký) */}
+          {tutor.user?.email && (
+            <div className="col-span-2 bg-[#0f172a] p-3 rounded-lg border border-slate-800">
+              <span className="text-slate-500 text-xs">Email cá nhân (nhận thông báo):</span>
+              <p className="font-semibold text-emerald-400 mt-0.5">{tutor.user.email}</p>
+            </div>
+          )}
         </div>
+
+        {/* Form cấp email hệ thống khi phê duyệt */}
+        {showApproveForm && (
+          <div className="bg-emerald-950/30 border border-emerald-800/50 rounded-lg p-4 space-y-4">
+            <div className="flex items-center gap-2 text-emerald-400 text-xs font-bold uppercase tracking-wider">
+              <Mail size={14} />
+              <span>Cấp email hệ thống cho gia sư</span>
+            </div>
+
+            <div>
+              <label className="block text-xs text-slate-400 mb-1.5">Email hệ thống (dùng để đăng nhập)</label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="email"
+                  value={systemEmail}
+                  onChange={(e) => setSystemEmail(e.target.value)}
+                  className="flex-1 bg-[#0f172a] border border-slate-700 rounded-lg px-3 py-2 text-sm text-white font-mono outline-none focus:border-emerald-500 transition-colors"
+                  placeholder="tutor@tutoredu.com"
+                />
+              </div>
+              <p className="text-[10px] text-slate-500 mt-1">
+                Email này sẽ được dùng để đăng nhập hệ thống. Mật khẩu tạm thời sẽ được gửi tới email cá nhân của gia sư.
+              </p>
+            </div>
+
+            <div className="bg-amber-950/30 border border-amber-800/40 rounded-lg p-3 flex items-start gap-2">
+              <AlertTriangle size={14} className="text-amber-400 shrink-0 mt-0.5" />
+              <p className="text-[11px] text-amber-300 leading-relaxed">
+                Sau khi phê duyệt, hệ thống sẽ tự động gửi email thông báo trúng tuyển kèm mật khẩu tạm thời tới email cá nhân <strong className="text-amber-200">{tutor.user?.email}</strong>.
+              </p>
+            </div>
+
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setShowApproveForm(false)}
+                className="px-4 py-2 rounded-lg border border-slate-700 text-xs font-semibold text-slate-400 hover:text-white cursor-pointer"
+                disabled={approving}
+              >
+                Quay lại
+              </button>
+              <button
+                onClick={handleApprove}
+                disabled={approving || !systemEmail}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-5 py-2 rounded-lg cursor-pointer disabled:opacity-50 flex items-center gap-2"
+              >
+                {approving ? (
+                  "Đang xử lý..."
+                ) : (
+                  <>
+                    <CheckCircle2 size={14} />
+                    Xác nhận phê duyệt &amp; Gửi mail
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Approval Controls */}
         <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-800">
@@ -145,9 +255,9 @@ export function TutorDetailModal({
               Từ chối hồ sơ
             </button>
           )}
-          {tutor.approvalStatus !== "approved" && (
+          {tutor.approvalStatus !== "approved" && !showApproveForm && (
             <button
-              onClick={() => onApprove(tutor.id, "approved")}
+              onClick={() => setShowApproveForm(true)}
               className="bg-yellow-500 hover:bg-yellow-600 text-slate-950 text-xs font-bold px-5 py-2 rounded-lg cursor-pointer"
             >
               Phê duyệt

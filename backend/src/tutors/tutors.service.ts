@@ -281,11 +281,9 @@ export class TutorsService implements OnModuleInit {
           ? 'Gia sư hệ thống'
           : tutorEntity.user?.role?.name || 'Người dùng',
       avatar:
-        tutorEntity.user?.avatarUrl ||
-        'https://randomuser.me/api/portraits/women/1.jpg',
+        tutorEntity.user?.avatarUrl || '',
       avatarUrl:
-        tutorEntity.user?.avatarUrl ||
-        'https://randomuser.me/api/portraits/women/1.jpg',
+        tutorEntity.user?.avatarUrl || '',
       email: tutorEntity.user?.email,
       phone: tutorEntity.user?.phone,
       address: tutorEntity.user?.address,
@@ -616,7 +614,7 @@ export class TutorsService implements OnModuleInit {
           email: cls.student?.user?.email || 'Chưa cập nhật',
           phone: cls.student?.user?.phone || 'Chưa cập nhật',
           gradeLevel: cls.student?.gradeLevel || 'Chưa cập nhật',
-          avatar: cls.student?.user?.avatarUrl || 'https://storage.googleapis.com/banani-avatars/avatar%2Ffemale%2F25-35%2FSoutheast%20Asian%2F1',
+          avatar: cls.student?.user?.avatarUrl || '',
           lastSubject: cls.subject?.name || 'Môn học',
           totalSessions: total,
           completedSessions: completedCount,

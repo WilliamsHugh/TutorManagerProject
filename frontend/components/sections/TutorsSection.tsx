@@ -29,9 +29,7 @@ export default function TutorsSection() {
         const mapped: TutorDisplay[] = (res.data ?? []).slice(0, 3).map((item: ApiTutor) => ({
           name: item.name || "",
           title: item.title || "",
-          avatar:
-            item.avatar ||
-            "https://storage.googleapis.com/banani-avatars/avatar%2Ffemale%2F25-35%2FSoutheast%20Asian%2F1",
+          avatar: item.avatar || "",
           rating: String(item.rating ?? "5.0"),
           reviews: `${item.reviews ?? 0} đánh giá`,
           location: item.location || "",
@@ -104,14 +102,20 @@ export default function TutorsSection() {
             >
               {/* Header */}
               <div className="flex items-center gap-3 sm:gap-4">
-                <Image
-                  src={tutor.avatar}
-                  alt={tutor.name}
-                  width={56}
-                  height={56}
-                  className="w-14 h-14 sm:w-16 sm:h-16 rounded-full object-cover shrink-0"
-                  unoptimized
-                />
+                {tutor.avatar ? (
+                  <Image
+                    src={tutor.avatar}
+                    alt={tutor.name}
+                    width={56}
+                    height={56}
+                    className="w-14 h-14 sm:w-16 sm:h-16 rounded-full object-cover shrink-0"
+                    unoptimized
+                  />
+                ) : (
+                  <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full flex items-center justify-center shrink-0 bg-blue-100 text-blue-600 font-bold text-lg sm:text-xl">
+                    {(tutor.name || '?').charAt(0).toUpperCase()}
+                  </div>
+                )}
                 <div className="min-w-0">
                   <h3
                     className="text-base sm:text-lg font-semibold mb-0.5 sm:mb-1 truncate"

@@ -6,6 +6,7 @@ import ListingLayout from "@/components/common/ListingLayout";
 import { ClassListing } from "@/types/class";
 import { getPublicClasses } from "@/lib/api";
 import { useDebounce } from "@/lib/hooks/useDebounce";
+import PublicClassDetailModal from "@/components/common/PublicClassDetailModal";
 
 const CLASS_FILTERS = [
   {
@@ -56,6 +57,15 @@ export default function PublicClassesClient() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Detail modal state
+  const [selectedClass, setSelectedClass] = useState<ClassListing | null>(null);
+  const [showDetailModal, setShowDetailModal] = useState(false);
+
+  const handleViewClassDetail = (cls: ClassListing) => {
+    setSelectedClass(cls);
+    setShowDetailModal(true);
+  };
+
   const toggleFilter = (key: string) =>
     setChecked((prev) => ({ ...prev, [key]: !prev[key] }));
 
@@ -84,26 +94,45 @@ export default function PublicClassesClient() {
   }, [debouncedSearch, checked, sort, currentPage]);
 
   return (
-    <ListingLayout
-      heroTitle="Danh Sách Lớp Học Mới"
-      heroDescription="Cập nhật liên tục các lớp học đang tìm kiếm gia sư. Đăng ký nhận lớp ngay hôm nay để bắt đầu hành trình giảng dạy của bạn."
-      items={items}
-      isLoading={isLoading}
-      error={error}
-      totalItems={totalItems}
-      totalPages={totalPages}
-      entityName="lớp chờ gia sư"
-      filtersConfig={CLASS_FILTERS}
-      sortOptions={CLASS_SORT_OPTIONS}
-      sort={sort}
-      setSort={setSort}
-      currentPage={currentPage}
-      setCurrentPage={setCurrentPage}
-      search={search}
-      setSearch={setSearch}
-      checked={checked}
-      toggleFilter={toggleFilter}
-      renderItem={(cls) => <ClassCard key={cls.id} cls={cls} />}
-    />
+    <>
+      <ListingLayout
+        heroTitle="Danh Sách Lớp Học Mới"
+        heroDescription="Cập nhật liên tục các lớp học đang tìm kiếm gia sư. Đăng ký nhận lớp ngay hôm nay để bắt đầu hành trình giảng dạy của bạn."
+        items={items}
+        isLoading={isLoading}
+        error={error}
+        totalItems={totalItems}
+        totalPages={totalPages}
+        entityName="lớp chờ gia sư"
+        filtersConfig={CLASS_FILTERS}
+        sortOptions={CLASS_SORT_OPTIONS}
+        sort={sort}
+        setSort={setSort}
+        currentPage={currentPage}
+        setCurrentPage={setCurrentPage}
+        search={search}
+        setSearch={setSearch}
+        checked={checked}
+        toggleFilter={toggleFilter}
+        renderItem={(cls) => (
+          <ClassCard
+            key={cls.id}
+            cls={cls}
+            onViewDetail={() => handleViewClassDetail(cls)}
+          />
+        )}
+      />
+
+      {/* Class Detail Modal */}
+      {showDetailModal && (
+        <PublicClassDetailModal
+          classItem={selectedClass}
+          onClose={() => {
+            setShowDetailModal(false);
+            setSelectedClass(null);
+          }}
+        />
+      )}
+    </>
   );
 }

@@ -280,11 +280,9 @@ export class TutorsService implements OnModuleInit {
           ? 'Gia sư hệ thống'
           : tutorEntity.user?.role?.name || 'Người dùng',
       avatar:
-        tutorEntity.user?.avatarUrl ||
-        'https://randomuser.me/api/portraits/women/1.jpg',
+        tutorEntity.user?.avatarUrl || '',
       avatarUrl:
-        tutorEntity.user?.avatarUrl ||
-        'https://randomuser.me/api/portraits/women/1.jpg',
+        tutorEntity.user?.avatarUrl || '',
       email: tutorEntity.user?.email,
       phone: tutorEntity.user?.phone,
       address: tutorEntity.user?.address,
@@ -440,26 +438,23 @@ export class TutorsService implements OnModuleInit {
       const isToday =
         dateOfThisDay.toDateString() === new Date().toDateString();
 
-      const scheduleForDay = fullWeeklySchedules.find(
+      const schedulesForDay = fullWeeklySchedules.filter(
         (s) =>
           s.sessionDate &&
           new Date(s.sessionDate).toDateString() ===
             dateOfThisDay.toDateString(),
       );
-
+ 
       return {
         day: dayLabel,
         date: dateStr,
         isToday,
-        event: scheduleForDay
-          ? {
-              time: `${scheduleForDay.startTime} - ${scheduleForDay.endTime}`,
-              title: scheduleForDay.class?.subject?.name || 'Môn học',
-              student:
-                scheduleForDay.class?.student?.user?.fullName || 'Học viên',
-              color: 'blue',
-            }
-          : null,
+        events: schedulesForDay.map(s => ({
+          time: `${s.startTime} - ${s.endTime}`,
+          title: s.class?.subject?.name || 'Môn học',
+          student: s.class?.student?.user?.fullName || 'Học viên',
+          color: 'blue',
+        })),
       };
     });
 

@@ -45,7 +45,7 @@ export function MatchTutorDialog({
     const mapped: any = {
       id: tutor.id,
       name: tutor.name,
-      avatar: "https://randomuser.me/api/portraits/women/1.jpg",
+      avatar: '',
       match: parseInt(tutor.match) || 95,
       experience: tutor.meta.split(" · ")[0] || "Chưa cập nhật",
       education: tutor.meta.split(" · ")[1] || "Chưa cập nhật",

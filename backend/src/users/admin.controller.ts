@@ -12,6 +12,7 @@ import {
   Request,
   ConflictException,
   NotFoundException,
+  ServiceUnavailableException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between } from 'typeorm';
@@ -26,6 +27,7 @@ import { TutorSubject } from '../tutors/tutor-subject.entity';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles, RoleType } from '../auth/decorators/roles.decorator';
+import { MailService } from '../mail/mail.service';
 import * as bcrypt from 'bcryptjs';
 
 interface CreateUserBody {
@@ -94,6 +96,7 @@ export class AdminController {
     private requestsRepo: Repository<ClassRequest>,
     @InjectRepository(TutorSubject)
     private tutorSubjectsRepo: Repository<TutorSubject>,
+    private readonly mailService: MailService,
   ) {}
 
   // ----------------------------------------------------
@@ -345,27 +348,131 @@ export class AdminController {
     return result;
   }
 
+  /**
+   * Tạo email hệ thống từ họ tên gia sư.
+   * VD: "Nguyễn Văn Bình" → "nguyen.van.binh@tutoredu.com"
+   */
+  private generateSystemEmail(fullName: string): string {
+    if (!fullName || !fullName.trim()) {
+      return `tutor${Date.now()}@tutoredu.com`;
+    }
+    let slug = fullName
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '') // bỏ dấu tiếng Việt
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, '')
+      .replace(/\s+/g, '.')
+      .replace(/\.+/g, '.')
+      .replace(/^\.|\.$/g, '');
+
+    if (!slug) {
+      return `tutor${Date.now()}@tutoredu.com`;
+    }
+    return `${slug}@tutoredu.com`;
+  }
+
+  /**
+   * Tạo mật khẩu tạm thời ngẫu nhiên 8 ký tự.
+   */
+  private generateTempPassword(): string {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
+    let password = '';
+    for (let i = 0; i < 8; i++) {
+      password += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return password;
+  }
+
   @Patch('tutors/:id/approve')
   async approveTutor(
     @Param('id') id: string,
-    @Body() body: { status: string },
-    @Request() req: AuthenticatedRequest,
+    @Body() body: { status: string; systemEmail?: string },
+    @Request() req: any,
   ) {
     const tutor = await this.tutorsRepo.findOne({
       where: { id },
       relations: ['user'],
     });
     if (!tutor) throw new NotFoundException('Không tìm thấy gia sư');
-
+ 
     const statusInput = body.status?.toLowerCase();
     if (!Object.values(ApprovalStatus).includes(statusInput as ApprovalStatus)) {
       throw new ConflictException('Trạng thái phê duyệt không hợp lệ');
     }
     const statusEnum = statusInput as ApprovalStatus;
-
+ 
+    // Guard: không cho phê duyệt lại gia sư đã được duyệt
+    if (tutor.approvalStatus === ApprovalStatus.APPROVED && statusEnum === ApprovalStatus.APPROVED) {
+      throw new ConflictException('Gia sư này đã được phê duyệt trước đó');
+    }
+ 
+    // Guard: không cho từ chối gia sư đã bị từ chối
+    if (tutor.approvalStatus === ApprovalStatus.REJECTED && statusEnum === ApprovalStatus.REJECTED) {
+      throw new ConflictException('Gia sư này đã bị từ chối trước đó');
+    }
+ 
     tutor.approvalStatus = statusEnum;
     tutor.approvedAt = new Date();
-    tutor.approvedBy = req.user as any;
+    tutor.approvedBy = req.user;
+ 
+    // Khi phê duyệt, cấp email hệ thống và gửi mail trúng tuyển
+    if (statusEnum === ApprovalStatus.APPROVED) {
+      const user = tutor.user;
+      const personalEmail = user.email;
+ 
+      // Tạo email hệ thống từ tên (hoặc dùng email do admin gửi lên)
+      let systemEmail = body.systemEmail || this.generateSystemEmail(user.fullName);
+ 
+      // Đảm bảo email hệ thống không bị trùng
+      let emailSuffix = 1;
+      const baseEmail = systemEmail;
+      while (await this.usersRepo.findOneBy({ email: systemEmail })) {
+        const atIndex = baseEmail.lastIndexOf('@');
+        const namePart = atIndex >= 0 ? baseEmail.substring(0, atIndex) : baseEmail;
+        const domainPart = atIndex >= 0 ? baseEmail.substring(atIndex) : '@tutoredu.com';
+        systemEmail = `${namePart}.${emailSuffix}${domainPart}`;
+        emailSuffix++;
+      }
+ 
+      // Tạo mật khẩu tạm thời
+      const tempPassword = this.generateTempPassword();
+      const hashedPassword = await bcrypt.hash(tempPassword, 10);
+ 
+      // Lưu email cá nhân vào contactEmail, cập nhật email thành email hệ thống
+      user.contactEmail = personalEmail;
+      user.email = systemEmail;
+      user.passwordHash = hashedPassword;
+      await this.usersRepo.save(user);
+ 
+      // Lưu trạng thái phê duyệt của tutor
+      await this.tutorsRepo.save(tutor);
+ 
+      // Gửi mail trúng tuyển tới email cá nhân (không phải email hệ thống)
+      let emailSent = false;
+      try {
+        await this.mailService.sendAcceptanceEmail(
+          personalEmail,
+          user.fullName,
+          systemEmail,
+          tempPassword,
+        );
+        emailSent = true;
+      } catch (err) {
+        console.error('Failed to send acceptance email:', err);
+        // Không throw lỗi — vẫn duyệt thành công dù mail gửi thất bại
+      }
+ 
+      const message = emailSent
+        ? `Đã phê duyệt gia sư thành công! Email hệ thống: ${systemEmail}. Mật khẩu tạm thời đã được gửi tới email cá nhân: ${personalEmail}.`
+        : `Đã phê duyệt gia sư thành công! Email hệ thống: ${systemEmail}. ⚠️ KHÔNG THỂ gửi email tới ${personalEmail}. Vui lòng thông báo thủ công mật khẩu tạm thời cho gia sư.`;
+ 
+      return {
+        ...tutor,
+        systemEmail,
+        emailSent,
+        message,
+      };
+    }
  
     return this.tutorsRepo.save(tutor);
   }

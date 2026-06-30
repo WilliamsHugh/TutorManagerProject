@@ -3,17 +3,23 @@ import { MapPin } from "lucide-react";
 import StarRating from "./StarRating";
 import { Tutor } from "@/types/tutor";
 
-export default function TutorCard({ tutor }: { tutor: Tutor }) {
+export default function TutorCard({ tutor, onViewDetail }: { tutor: Tutor; onViewDetail?: () => void }) {
   return (
     <div className="group bg-white rounded-2xl border border-gray-100 p-6 flex flex-col gap-5 hover:shadow-lg hover:shadow-blue-900/5 hover:border-blue-100 transition-all duration-300">
       {/* Header */}
       <div className="flex gap-4 items-center">
         <div className="relative">
-          <img
-            src={tutor.avatar}
-            alt={tutor.name}
-            className="w-16 h-16 rounded-2xl object-cover"
-          />
+          {tutor.avatar ? (
+            <img
+              src={tutor.avatar}
+              alt={tutor.name}
+              className="w-16 h-16 rounded-2xl object-cover"
+            />
+          ) : (
+            <div className="w-16 h-16 rounded-2xl flex items-center justify-center bg-blue-100 text-blue-600 font-bold text-xl">
+              {(tutor.name || '?').charAt(0).toUpperCase()}
+            </div>
+          )}
           <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-emerald-400 rounded-full border-2 border-white" />
         </div>
         <div className="flex-1 min-w-0">
@@ -55,6 +61,7 @@ export default function TutorCard({ tutor }: { tutor: Tutor }) {
           <span className="text-sm text-gray-400 ml-1">/ giờ</span>
         </div>
         <button
+          onClick={onViewDetail}
           className="text-sm font-semibold px-4 py-2 rounded-xl border transition-all duration-200 text-primary border-primary hover:bg-blue-700 hover:text-white hover:border-blue-700"
         >
           Xem chi tiết

@@ -47,13 +47,18 @@ function mapTutorData(raw: any) {
     title:
       [raw.educationLevel, raw.major].filter(Boolean).join(' · ') || 'Gia sư',
     avatar:
-      raw.avatarUrl ||
-      'https://randomuser.me/api/portraits/women/1.jpg',
+      raw.avatarUrl || '',
     rating: raw.rating ?? 0,
     reviews: raw.reviews ?? 0,
     location: raw.availableAreas || 'Toàn quốc',
     tags: raw.subjects || [],
     price: raw.price ?? 200000,
+    bio: raw.bio || '',
+    educationLevel: raw.educationLevel || '',
+    major: raw.major || '',
+    experience: raw.experience || '',
+    phone: raw.phone || '',
+    email: raw.email || '',
   };
 }
 
@@ -70,8 +75,7 @@ function mapTutorSuggestionData(raw: any) {
     id: raw.id,
     name: raw.fullName || 'Chưa có tên',
     avatar:
-      raw.avatarUrl ||
-      'https://randomuser.me/api/portraits/women/1.jpg',
+      raw.avatarUrl || '',
     match,
     experience: raw.experience || 'Chưa cập nhật',
     education: [raw.educationLevel, raw.major].filter(Boolean).join(' · ') || 'Chưa cập nhật',

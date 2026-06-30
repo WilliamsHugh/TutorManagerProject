@@ -10,6 +10,7 @@ import { Class } from '../classes/entities/class.entity';
 import { ClassRequest } from '../classes/entities/class-request.entity';
 import { UsersService } from './users.service';
 import { AdminController } from './admin.controller';
+import { MailModule } from '../mail/mail.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { AdminController } from './admin.controller';
       Class,
       ClassRequest,
     ]),
+    MailModule,
   ],
   controllers: [AdminController],
   providers: [UsersService],

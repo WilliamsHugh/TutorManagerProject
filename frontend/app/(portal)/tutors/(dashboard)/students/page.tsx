@@ -212,11 +212,17 @@ export default function MyStudentsPage() {
                       <td className="py-4 px-6">
                         <div className="flex items-center gap-4">
                           <div className="relative shrink-0">
-                            <img 
-                              src={student.avatar || "https://storage.googleapis.com/banani-avatars/avatar%2Ffemale%2F25-35%2FSoutheast%20Asian%2F1"} 
-                              className="w-11 h-11 rounded-full object-cover ring-2 ring-slate-100 group-hover:ring-blue-100 transition-all duration-200" 
-                              alt={student.fullName} 
-                            />
+                            {student.avatar ? (
+                              <img 
+                                src={student.avatar}
+                                className="w-11 h-11 rounded-full object-cover ring-2 ring-slate-100 group-hover:ring-blue-100 transition-all duration-200" 
+                                alt={student.fullName} 
+                              />
+                            ) : (
+                              <div className="w-11 h-11 rounded-full flex items-center justify-center ring-2 ring-slate-100 group-hover:ring-blue-100 transition-all bg-blue-100 text-blue-600 font-bold text-sm">
+                                {(student.fullName || '?').charAt(0).toUpperCase()}
+                              </div>
+                            )}
                             <span className={`absolute bottom-0 right-0 block h-2.5 w-2.5 rounded-full ring-2 ring-white ${
                               student.status === 'Đang học' ? 'bg-emerald-500' : 'bg-slate-400'
                             }`} />

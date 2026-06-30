@@ -368,21 +368,37 @@ export default function AdminDashboardClient() {
     }
   };
 
-  const handleApproveTutor = async (tutorId: string, status: "approved" | "rejected") => {
+  const handleApproveTutor = async (tutorId: string, status: "approved" | "rejected", systemEmail?: string) => {
     try {
       const res = await fetch(`/api/admin/tutors/${tutorId}/approve`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status }),
+        body: JSON.stringify({ status, systemEmail }),
         credentials: "include",
       });
       if (res.ok) {
-        showToast(status === "approved" ? "Đã phê duyệt hồ sơ gia sư! Tài khoản đã được kích hoạt." : "Đã từ chối hồ sơ gia sư!");
+        const data = await res.json();
+        if (status === "approved") {
+          // Kiểm tra emailSent để biết mail đã gửi được chưa
+          if (data.emailSent === false) {
+            // Cảnh báo đặc biệt nếu mail không gửi được
+            showToast(
+              `⚠️ Đã phê duyệt! Email hệ thống: ${data.systemEmail || systemEmail}. NHƯNG không thể gửi email thông báo. Vui lòng liên hệ thủ công với gia sư để cung cấp mật khẩu.`,
+              "error"
+            );
+          } else {
+            const msg = data.message || `Đã phê duyệt hồ sơ gia sư! Email hệ thống: ${data.systemEmail || systemEmail}`;
+            showToast(msg);
+          }
+        } else {
+          showToast("Đã từ chối hồ sơ gia sư!");
+        }
         setSelectedTutor(null);
         fetchTutors();
         fetchStats();
       } else {
-        showToast("Có lỗi xảy ra!", "error");
+        const errData = await res.json().catch(() => ({}));
+        showToast(errData.message || "Có lỗi xảy ra!", "error");
       }
     } catch (err) {
       console.error(err);

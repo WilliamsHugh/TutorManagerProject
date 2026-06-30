@@ -59,14 +59,19 @@ export function WeeklyCalendar({
                   <div style={{ fontSize: '12px', color: '#64748b' }}>{item.day}</div>
                   <div style={{ fontSize: '18px', fontWeight: 600 }} className="text-slate-800">{item.date}</div>
                 </div>
-                {item.event && (
-                  <div 
-                    className={`event ${item.event.color}`} 
-                    style={{ padding: '8px', borderRadius: '4px', fontSize: '11px', background: '#dbeafe', borderLeft: '3px solid #3b82f6', cursor: 'pointer' }}
-                  >
-                    <div style={{ fontWeight: 700 }} className="text-blue-900">{item.event.time}</div>
-                    <div style={{ fontWeight: 600 }} className="text-blue-800">{item.event.title}</div>
-                    <div style={{ marginTop: '4px' }} className="text-blue-700">{item.event.student}</div>
+                {item.events && item.events.length > 0 && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {item.events.map((evt: any, idx: number) => (
+                      <div 
+                        key={idx}
+                        className={`event ${evt.color}`} 
+                        style={{ padding: '8px', borderRadius: '4px', fontSize: '11px', background: '#dbeafe', borderLeft: '3px solid #3b82f6', cursor: 'pointer' }}
+                      >
+                        <div style={{ fontWeight: 700 }} className="text-blue-900">{evt.time}</div>
+                        <div style={{ fontWeight: 600 }} className="text-blue-800">{evt.title}</div>
+                        <div style={{ marginTop: '4px' }} className="text-blue-700">{evt.student}</div>
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>

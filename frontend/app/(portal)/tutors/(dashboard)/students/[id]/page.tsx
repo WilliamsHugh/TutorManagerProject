@@ -284,11 +284,17 @@ export default function StudentDetailPage() {
         <div className="bg-white rounded-2xl border border-slate-100 p-8 flex flex-col md:flex-row md:items-center justify-between gap-6 shadow-[0_8px_30px_rgb(0,0,0,0.015)]">
           <div className="flex items-center gap-6">
             <div className="relative">
-              <img
-                src={student.avatar || "https://storage.googleapis.com/banani-avatars/avatar%2Ffemale%2F25-35%2FSoutheast%20Asian%2F1"}
-                className="w-20 h-20 rounded-full object-cover ring-4 ring-blue-50"
-                alt={student.fullName}
-              />
+              {student.avatar ? (
+                <img
+                  src={student.avatar}
+                  className="w-20 h-20 rounded-full object-cover ring-4 ring-blue-50"
+                  alt={student.fullName}
+                />
+              ) : (
+                <div className="w-20 h-20 rounded-full flex items-center justify-center ring-4 ring-blue-50 bg-blue-100 text-blue-600 font-bold text-2xl">
+                  {(student.fullName || '?').charAt(0).toUpperCase()}
+                </div>
+              )}
               <span className={`absolute bottom-0.5 right-0.5 block h-4 w-4 rounded-full ring-4 ring-white ${
                 student.status === 'Đang học' ? 'bg-emerald-500' : 'bg-slate-400'
               }`} />

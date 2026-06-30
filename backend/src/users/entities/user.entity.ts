@@ -24,6 +24,9 @@ export class User {
   @Column({ type: 'varchar', length: 255, unique: true })
   email!: string;
 
+  @Column({ name: 'contact_email', type: 'varchar', length: 255, nullable: true })
+  contactEmail?: string;
+
   @Column({ name: 'password_hash', type: 'varchar', length: 255 })
   passwordHash!: string;
 

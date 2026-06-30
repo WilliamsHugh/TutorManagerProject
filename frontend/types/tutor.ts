@@ -8,4 +8,10 @@ export interface Tutor {
   location: string;
   tags: string[];
   price: number;
+  bio?: string;
+  educationLevel?: string;
+  major?: string;
+  experience?: string;
+  phone?: string;
+  email?: string;
 }

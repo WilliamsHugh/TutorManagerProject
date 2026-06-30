@@ -15,7 +15,9 @@ import {
 import Link from "next/link";
 import { useState, useRef, useEffect } from "react";
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:3001";
+// Sử dụng Next.js rewrite proxy thay vì gọi trực tiếp backend
+// để tránh lỗi double /api khi NEXT_PUBLIC_BACKEND_URL đã có /api
+const API_BASE = '/api';
 
 // Danh sách đầy đủ các môn học
 const ALL_SUBJECTS = [
@@ -147,8 +149,8 @@ export default function RegisterForm() {
         setLoading(true);
 
         const endpoint = selectedRole === "student"
-            ? `${BACKEND_URL}/api/auth/register/student`
-            : `${BACKEND_URL}/api/auth/register/tutor`;
+            ? `${API_BASE}/auth/register/student`
+            : `${API_BASE}/auth/register/tutor`;
 
         const payload: any = {
             fullName,
@@ -696,7 +698,7 @@ export default function RegisterForm() {
                                                     const formData = new FormData();
                                                     formData.append('file', file);
 
-                                                    const res = await fetch(`${BACKEND_URL}/api/upload/cv`, {
+                                                    const res = await fetch(`${API_BASE}/upload/cv`, {
                                                         method: 'POST',
                                                         body: formData,
                                                         credentials: 'include',

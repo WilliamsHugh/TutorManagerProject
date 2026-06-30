@@ -101,7 +101,7 @@ export class ClassRequestsService {
       .leftJoinAndSelect('request.preferredTutor', 'preferredTutor')
       .leftJoinAndSelect('preferredTutor.user', 'preferredTutorUser')
       .leftJoinAndSelect('request.handledBy', 'handledBy')
-      .orderBy('request.createdAt', 'DESC');
+      .orderBy('request.updatedAt', 'DESC');
 
     if (query.status) {
       qb.andWhere('request.status = :status', { status: query.status });

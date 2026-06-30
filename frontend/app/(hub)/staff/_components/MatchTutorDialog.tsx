@@ -13,7 +13,7 @@ import type { RequestItem, RequestStatus, TutorRecommendation } from "@/types/cl
 import { TutorDetailModal } from "../../../(portal)/student/_components/TutorDetailModal"
 import { TablePagination } from "./TablePagination"
 
-const statusOptions: RequestStatus[] = ["Chờ xử lý", "Đang xử lý", "Đã ghép", "Đã hủy"]
+const statusOptions: RequestStatus[] = ["Chờ xử lý", "Đã đề xuất", "Đang thương lượng", "Đang xử lý", "Đã ghép", "Đã hủy", "Đã từ chối"]
 
 type MatchTutorDialogProps = {
   request: RequestItem
@@ -34,6 +34,11 @@ export function MatchTutorDialog({
 }: MatchTutorDialogProps) {
   const [status, setStatus] = useState<RequestStatus>(request.status)
   const [savingStatus, setSavingStatus] = useState(false)
+
+  // Đồng bộ status với prop request.status khi nó thay đổi từ bên ngoài
+  useEffect(() => {
+    setStatus(request.status)
+  }, [request.status])
 
   // Schedule View Modal State
   const [activeScheduleModal, setActiveScheduleModal] = useState<{ id: string; name: string; role: "tutor" | "student" } | null>(null)
@@ -243,7 +248,7 @@ export function MatchTutorDialog({
                 <Button
                   className="h-8 rounded text-xs gap-1.5"
                   variant="outline"
-                  disabled={savingStatus || request.status === "Đã ghép" || request.status === "Đã hủy"}
+                  disabled={savingStatus || request.status === "Đã ghép" || request.status === "Đã hủy" || request.status === "Đã từ chối"}
                   onClick={() => {
                     setShowStatusDropdown(!showStatusDropdown)
                     setShowApprovedDropdown(false)

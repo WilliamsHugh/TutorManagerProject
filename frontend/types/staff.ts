@@ -56,6 +56,9 @@ export type StaffClassItem = {
 export const requestStatusLabels: Record<ApiRequestStatus, RequestStatus> = {
   pending: "Chờ xử lý",
   processing: "Đang xử lý",
+  proposed: "Đã đề xuất",
+  negotiating: "Đang thương lượng",
+  declined: "Đã từ chối",
   matched: "Đã ghép",
   cancelled: "Đã hủy",
 }
@@ -63,6 +66,9 @@ export const requestStatusLabels: Record<ApiRequestStatus, RequestStatus> = {
 export const requestStatusValues: Record<RequestStatus, ApiRequestStatus> = {
   "Chờ xử lý": "pending",
   "Đang xử lý": "processing",
+  "Đã đề xuất": "proposed",
+  "Đang thương lượng": "negotiating",
+  "Đã từ chối": "declined",
   "Đã ghép": "matched",
   "Đã hủy": "cancelled",
 }

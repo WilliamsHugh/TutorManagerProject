@@ -1,5 +1,5 @@
-export type ApiRequestStatus = "pending" | "processing" | "matched" | "cancelled"
-export type RequestStatus = "Chờ xử lý" | "Đang xử lý" | "Đã ghép" | "Đã hủy"
+export type ApiRequestStatus = "pending" | "processing" | "proposed" | "negotiating" | "declined" | "matched" | "cancelled"
+export type RequestStatus = "Chờ xử lý" | "Đang xử lý" | "Đã đề xuất" | "Đang thương lượng" | "Đã từ chối" | "Đã ghép" | "Đã hủy"
 
 export type ApiUser = {
   id: string

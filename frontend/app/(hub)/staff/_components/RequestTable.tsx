@@ -29,13 +29,16 @@ export function RequestTable({
             const status = request.status as any;
             const displayStatus = 
               status === "pending" || status === "Chờ xử lý" ? "Chờ xử lý" :
+              status === "proposed" || status === "Đã đề xuất" ? "Đã đề xuất" :
+              status === "negotiating" || status === "Đang thương lượng" ? "Đang thương lượng" :
               status === "processing" || status === "Đang xử lý" ? "Đang xử lý" :
               status === "matched" || status === "Đã ghép" ? "Đã ghép" :
-              status === "cancelled" || status === "Đã hủy" ? "Đã hủy" : 
+              status === "cancelled" || status === "Đã hủy" ? "Đã hủy" :
+              status === "declined" || status === "Đã từ chối" ? "Đã từ chối" :
               "Chờ xử lý";
 
-            const isProcessing = displayStatus === "Đang xử lý";
-            const isCompletedOrCancelled = displayStatus === "Đã ghép" || displayStatus === "Đã hủy";
+            const isProcessing = displayStatus === "Đang xử lý" || displayStatus === "Đã đề xuất" || displayStatus === "Đang thương lượng";
+            const isCompletedOrCancelled = displayStatus === "Đã ghép" || displayStatus === "Đã hủy" || displayStatus === "Đã từ chối";
 
             return (
               <div
@@ -84,10 +87,16 @@ export function RequestTable({
                     className={`rounded-md px-2.5 py-1 text-[11px] font-bold ${
                       displayStatus === "Chờ xử lý"
                         ? "bg-orange-500 text-white border-orange-500"
+                        : displayStatus === "Đã đề xuất"
+                        ? "bg-blue-600 text-white border-blue-600"
+                        : displayStatus === "Đang thương lượng"
+                        ? "bg-purple-600 text-white border-purple-600"
                         : displayStatus === "Đã ghép"
                         ? "bg-green-600 text-white border-green-600"
                         : displayStatus === "Đã hủy"
                         ? "bg-slate-500 text-white border-slate-500"
+                        : displayStatus === "Đã từ chối"
+                        ? "bg-red-500 text-white border-red-500"
                         : ""
                     }`}
                   >

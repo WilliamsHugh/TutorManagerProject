@@ -592,7 +592,9 @@ function DateField({ label, value, onChange, min }: DateFieldProps) {
           }}
           className="flex h-9 w-full rounded-md border border-input bg-white px-3 py-1 pr-10 text-sm shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary hover:border-primary/50 font-medium cursor-pointer [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0 [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-datetime-edit]:opacity-0 [&::-webkit-datetime-edit-fields-wrapper]:opacity-0 select-none"
           style={{
-            colorScheme: "light"
+            colorScheme: "light",
+            color: "transparent",
+            caretColor: "transparent",
           }}
         />
         <CalendarDays

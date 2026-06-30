@@ -57,7 +57,7 @@ export function TablePagination({
 
   return (
     <div className="flex flex-col sm:flex-row items-center justify-between gap-3 text-xs mt-4 pt-3 border-t border-slate-200/20 dark:border-white/5 w-full">
-      <span className="text-slate-200 font-semibold shrink-0 text-center sm:text-left">
+      <span className="text-slate-500 font-semibold shrink-0 text-center sm:text-left">
         Hiển thị {startIdx}-{endIdx} trong số {totalItems} {itemName}
       </span>
       <div className="flex gap-1.5 items-center flex-wrap justify-center max-w-full">
@@ -65,10 +65,10 @@ export function TablePagination({
         <button
           className={baseButtonClass}
           style={{
-            color: "#ffffff",
-            borderColor: currentPage === 1 ? "rgba(255, 255, 255, 0.1)" : "rgba(255, 255, 255, 0.3)",
+            color: currentPage === 1 ? "#94a3b8" : "#334155",
+            borderColor: currentPage === 1 ? "#e2e8f0" : "#cbd5e1",
             backgroundColor: "transparent",
-            opacity: currentPage === 1 ? 0.3 : 1,
+            opacity: currentPage === 1 ? 0.5 : 1,
             cursor: currentPage === 1 ? "not-allowed" : "pointer",
           }}
           disabled={currentPage === 1}
@@ -83,7 +83,7 @@ export function TablePagination({
               <span
                 key={`dots-${idx}`}
                 className="px-2 font-bold select-none"
-                style={{ color: "rgba(255, 255, 255, 0.4)" }}
+                style={{ color: "#94a3b8" }}
               >
                 ...
               </span>
@@ -99,16 +99,16 @@ export function TablePagination({
               style={
                 isActive
                   ? {
-                      color: "#0f172a", // Chữ tối trên nền vàng nổi bật
+                      color: "#0f172a",
                       backgroundColor: "#f59e0b",
                       borderColor: "#f59e0b",
                       fontWeight: "bold",
                       cursor: "pointer",
                     }
                   : {
-                      color: "#ffffff", // Chữ màu trắng hoàn toàn cho trang không active
+                      color: "#334155",
                       backgroundColor: "transparent",
-                      borderColor: "rgba(255, 255, 255, 0.3)",
+                      borderColor: "#e2e8f0",
                       cursor: "pointer",
                     }
               }
@@ -123,10 +123,10 @@ export function TablePagination({
         <button
           className={baseButtonClass}
           style={{
-            color: "#ffffff",
-            borderColor: currentPage === totalPages ? "rgba(255, 255, 255, 0.1)" : "rgba(255, 255, 255, 0.3)",
+            color: currentPage === totalPages ? "#94a3b8" : "#334155",
+            borderColor: currentPage === totalPages ? "#e2e8f0" : "#cbd5e1",
             backgroundColor: "transparent",
-            opacity: currentPage === totalPages ? 0.3 : 1,
+            opacity: currentPage === totalPages ? 0.5 : 1,
             cursor: currentPage === totalPages ? "not-allowed" : "pointer",
           }}
           disabled={currentPage === totalPages}

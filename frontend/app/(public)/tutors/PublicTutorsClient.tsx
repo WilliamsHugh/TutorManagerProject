@@ -1,11 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import TutorCard from "@/components/common/TutorCard";
 import ListingLayout from "@/components/common/ListingLayout";
 import { Tutor } from "@/types/tutor";
 import { getPublicTutors } from "@/lib/api";
 import { useDebounce } from "@/lib/hooks/useDebounce";
+import PublicTutorDetailModal from "@/components/common/PublicTutorDetailModal";
 
 const TUTOR_FILTERS = [
   {
@@ -41,6 +43,8 @@ const TUTOR_SORT_OPTIONS = [
 ];
 
 export default function PublicTutorsClient() {
+  const router = useRouter();
+
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounce(search, 500);
 
@@ -53,6 +57,20 @@ export default function PublicTutorsClient() {
   const [totalPages, setTotalPages] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Detail modal state
+  const [selectedTutor, setSelectedTutor] = useState<Tutor | null>(null);
+  const [showDetailModal, setShowDetailModal] = useState(false);
+
+  const handleViewTutorDetail = (tutor: Tutor) => {
+    setSelectedTutor(tutor);
+    setShowDetailModal(true);
+  };
+
+  const handleRecommendTutor = (tutor: Tutor) => {
+    // Chuyển hướng đến trang đăng ký để người dùng tạo tài khoản và gửi yêu cầu
+    router.push("/register");
+  };
 
   const toggleFilter = (key: string) =>
     setChecked((prev) => ({ ...prev, [key]: !prev[key] }));
@@ -86,26 +104,46 @@ export default function PublicTutorsClient() {
   }, [debouncedSearch, checked, sort, currentPage]);
 
   return (
-    <ListingLayout
-      heroTitle="Tìm Gia Sư Phù Hợp"
-      heroDescription="Hàng ngàn gia sư chất lượng cao đang sẵn sàng đồng hành cùng bạn trên con đường chinh phục tri thức."
-      items={items}
-      isLoading={isLoading}
-      error={error}
-      totalItems={totalItems}
-      totalPages={totalPages}
-      entityName="gia sư phù hợp"
-      filtersConfig={TUTOR_FILTERS}
-      sortOptions={TUTOR_SORT_OPTIONS}
-      sort={sort}
-      setSort={setSort}
-      currentPage={currentPage}
-      setCurrentPage={setCurrentPage}
-      search={search}
-      setSearch={setSearch}
-      checked={checked}
-      toggleFilter={toggleFilter}
-      renderItem={(tutor) => <TutorCard key={tutor.id} tutor={tutor} />}
-    />
+    <>
+      <ListingLayout
+        heroTitle="Tìm Gia Sư Phù Hợp"
+        heroDescription="Hàng ngàn gia sư chất lượng cao đang sẵn sàng đồng hành cùng bạn trên con đường chinh phục tri thức."
+        items={items}
+        isLoading={isLoading}
+        error={error}
+        totalItems={totalItems}
+        totalPages={totalPages}
+        entityName="gia sư phù hợp"
+        filtersConfig={TUTOR_FILTERS}
+        sortOptions={TUTOR_SORT_OPTIONS}
+        sort={sort}
+        setSort={setSort}
+        currentPage={currentPage}
+        setCurrentPage={setCurrentPage}
+        search={search}
+        setSearch={setSearch}
+        checked={checked}
+        toggleFilter={toggleFilter}
+        renderItem={(tutor) => (
+          <TutorCard
+            key={tutor.id}
+            tutor={tutor}
+            onViewDetail={() => handleViewTutorDetail(tutor)}
+          />
+        )}
+      />
+
+      {/* Tutor Detail Modal */}
+      {showDetailModal && (
+        <PublicTutorDetailModal
+          tutor={selectedTutor}
+          onClose={() => {
+            setShowDetailModal(false);
+            setSelectedTutor(null);
+          }}
+          onRecommend={handleRecommendTutor}
+        />
+      )}
+    </>
   );
 }

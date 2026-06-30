@@ -95,7 +95,7 @@ export default function StudentClassesClient() {
     const mappedTutor: TutorSuggestion = {
       id: tutor.id,
       name: tutor.user?.fullName || "Gia sư",
-      avatar: tutor.avatarUrl || "https://randomuser.me/api/portraits/women/1.jpg",
+      avatar: tutor.avatarUrl || '',
       match: 95,
       experience: tutor.experience || "Chưa cập nhật",
       education: [tutor.educationLevel, tutor.major].filter(Boolean).join(" · ") || "Chưa cập nhật",

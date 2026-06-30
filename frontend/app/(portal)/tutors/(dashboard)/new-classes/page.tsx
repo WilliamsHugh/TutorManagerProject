@@ -6,6 +6,8 @@ import { Icon } from '@iconify/react';
 import { getNewClasses, proposeToStudent, getClassRequestDetail } from '@/lib/api';
 import Header from '@/components/tutor/Header';
 import { Skeleton } from '@/components/common/Skeleton';
+import { useProvinces, useDistricts } from '@/lib/hooks/useProvinces';
+import Pagination from '@/components/common/Pagination';
 
 const weekDays = [
   { label: "Thứ 2", value: "T2" },
@@ -50,7 +52,26 @@ export default function NewClassesPage() {
   const [selectedSubject, setSelectedSubject] = useState("Tất cả môn học");
   const [selectedMode, setSelectedMode] = useState("Hình thức dạy");
   const [selectedArea, setSelectedArea] = useState("Khu vực");
+  const [selectedProvinceCode, setSelectedProvinceCode] = useState<number | null>(null);
+  const [selectedDistrict, setSelectedDistrict] = useState("Quận/Huyện");
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+  const [locationSearch, setLocationSearch] = useState("");
+  const [districtSearch, setDistrictSearch] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 6;
+
+  const { provinces, loading: provincesLoading } = useProvinces();
+  const { districts, loading: districtsLoading } = useDistricts(selectedProvinceCode);
+
+  // Lọc danh sách tỉnh thành trong dropdown
+  const filteredProvinces = provinces.filter(p => 
+    p.name.toLowerCase().includes(locationSearch.toLowerCase())
+  );
+  
+  // Lọc danh sách quận huyện trong dropdown
+  const filteredDistricts = districts.filter(d => 
+    d.name.toLowerCase().includes(districtSearch.toLowerCase())
+  );
 
   const fetchClasses = async () => {
     try {
@@ -75,14 +96,16 @@ export default function NewClassesPage() {
     let result = classes;
 
     if (searchTerm) {
+      const q = searchTerm.toLowerCase();
       result = result.filter(c => 
-        c.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
-        c.code.toLowerCase().includes(searchTerm.toLowerCase())
+        c.title?.toLowerCase().includes(q) || 
+        c.code?.toLowerCase().includes(q) ||
+        c.requirements?.toLowerCase().includes(q)
       );
     }
 
     if (selectedSubject !== "Tất cả môn học") {
-      result = result.filter(c => c.title.includes(selectedSubject));
+      result = result.filter(c => c.title?.toLowerCase().includes(selectedSubject.toLowerCase()));
     }
 
     if (selectedMode !== "Hình thức dạy") {
@@ -90,11 +113,22 @@ export default function NewClassesPage() {
     }
 
     if (selectedArea !== "Khu vực") {
-      result = result.filter(c => c.location.includes(selectedArea));
+      result = result.filter(c => {
+        const loc = c.location || c.preferredArea || "";
+        return loc.toLowerCase().includes(selectedArea.toLowerCase());
+      });
+    }
+
+    if (selectedDistrict !== "Quận/Huyện") {
+      result = result.filter(c => {
+        const loc = c.location || c.preferredArea || "";
+        return loc.toLowerCase().includes(selectedDistrict.toLowerCase());
+      });
     }
 
     setFilteredClasses(result);
-  }, [searchTerm, selectedSubject, selectedMode, selectedArea, classes]);
+    setCurrentPage(1); // Reset page on filter changes
+  }, [searchTerm, selectedSubject, selectedMode, selectedArea, selectedDistrict, classes]);
 
   const toggleDropdown = (name: string) => {
     setActiveDropdown(activeDropdown === name ? null : name);
@@ -244,28 +278,146 @@ export default function NewClassesPage() {
 
             {/* Dropdown Khu vực */}
             <div className="relative min-w-[160px]">
-              <div onClick={() => toggleDropdown('area')} className="flex items-center gap-2 border border-slate-200 px-4 py-2.5 rounded-lg bg-slate-50 cursor-pointer hover:bg-slate-100">
-                <span className="flex-1 text-sm text-slate-700">{selectedArea}</span>
-                <Icon icon="lucide:chevron-down" className="text-slate-400" />
+              <div 
+                onClick={() => {
+                  toggleDropdown('area');
+                  setLocationSearch("");
+                }} 
+                className="flex items-center gap-2 border border-slate-200 px-4 py-2.5 rounded-lg bg-slate-50 cursor-pointer hover:bg-slate-100"
+              >
+                <span className="flex-1 text-sm text-slate-700 truncate">{selectedArea}</span>
+                <Icon icon="lucide:chevron-down" className={`text-slate-400 transition-transform ${activeDropdown === 'area' ? 'rotate-180' : ''}`} />
               </div>
               {activeDropdown === 'area' && (
-                <div className="absolute z-50 w-full mt-2 bg-white border border-slate-200 rounded-lg shadow-xl py-1 max-h-48 overflow-y-auto">
-                  {['Khu vực', 'Quận 1', 'Quận 7', 'Quận Bình Thạnh', 'Quận Tân Bình', 'Online'].map(opt => (
-                    <div key={opt} onClick={() => { setSelectedArea(opt); setActiveDropdown(null); }} className="px-4 py-2 text-sm hover:bg-blue-50 cursor-pointer">{opt}</div>
-                  ))}
+                <div 
+                  className="absolute z-50 w-64 mt-2 bg-white border border-slate-200 rounded-lg shadow-xl py-1"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="p-2 border-b border-slate-100 bg-slate-50 sticky top-0">
+                    <input
+                      type="text"
+                      value={locationSearch}
+                      onChange={(e) => setLocationSearch(e.target.value)}
+                      placeholder="Tìm Tỉnh/Thành..."
+                      className="w-full h-8 px-2 rounded border border-slate-200 text-xs outline-none bg-white text-slate-900"
+                      autoFocus
+                    />
+                  </div>
+                  <div className="max-h-48 overflow-y-auto">
+                    <div 
+                      onClick={() => { 
+                        setSelectedArea("Khu vực"); 
+                        setSelectedProvinceCode(null); 
+                        setSelectedDistrict("Quận/Huyện"); 
+                        setActiveDropdown(null); 
+                      }} 
+                      className="px-4 py-2 text-sm hover:bg-blue-50 cursor-pointer text-slate-700 font-medium"
+                    >
+                      Tất cả khu vực
+                    </div>
+                    {provincesLoading ? (
+                      <div className="p-3 space-y-2">
+                        <div className="h-3.5 bg-slate-100 rounded animate-pulse w-3/4"></div>
+                        <div className="h-3.5 bg-slate-100 rounded animate-pulse w-1/2"></div>
+                        <div className="h-3.5 bg-slate-100 rounded animate-pulse w-5/6"></div>
+                      </div>
+                    ) : filteredProvinces.length === 0 ? (
+                      <div className="px-4 py-2 text-xs text-slate-400 text-center">Không tìm thấy</div>
+                    ) : (
+                      filteredProvinces.map(p => (
+                        <div 
+                          key={p.code} 
+                          onClick={() => { 
+                            setSelectedArea(p.name); 
+                            setSelectedProvinceCode(p.code); 
+                            setSelectedDistrict("Quận/Huyện"); // Reset district
+                            setActiveDropdown(null); 
+                          }} 
+                          className="px-4 py-2 text-sm hover:bg-blue-50 cursor-pointer text-slate-700"
+                        >
+                          {p.name}
+                        </div>
+                      ))
+                    )}
+                  </div>
                 </div>
               )}
             </div>
 
-            <button className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition-colors">
-              <Icon icon="lucide:sliders-horizontal" />
-              Lọc kết quả
-            </button>
+            {/* Dropdown Quận/Huyện */}
+            <div className="relative min-w-[160px]">
+              <div 
+                onClick={() => {
+                  if (!selectedProvinceCode) return;
+                  toggleDropdown('district');
+                  setDistrictSearch("");
+                }} 
+                className={`flex items-center gap-2 border border-slate-200 px-4 py-2.5 rounded-lg bg-slate-50 ${
+                  selectedProvinceCode ? 'cursor-pointer hover:bg-slate-100' : 'cursor-not-allowed opacity-60'
+                }`}
+              >
+                <span className="flex-1 text-sm text-slate-700 truncate">{selectedDistrict}</span>
+                <Icon icon="lucide:chevron-down" className={`text-slate-400 transition-transform ${activeDropdown === 'district' ? 'rotate-180' : ''}`} />
+              </div>
+              {activeDropdown === 'district' && selectedProvinceCode && (
+                <div 
+                  className="absolute z-50 w-64 mt-2 bg-white border border-slate-200 rounded-lg shadow-xl py-1"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="p-2 border-b border-slate-100 bg-slate-50 sticky top-0">
+                    <input
+                      type="text"
+                      value={districtSearch}
+                      onChange={(e) => setDistrictSearch(e.target.value)}
+                      placeholder="Tìm Quận/Huyện..."
+                      className="w-full h-8 px-2 rounded border border-slate-200 text-xs outline-none bg-white text-slate-900"
+                      autoFocus
+                    />
+                  </div>
+                  <div className="max-h-48 overflow-y-auto">
+                    <div 
+                      onClick={() => { setSelectedDistrict("Quận/Huyện"); setActiveDropdown(null); }} 
+                      className="px-4 py-2 text-sm hover:bg-blue-50 cursor-pointer text-slate-700 font-medium"
+                    >
+                      Tất cả Quận/Huyện
+                    </div>
+                    {districtsLoading ? (
+                      <div className="p-3 space-y-2">
+                        <div className="h-3.5 bg-slate-100 rounded animate-pulse w-3/4"></div>
+                        <div className="h-3.5 bg-slate-100 rounded animate-pulse w-1/2"></div>
+                        <div className="h-3.5 bg-slate-100 rounded animate-pulse w-5/6"></div>
+                      </div>
+                    ) : filteredDistricts.length === 0 ? (
+                      <div className="px-4 py-2 text-xs text-slate-400 text-center">Không tìm thấy</div>
+                    ) : (
+                      filteredDistricts.map(d => (
+                        <div 
+                          key={d.code} 
+                          onClick={() => { setSelectedDistrict(d.name); setActiveDropdown(null); }} 
+                          className="px-4 py-2 text-sm hover:bg-blue-50 cursor-pointer text-slate-700"
+                        >
+                          {d.name}
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
 
             <button 
               type="button"
-              onClick={fetchClasses}
-              className="flex items-center gap-2 border border-slate-200 text-slate-700 bg-white hover:bg-slate-50 px-4 py-2 rounded-md text-sm font-medium transition-colors cursor-pointer shadow-sm"
+              onClick={() => {
+                setSearchTerm("");
+                setSelectedSubject("Tất cả môn học");
+                setSelectedMode("Hình thức dạy");
+                setSelectedArea("Khu vực");
+                setSelectedProvinceCode(null);
+                setSelectedDistrict("Quận/Huyện");
+                setLocationSearch("");
+                setDistrictSearch("");
+              }}
+              className="flex items-center gap-2 border border-slate-200 text-slate-700 bg-white hover:bg-slate-50 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors cursor-pointer shadow-sm shrink-0"
             >
               <Icon icon="lucide:refresh-cw" className={loading ? 'animate-spin' : ''} />
               Làm mới
@@ -303,7 +455,7 @@ export default function NewClassesPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-            {filteredClasses.map((item, index) => (
+            {filteredClasses.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((item, index) => (
               <ClassCard 
                 key={item.id} 
                 cls={{
@@ -316,6 +468,17 @@ export default function NewClassesPage() {
               />
             ))}
           </div>
+        )}
+
+        {/* Pagination Controls */}
+        {!loading && (
+          <Pagination 
+            currentPage={currentPage}
+            totalItems={filteredClasses.length}
+            itemsPerPage={itemsPerPage}
+            onPageChange={setCurrentPage}
+            label="lớp gợi ý"
+          />
         )}
       </main>
 
@@ -353,22 +516,51 @@ export default function NewClassesPage() {
                 </span>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <span className="text-xs text-slate-400 font-semibold block">CẤP HỌC</span>
-                  <span className="font-semibold text-slate-900 block mt-0.5">{selectedClass.student?.gradeLevel || 'Mọi cấp học'}</span>
-                </div>
-                <div>
-                  <span className="text-xs text-slate-400 font-semibold block">HỌC VIÊN</span>
-                  <span className="font-semibold text-slate-900 block mt-0.5">{selectedClass.student?.user?.fullName || 'Ẩn danh'}</span>
-                </div>
-                <div className="col-span-2">
-                  <span className="text-xs text-slate-400 font-semibold block">ĐỊA CHỈ HỌC TẬP</span>
-                  <span className="font-semibold text-slate-900 block mt-0.5">{selectedClass.preferredArea || 'Toàn quốc'}</span>
-                </div>
-                <div className="col-span-2">
-                  <span className="text-xs text-slate-400 font-semibold block">LỊCH HỌC MONG MUỐN</span>
-                  <span className="font-semibold text-slate-900 block mt-0.5">{selectedClass.preferredSchedule || 'Linh hoạt'}</span>
+              <div className="space-y-3">
+                <span className="text-xs text-slate-400 font-bold uppercase tracking-wider block">THÔNG TIN CHI TIẾT HỌC VIÊN</span>
+                <div className="grid grid-cols-2 gap-3.5 bg-slate-50 p-4 rounded-xl border border-slate-100 text-xs">
+                  <div>
+                    <span className="text-slate-400 font-medium">Họ & Tên học viên:</span>
+                    <p className="font-bold text-slate-900 mt-0.5">{selectedClass.student?.user?.fullName || 'Ẩn danh'}</p>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 font-medium">Cấp lớp học:</span>
+                    <p className="font-bold text-slate-900 mt-0.5">{selectedClass.student?.gradeLevel || 'Mọi cấp học'}</p>
+                  </div>
+                  {selectedClass.student?.parentName && (
+                    <div>
+                      <span className="text-slate-400 font-medium">Đại diện phụ huynh:</span>
+                      <p className="font-semibold text-slate-950 mt-0.5">{selectedClass.student.parentName}</p>
+                    </div>
+                  )}
+                  <div>
+                    <span className="text-slate-400 font-medium">Số điện thoại liên hệ:</span>
+                    <p className="font-semibold text-slate-500 mt-0.5 flex items-center gap-1.5 italic">
+                      <Icon icon="lucide:lock" className="text-amber-500 shrink-0" fontSize={11} />
+                      Ẩn (Hiển thị sau khi nhận lớp)
+                    </p>
+                  </div>
+                  <div className="col-span-2 border-t border-slate-200/60 pt-2.5">
+                    <span className="text-slate-400 font-medium">Email học tập:</span>
+                    <p className="font-semibold text-slate-500 mt-0.5 flex items-center gap-1.5 italic">
+                      <Icon icon="lucide:lock" className="text-amber-500 shrink-0" fontSize={11} />
+                      Ẩn (Hiển thị sau khi nhận lớp)
+                    </p>
+                  </div>
+                  <div className="col-span-2 border-t border-slate-200/60 pt-2.5">
+                    <span className="text-slate-400 font-medium">Địa chỉ học tập:</span>
+                    <p className="font-semibold text-slate-800 mt-0.5 flex items-center gap-1.5">
+                      <Icon icon="lucide:map-pin" className="text-slate-400 shrink-0" fontSize={12} />
+                      {selectedClass.preferredArea || 'Toàn quốc'}
+                    </p>
+                  </div>
+                  <div className="col-span-2 border-t border-slate-200/60 pt-2.5">
+                    <span className="text-slate-400 font-medium">Lịch học mong muốn:</span>
+                    <p className="font-semibold text-slate-800 mt-0.5 flex items-center gap-1.5">
+                      <Icon icon="lucide:calendar" className="text-slate-400 shrink-0" fontSize={12} />
+                      {selectedClass.preferredSchedule || 'Linh hoạt'}
+                    </p>
+                  </div>
                 </div>
               </div>
 

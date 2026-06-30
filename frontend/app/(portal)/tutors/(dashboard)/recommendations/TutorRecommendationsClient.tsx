@@ -13,6 +13,8 @@ import {
 } from "@/lib/api";
 import Header from "@/components/tutor/Header";
 import SchedulePicker from "@/components/common/SchedulePicker";
+import { Skeleton } from "@/components/common/Skeleton";
+import Pagination from "@/components/common/Pagination";
 
 type Recommendation = {
   id: string;
@@ -75,6 +77,10 @@ export default function TutorRecommendationsClient() {
     message: string;
     type: "success" | "error" | "info";
   } | null>(null);
+
+  const [currentPageNew, setCurrentPageNew] = useState(1);
+  const [currentPagePending, setCurrentPagePending] = useState(1);
+  const itemsPerPage = 5;
 
   const showToast = (
     message: string,
@@ -305,9 +311,23 @@ export default function TutorRecommendationsClient() {
         {activeTab === "new" && (
           <>
             {loading && (
-              <div className="flex items-center justify-center py-16 text-slate-500">
-                <Icon icon="lucide:loader-2" className="animate-spin mr-3 text-xl" />
-                Đang tải danh sách đề xuất...
+              <div className="space-y-4">
+                {Array.from({ length: 2 }).map((_, i) => (
+                  <div key={i} className="bg-white border border-slate-200 rounded-xl p-6 space-y-4">
+                    <div className="flex gap-4 items-center">
+                      <Skeleton className="w-12 h-12 rounded-full" />
+                      <div className="space-y-2">
+                        <Skeleton className="h-5 w-32" />
+                        <Skeleton className="h-3 w-40" />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-3 gap-4">
+                      <Skeleton className="h-14 rounded-lg" />
+                      <Skeleton className="h-14 rounded-lg" />
+                      <Skeleton className="h-14 rounded-lg" />
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
 
@@ -320,107 +340,132 @@ export default function TutorRecommendationsClient() {
             )}
 
             {!loading &&
-              recommendations.map((rec) => (
-                <div key={rec.id} className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-shadow">
-                  <div className="flex items-start justify-between p-6 pb-4 border-b border-slate-100">
-                    <div className="flex items-start gap-4">
-                      <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-lg shrink-0">
-                        {rec.studentName.charAt(0).toUpperCase()}
-                      </div>
-                      <div>
-                        <h3 className="text-lg font-semibold text-slate-900">{rec.studentName}</h3>
-                        <div className="flex flex-wrap items-center gap-3 mt-1 text-sm text-slate-500">
-                          {rec.gradeLevel && (
-                            <span className="flex items-center gap-1"><Icon icon="lucide:graduation-cap" fontSize={14} />{rec.gradeLevel}</span>
-                          )}
-                          <span className="flex items-center gap-1"><Icon icon="lucide:clock" fontSize={14} />{timeAgo(rec.createdAt)}</span>
-                        </div>
+              recommendations.slice((currentPageNew - 1) * itemsPerPage, currentPageNew * itemsPerPage).map((rec) => (
+              <div key={rec.id} className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+                <div className="flex items-start justify-between p-6 pb-4 border-b border-slate-100">
+                  <div className="flex items-start gap-4">
+                    <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-lg shrink-0">
+                      {rec.studentName.charAt(0).toUpperCase()}
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-slate-900">{rec.studentName}</h3>
+                      <div className="flex flex-wrap items-center gap-3 mt-1 text-sm text-slate-500">
+                        {rec.gradeLevel && (
+                          <span className="flex items-center gap-1"><Icon icon="lucide:graduation-cap" fontSize={14} />{rec.gradeLevel}</span>
+                        )}
+                        <span className="flex items-center gap-1"><Icon icon="lucide:clock" fontSize={14} />{timeAgo(rec.createdAt)}</span>
                       </div>
                     </div>
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
-                      <Icon icon="lucide:star" fontSize={12} /> Đề xuất gia sư
-                    </span>
                   </div>
-
-                  <div className="p-6 space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div className="flex items-start gap-3 p-3 rounded-lg bg-slate-50">
-                        <Icon icon="lucide:book-open" fontSize={18} className="text-blue-500 mt-0.5" />
-                        <div>
-                          <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Môn học</p>
-                          <p className="text-sm font-semibold text-slate-800 mt-0.5">{rec.subject}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-start gap-3 p-3 rounded-lg bg-slate-50">
-                        <Icon icon="lucide:map-pin" fontSize={18} className="text-blue-500 mt-0.5" />
-                        <div>
-                          <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Khu vực</p>
-                          <p className="text-sm font-semibold text-slate-800 mt-0.5">{rec.preferredArea}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-start gap-3 p-3 rounded-lg bg-slate-50">
-                        <Icon icon="lucide:calendar-clock" fontSize={18} className="text-blue-500 mt-0.5" />
-                        <div>
-                          <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Lịch học</p>
-                          <p className="text-sm font-semibold text-slate-800 mt-0.5">{rec.preferredSchedule}</p>
-                        </div>
-                      </div>
-                    </div>
-
-                    {rec.requirements && (
-                      <div className="p-3 rounded-lg bg-slate-50">
-                        <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1.5">Yêu cầu thêm</p>
-                        <p className="text-sm text-slate-700 whitespace-pre-line leading-relaxed">{rec.requirements}</p>
-                      </div>
-                    )}
-
-                    {(rec.studentPhone || rec.studentEmail) && (
-                      <div className="flex flex-wrap gap-4 p-3 rounded-lg bg-slate-50">
-                        {rec.studentPhone && (
-                          <div className="flex items-center gap-2 text-sm text-slate-600">
-                            <Icon icon="lucide:phone" fontSize={14} className="text-slate-400" />
-                            {rec.studentPhone}
-                          </div>
-                        )}
-                        {rec.studentEmail && (
-                          <div className="flex items-center gap-2 text-sm text-slate-600">
-                            <Icon icon="lucide:mail" fontSize={14} className="text-slate-400" />
-                            {rec.studentEmail}
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="flex items-center justify-end gap-3 px-6 py-4 bg-slate-50 border-t border-slate-100">
-                    <button
-                      onClick={() => handleDecline(rec.id)}
-                      disabled={actionLoading === rec.id}
-                      className="flex items-center gap-2 px-5 py-2.5 border border-slate-300 rounded-lg text-sm font-medium text-slate-700 bg-white hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                    >
-                      {actionLoading === rec.id ? <Icon icon="lucide:loader-2" className="animate-spin" fontSize={16} /> : <Icon icon="lucide:x" fontSize={16} />}
-                      Từ chối
-                    </button>
-                    <button
-                      onClick={() => openProposeModal(rec.id, rec.studentName, rec.preferredSchedule)}
-                      disabled={actionLoading === rec.id}
-                      className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                    >
-                      {actionLoading === rec.id ? <Icon icon="lucide:loader-2" className="animate-spin" fontSize={16} /> : <Icon icon="lucide:send" fontSize={16} />}
-                      Gửi đề xuất dạy
-                    </button>
-                  </div>
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
+                    <Icon icon="lucide:star" fontSize={12} /> Đề xuất gia sư
+                  </span>
                 </div>
-              ))}
+
+                <div className="p-6 space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="flex items-start gap-3 p-3 rounded-lg bg-slate-50">
+                      <Icon icon="lucide:book-open" fontSize={18} className="text-blue-500 mt-0.5" />
+                      <div>
+                        <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Môn học</p>
+                        <p className="text-sm font-semibold text-slate-800 mt-0.5">{rec.subject}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-3 p-3 rounded-lg bg-slate-50">
+                      <Icon icon="lucide:map-pin" fontSize={18} className="text-blue-500 mt-0.5" />
+                      <div>
+                        <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Khu vực</p>
+                        <p className="text-sm font-semibold text-slate-800 mt-0.5">{rec.preferredArea}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-3 p-3 rounded-lg bg-slate-50">
+                      <Icon icon="lucide:calendar-clock" fontSize={18} className="text-blue-500 mt-0.5" />
+                      <div>
+                        <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Lịch học</p>
+                        <p className="text-sm font-semibold text-slate-800 mt-0.5">{rec.preferredSchedule}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {rec.requirements && (
+                    <div className="p-3 rounded-lg bg-slate-50">
+                      <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1.5">Yêu cầu thêm</p>
+                      <p className="text-sm text-slate-700 whitespace-pre-line leading-relaxed">{rec.requirements}</p>
+                    </div>
+                  )}
+
+                  {(rec.studentPhone || rec.studentEmail) && (
+                    <div className="flex flex-wrap gap-4 p-3 rounded-lg bg-slate-50">
+                      {rec.studentPhone && (
+                        <div className="flex items-center gap-2 text-sm text-slate-600">
+                          <Icon icon="lucide:phone" fontSize={14} className="text-slate-400" />
+                          {rec.studentPhone}
+                        </div>
+                      )}
+                      {rec.studentEmail && (
+                        <div className="flex items-center gap-2 text-sm text-slate-600">
+                          <Icon icon="lucide:mail" fontSize={14} className="text-slate-400" />
+                          {rec.studentEmail}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex items-center justify-end gap-3 px-6 py-4 bg-slate-50 border-t border-slate-100">
+                  <button
+                    onClick={() => handleDecline(rec.id)}
+                    disabled={actionLoading === rec.id}
+                    className="flex items-center gap-2 px-5 py-2.5 border border-slate-300 rounded-lg text-sm font-medium text-slate-700 bg-white hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    {actionLoading === rec.id ? <Icon icon="lucide:loader-2" className="animate-spin" fontSize={16} /> : <Icon icon="lucide:x" fontSize={16} />}
+                    Từ chối
+                  </button>
+                  <button
+                    onClick={() => openProposeModal(rec.id, rec.studentName, rec.preferredSchedule)}
+                    disabled={actionLoading === rec.id}
+                    className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    {actionLoading === rec.id ? <Icon icon="lucide:loader-2" className="animate-spin" fontSize={16} /> : <Icon icon="lucide:send" fontSize={16} />}
+                    Gửi đề xuất dạy
+                  </button>
+                </div>
+              </div>
+            ))}
+
+            {/* Pagination for Recommendations */}
+            {!loading && (
+              <Pagination 
+                currentPage={currentPageNew}
+                totalItems={recommendations.length}
+                itemsPerPage={itemsPerPage}
+                onPageChange={setCurrentPageNew}
+                label="đề xuất"
+              />
+            )}
           </>
         )}
 
         {activeTab === "pending" && (
           <>
             {loadingPending && (
-              <div className="flex items-center justify-center py-16 text-slate-500">
-                <Icon icon="lucide:loader-2" className="animate-spin mr-3 text-xl" />
-                Đang tải danh sách đề xuất đang chờ...
+              <div className="space-y-4">
+                {Array.from({ length: 2 }).map((_, i) => (
+                  <div key={i} className="bg-white border border-slate-200 rounded-xl p-6 space-y-4">
+                    <div className="flex gap-4 items-center">
+                      <Skeleton className="w-12 h-12 rounded-full animate-pulse" />
+                      <div className="space-y-2">
+                        <Skeleton className="h-5 w-32" />
+                        <Skeleton className="h-3 w-40" />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-3 gap-4">
+                      <Skeleton className="h-14 rounded-lg animate-pulse" />
+                      <Skeleton className="h-14 rounded-lg animate-pulse" />
+                      <Skeleton className="h-14 rounded-lg animate-pulse" />
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
 
@@ -432,112 +477,122 @@ export default function TutorRecommendationsClient() {
               </div>
             )}
 
-            {!loadingPending &&
-              pendingProposals.map((prop) => (
-                <div key={prop.id} className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-shadow">
-                  <div className="flex items-start justify-between p-6 pb-4 border-b border-slate-100">
-                    <div className="flex items-start gap-4">
-                      <div className="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center text-amber-600 font-bold text-lg shrink-0">
-                        {prop.studentName.charAt(0).toUpperCase()}
+            {pendingProposals.slice((currentPagePending - 1) * itemsPerPage, currentPagePending * itemsPerPage).map((prop) => (
+              <div key={prop.id} className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+                <div className="flex items-start justify-between p-6 pb-4 border-b border-slate-100">
+                  <div className="flex items-start gap-4">
+                    <div className="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center text-amber-600 font-bold text-lg shrink-0">
+                      {prop.studentName.charAt(0).toUpperCase()}
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-slate-900">{prop.studentName}</h3>
+                      <div className="flex flex-wrap items-center gap-3 mt-1 text-sm text-slate-500">
+                        {prop.gradeLevel && (
+                          <span className="flex items-center gap-1"><Icon icon="lucide:graduation-cap" fontSize={14} />{prop.gradeLevel}</span>
+                        )}
+                        <span className="flex items-center gap-1"><Icon icon="lucide:clock" fontSize={14} />{timeAgo(prop.createdAt)}</span>
                       </div>
+                    </div>
+                  </div>
+                  <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border ${
+                    prop.status === "negotiating"
+                      ? "bg-amber-50 text-amber-700 border-amber-200"
+                      : "bg-blue-50 text-blue-700 border-blue-200"
+                  }`}>
+                    <Icon icon="lucide:clock" fontSize={12} />
+                    {prop.status === "negotiating" ? "Chờ điều chỉnh" : "Chờ xác nhận"}
+                  </span>
+                </div>
+
+                <div className="p-6 space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="flex items-start gap-3 p-3 rounded-lg bg-slate-50">
+                      <Icon icon="lucide:book-open" fontSize={18} className="text-blue-500 mt-0.5" />
                       <div>
-                        <h3 className="text-lg font-semibold text-slate-900">{prop.studentName}</h3>
-                        <div className="flex flex-wrap items-center gap-3 mt-1 text-sm text-slate-500">
-                          {prop.gradeLevel && (
-                            <span className="flex items-center gap-1"><Icon icon="lucide:graduation-cap" fontSize={14} />{prop.gradeLevel}</span>
-                          )}
-                          <span className="flex items-center gap-1"><Icon icon="lucide:clock" fontSize={14} />{timeAgo(prop.createdAt)}</span>
-                        </div>
+                        <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Môn học</p>
+                        <p className="text-sm font-semibold text-slate-800 mt-0.5">{prop.subject}</p>
                       </div>
                     </div>
-                    <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border ${
-                      prop.status === "negotiating"
-                        ? "bg-amber-50 text-amber-700 border-amber-200"
-                        : "bg-blue-50 text-blue-700 border-blue-200"
-                    }`}>
-                      <Icon icon="lucide:clock" fontSize={12} />
-                      {prop.status === "negotiating" ? "Chờ điều chỉnh" : "Chờ xác nhận"}
-                    </span>
-                  </div>
-
-                  <div className="p-6 space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div className="flex items-start gap-3 p-3 rounded-lg bg-slate-50">
-                        <Icon icon="lucide:book-open" fontSize={18} className="text-blue-500 mt-0.5" />
-                        <div>
-                          <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Môn học</p>
-                          <p className="text-sm font-semibold text-slate-800 mt-0.5">{prop.subject}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-start gap-3 p-3 rounded-lg bg-blue-50">
-                        <Icon icon="lucide:dollar-sign" fontSize={18} className="text-blue-500 mt-0.5" />
-                        <div>
-                          <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Học phí/buổi</p>
-                          <p className="text-sm font-semibold text-blue-700 mt-0.5">{prop.proposedFee?.toLocaleString("vi-VN")}đ</p>
-                        </div>
-                      </div>
-                      <div className="flex items-start gap-3 p-3 rounded-lg bg-emerald-50">
-                        <Icon icon="lucide:layers" fontSize={18} className="text-emerald-500 mt-0.5" />
-                        <div>
-                          <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Số buổi</p>
-                          <p className="text-sm font-semibold text-emerald-700 mt-0.5">{prop.proposedSessions} buổi</p>
-                        </div>
+                    <div className="flex items-start gap-3 p-3 rounded-lg bg-blue-50">
+                      <Icon icon="lucide:dollar-sign" fontSize={18} className="text-blue-500 mt-0.5" />
+                      <div>
+                        <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Học phí/buổi</p>
+                        <p className="text-sm font-semibold text-blue-700 mt-0.5">{prop.proposedFee?.toLocaleString("vi-VN")}đ</p>
                       </div>
                     </div>
-
-                    {prop.requirements && (
-                      <div className="p-3 rounded-lg bg-slate-50">
-                        <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1.5">Ghi chú</p>
-                        <p className="text-sm text-slate-700 whitespace-pre-line leading-relaxed">{prop.requirements}</p>
+                    <div className="flex items-start gap-3 p-3 rounded-lg bg-emerald-50">
+                      <Icon icon="lucide:layers" fontSize={18} className="text-emerald-500 mt-0.5" />
+                      <div>
+                        <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Số buổi</p>
+                        <p className="text-sm font-semibold text-emerald-700 mt-0.5">{prop.proposedSessions} buổi</p>
                       </div>
-                    )}
-
-                    <div className="rounded-lg bg-blue-50 p-4">
-                      <p className="text-sm font-medium text-blue-800">Tổng chi phí dự kiến</p>
-                      <p className="mt-1 text-2xl font-bold text-blue-600">{prop.totalFee?.toLocaleString("vi-VN")}đ</p>
-                      <p className="text-xs text-blue-500">{prop.proposedFee?.toLocaleString("vi-VN")}đ × {prop.proposedSessions} buổi</p>
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between gap-3 px-6 py-4 bg-slate-50 border-t border-slate-100">
-                    <p className="text-xs text-slate-400">
-                      {prop.proposedAt
-                        ? new Date(prop.proposedAt).toLocaleDateString("vi-VN", { hour: "2-digit", minute: "2-digit" })
-                        : ""}
-                    </p>
-                    <div className="flex gap-3">
-                      <button
-                        onClick={() => handleWithdraw(prop.id)}
-                        disabled={actionLoading === prop.id}
-                        className="flex items-center gap-2 px-4 py-2 border border-slate-300 rounded-lg text-sm font-medium text-slate-600 bg-white hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                      >
-                        {actionLoading === prop.id ? <Icon icon="lucide:loader-2" className="animate-spin" fontSize={16} /> : <Icon icon="lucide:undo-2" fontSize={16} />}
-                        Rút đề xuất
-                      </button>
-                      {prop.status === "negotiating" && (
-                        <button
-                          onClick={() => handleConfirmProposalByTutor(prop.id)}
-                          disabled={actionLoading === prop.id}
-                          className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                        >
-                          {actionLoading === prop.id ? <Icon icon="lucide:loader-2" className="animate-spin" fontSize={16} /> : <Icon icon="lucide:check-circle" fontSize={16} />}
-                          Đồng ý đề xuất
-                        </button>
-                      )}
-                      {(prop.status === "negotiating" || prop.status === "proposed") && (
-                        <button
-                          onClick={() => openModifyModal(prop)}
-                          disabled={actionLoading === prop.id}
-                          className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                        >
-                          <Icon icon="lucide:refresh-cw" fontSize={16} />
-                          Điều chỉnh đề xuất
-                        </button>
-                      )}
+                  {prop.requirements && (
+                    <div className="p-3 rounded-lg bg-slate-50">
+                      <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1.5">Ghi chú</p>
+                      <p className="text-sm text-slate-700 whitespace-pre-line leading-relaxed">{prop.requirements}</p>
                     </div>
+                  )}
+
+                  <div className="rounded-lg bg-blue-50 p-4">
+                    <p className="text-sm font-medium text-blue-800">Tổng chi phí dự kiến</p>
+                    <p className="mt-1 text-2xl font-bold text-blue-600">{prop.totalFee?.toLocaleString("vi-VN")}đ</p>
+                    <p className="text-xs text-blue-500">{prop.proposedFee?.toLocaleString("vi-VN")}đ × {prop.proposedSessions} buổi</p>
                   </div>
                 </div>
-              ))}
+
+                <div className="flex items-center justify-between gap-3 px-6 py-4 bg-slate-50 border-t border-slate-100">
+                  <p className="text-xs text-slate-400">
+                    {prop.proposedAt
+                      ? new Date(prop.proposedAt).toLocaleDateString("vi-VN", { hour: "2-digit", minute: "2-digit" })
+                      : ""}
+                  </p>
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => handleWithdraw(prop.id)}
+                      disabled={actionLoading === prop.id}
+                      className="flex items-center gap-2 px-4 py-2 border border-slate-300 rounded-lg text-sm font-medium text-slate-600 bg-white hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      {actionLoading === prop.id ? <Icon icon="lucide:loader-2" className="animate-spin" fontSize={16} /> : <Icon icon="lucide:undo-2" fontSize={16} />}
+                      Rút đề xuất
+                    </button>
+                    {prop.status === "negotiating" && (
+                      <button
+                        onClick={() => handleConfirmProposalByTutor(prop.id)}
+                        disabled={actionLoading === prop.id}
+                        className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      >
+                        {actionLoading === prop.id ? <Icon icon="lucide:loader-2" className="animate-spin" fontSize={16} /> : <Icon icon="lucide:check-circle" fontSize={16} />}
+                        Đồng ý đề xuất
+                      </button>
+                    )}
+                    {(prop.status === "negotiating" || prop.status === "proposed") && (
+                      <button
+                        onClick={() => openModifyModal(prop)}
+                        disabled={actionLoading === prop.id}
+                        className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      >
+                        <Icon icon="lucide:refresh-cw" fontSize={16} />
+                        Điều chỉnh đề xuất
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+
+            {/* Pagination for Pending Proposals */}
+            {!loadingPending && (
+              <Pagination 
+                currentPage={currentPagePending}
+                totalItems={pendingProposals.length}
+                itemsPerPage={itemsPerPage}
+                onPageChange={setCurrentPagePending}
+                label="đề xuất"
+              />
+            )}
           </>
         )}
       </main>

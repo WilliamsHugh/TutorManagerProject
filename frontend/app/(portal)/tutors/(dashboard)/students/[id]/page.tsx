@@ -28,6 +28,7 @@ import {
   deleteLearningReport
 } from '@/lib/api';
 import { useParams } from 'next/navigation';
+import { Skeleton } from '@/components/common/Skeleton';
 
 export default function StudentDetailPage() {
   const [student, setStudent] = useState<any>(null);
@@ -239,10 +240,46 @@ export default function StudentDetailPage() {
     return (
       <>
         <Header title="Chi tiết lớp học" userProfile={profile} />
-        <div className="flex-grow flex flex-col items-center justify-center py-24 gap-3">
-          <Icon icon="lucide:loader-2" className="animate-spin text-blue-600" fontSize={40} />
-          <p className="text-slate-500 font-medium text-sm">Đang tải thông tin từ database...</p>
-        </div>
+        <main className="p-8 space-y-6 max-w-7xl mx-auto w-full">
+          <div className="flex justify-between items-end">
+            <div className="space-y-2">
+              <Skeleton className="h-7 w-48" />
+              <Skeleton className="h-4 w-96 max-w-full" />
+            </div>
+            <div className="flex gap-3">
+              <Skeleton className="h-10 w-28 rounded-md" />
+              <Skeleton className="h-10 w-36 rounded-md" />
+            </div>
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="lg:col-span-2 space-y-6">
+              <div className="bg-white p-6 border rounded-2xl space-y-3">
+                <Skeleton className="h-5 w-40" />
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-3.5 w-5/6" />
+              </div>
+              <div className="bg-white p-6 border rounded-2xl space-y-4">
+                <Skeleton className="h-5 w-32" />
+                <div className="space-y-3">
+                  <Skeleton className="h-12 w-full rounded-md" />
+                  <Skeleton className="h-12 w-full rounded-md" />
+                </div>
+              </div>
+            </div>
+            <div className="space-y-6">
+              <div className="bg-white p-6 border rounded-2xl grid grid-cols-2 gap-3">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <Skeleton key={i} className="h-16 rounded-xl" />
+                ))}
+              </div>
+              <div className="bg-white p-6 border rounded-2xl space-y-3">
+                <Skeleton className="h-5 w-24" />
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-10 w-full" />
+              </div>
+            </div>
+          </div>
+        </main>
       </>
     );
   }
@@ -375,9 +412,17 @@ export default function StudentDetailPage() {
             {/* Panel 2: Learning Timeline (Database Reports) */}
             <SectionPanel title="Đánh giá & Báo cáo quá trình" icon={<ClipboardList size={20} className="text-blue-600" />}>
               {loadingReports ? (
-                <div className="py-12 text-center flex flex-col items-center justify-center gap-2">
-                  <Icon icon="lucide:loader-2" className="animate-spin text-blue-600" fontSize={32} />
-                  <p className="text-slate-500 text-sm">Đang tải báo cáo học tập...</p>
+                <div className="space-y-4 py-4">
+                  {Array.from({ length: 2 }).map((_, i) => (
+                    <div key={i} className="bg-slate-50/50 p-4 border rounded-xl space-y-2">
+                      <div className="flex justify-between items-center">
+                        <Skeleton className="h-4 w-32" />
+                        <Skeleton className="h-3.5 w-20 rounded-full" />
+                      </div>
+                      <Skeleton className="h-3 w-full" />
+                      <Skeleton className="h-3 w-2/3" />
+                    </div>
+                  ))}
                 </div>
               ) : reports.length > 0 ? (
                 <div className="relative border-l-2 border-slate-100 pl-6 ml-3 flex flex-col gap-6 py-2">

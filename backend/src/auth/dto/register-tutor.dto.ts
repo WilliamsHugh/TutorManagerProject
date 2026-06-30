@@ -32,4 +32,12 @@ export class RegisterTutorDto {
   @IsOptional()
   @IsString()
   cvUrl?: string;
+
+  @IsOptional()
+  @IsString()
+  province?: string;
+
+  @IsOptional()
+  @IsString()
+  district?: string;
 }

@@ -178,26 +178,35 @@ const FIRST_FEMALE = [
 ];
 
 const AREAS = [
-  'Quận 1',
-  'Quận 2',
-  'Quận 3',
-  'Quận 4',
-  'Quận 5',
-  'Quận 6',
-  'Quận 7',
-  'Quận 8',
-  'Quận 9',
-  'Quận 10',
-  'Quận 11',
-  'Quận 12',
-  'Bình Thạnh',
-  'Thủ Đức',
-  'Gò Vấp',
-  'Tân Bình',
-  'Tân Phú',
-  'Phú Nhuận',
-  'Cầu Giấy, Hà Nội',
-  'Hải Châu, Đà Nẵng',
+  // TP. Hồ Chí Minh
+  { district: 'Quận 1', province: 'Thành phố Hồ Chí Minh' },
+  { district: 'Quận 3', province: 'Thành phố Hồ Chí Minh' },
+  { district: 'Quận 5', province: 'Thành phố Hồ Chí Minh' },
+  { district: 'Quận 7', province: 'Thành phố Hồ Chí Minh' },
+  { district: 'Quận 10', province: 'Thành phố Hồ Chí Minh' },
+  { district: 'Quận 12', province: 'Thành phố Hồ Chí Minh' },
+  { district: 'Quận Bình Thạnh', province: 'Thành phố Hồ Chí Minh' },
+  { district: 'Quận Gò Vấp', province: 'Thành phố Hồ Chí Minh' },
+  { district: 'Quận Tân Bình', province: 'Thành phố Hồ Chí Minh' },
+  { district: 'Quận Tân Phú', province: 'Thành phố Hồ Chí Minh' },
+  { district: 'Quận Phú Nhuận', province: 'Thành phố Hồ Chí Minh' },
+  { district: 'Thành phố Thủ Đức', province: 'Thành phố Hồ Chí Minh' },
+  // Hà Nội
+  { district: 'Quận Cầu Giấy', province: 'Thành phố Hà Nội' },
+  { district: 'Quận Đống Đa', province: 'Thành phố Hà Nội' },
+  { district: 'Quận Ba Đình', province: 'Thành phố Hà Nội' },
+  { district: 'Quận Hoàn Kiếm', province: 'Thành phố Hà Nội' },
+  { district: 'Quận Thanh Xuân', province: 'Thành phố Hà Nội' },
+  // Đà Nẵng
+  { district: 'Quận Hải Châu', province: 'Thành phố Đà Nẵng' },
+  { district: 'Quận Thanh Khê', province: 'Thành phố Đà Nẵng' },
+  { district: 'Quận Sơn Trà', province: 'Thành phố Đà Nẵng' },
+  // Các tỉnh khác
+  { district: 'Thành phố Biên Hòa', province: 'Tỉnh Đồng Nai' },
+  { district: 'Thành phố Thủ Dầu Một', province: 'Thành phố Hồ Chí Minh' },
+  { district: 'Thành phố Huế', province: 'Thành phố Huế' },
+  { district: 'Quận Hải An', province: 'Thành phố Hải Phòng' },
+  { district: 'Thành phố Cần Thơ', province: 'Thành phố Cần Thơ' },
 ];
 
 const EDU_LEVELS = ['Sinh viên', 'Cử nhân', 'Giáo viên', 'Thạc sĩ'];
@@ -515,6 +524,8 @@ async function seed() {
         experience: '2 năm kinh nghiệm dạy kèm môn Toán, Lý cấp 3',
         idCardNumber: '079100000001',
         availableAreas: 'Quận 1, Quận 5',
+        province: 'Thành phố Hồ Chí Minh',
+        district: 'Quận 1',
         approvalStatus: ApprovalStatus.APPROVED,
       },
       subjects: ['Toán học', 'Vật lí'],
@@ -533,6 +544,8 @@ async function seed() {
         experience: '5 năm kinh nghiệm giảng dạy môn Toán và Hóa học',
         idCardNumber: '079100000002',
         availableAreas: 'Quận 1, Quận 4, Quận 7',
+        province: 'Thành phố Hồ Chí Minh',
+        district: 'Quận 7',
         approvalStatus: ApprovalStatus.APPROVED,
       },
       subjects: ['Toán học', 'Hóa học'],
@@ -551,6 +564,8 @@ async function seed() {
         experience: '1.5 năm kinh nghiệm, rành kèm học sinh trung học',
         idCardNumber: '079100000003',
         availableAreas: 'Quận 3, Quận 10',
+        province: 'Thành phố Hồ Chí Minh',
+        district: 'Quận 10',
         approvalStatus: ApprovalStatus.PENDING,
       },
       subjects: ['Toán học', 'Tin học'],
@@ -569,6 +584,8 @@ async function seed() {
         experience: '3 năm kinh nghiệm dạy ôn thi',
         idCardNumber: '079100000004',
         availableAreas: 'Bình Thạnh',
+        province: 'Thành phố Hồ Chí Minh',
+        district: 'Quận Bình Thạnh',
         approvalStatus: ApprovalStatus.APPROVED,
       },
       subjects: ['Toán học'],
@@ -587,6 +604,8 @@ async function seed() {
         experience: '5 năm kinh nghiệm dạy kèm Toán THPT, luyện thi Đại học',
         idCardNumber: '079100000005',
         availableAreas: 'Quận 1, TP.HCM',
+        province: 'Thành phố Hồ Chí Minh',
+        district: 'Quận 1',
         approvalStatus: ApprovalStatus.APPROVED,
       },
       subjects: ['Toán học'],
@@ -605,6 +624,8 @@ async function seed() {
         experience: '4 năm kinh nghiệm dạy kèm Toán lớp 10-12, luyện thi',
         idCardNumber: '079100000006',
         availableAreas: 'Quận 3, TP.HCM',
+        province: 'Thành phố Hồ Chí Minh',
+        district: 'Quận 3',
         approvalStatus: ApprovalStatus.APPROVED,
       },
       subjects: ['Toán học'],
@@ -623,6 +644,8 @@ async function seed() {
         experience: '3 năm kinh nghiệm dạy kèm Toán cơ bản và Toán cấp 2',
         idCardNumber: '079100000007',
         availableAreas: 'Bình Thạnh',
+        province: 'Thành phố Hồ Chí Minh',
+        district: 'Quận Bình Thạnh',
         approvalStatus: ApprovalStatus.APPROVED,
       },
       subjects: ['Toán học'],
@@ -641,6 +664,8 @@ async function seed() {
         experience: '2 năm kinh nghiệm dạy kèm 1-1 Toán THPT',
         idCardNumber: '079100000008',
         availableAreas: 'Thủ Đức',
+        province: 'Thành phố Hồ Chí Minh',
+        district: 'Thành phố Thủ Đức',
         approvalStatus: ApprovalStatus.APPROVED,
       },
       subjects: ['Toán học'],
@@ -659,6 +684,8 @@ async function seed() {
         experience: '2 năm kinh nghiệm dạy kèm Toán cấp 3, luyện thi Đại học.',
         idCardNumber: '079100000009',
         availableAreas: 'Cầu Giấy, Đống Đa, Ba Đình',
+        province: 'Thành phố Hà Nội',
+        district: 'Quận Cầu Giấy',
         approvalStatus: ApprovalStatus.APPROVED,
       },
       subjects: ['Toán học'],
@@ -678,6 +705,8 @@ async function seed() {
           'Cử nhân Ngôn Ngữ Anh, 4 năm kinh nghiệm giảng dạy tiếng Anh giao tiếp và luyện thi IELTS 7.5+.',
         idCardNumber: '079100000010',
         availableAreas: 'Quận 1, Quận 3, Quận 7',
+        province: 'Thành phố Hồ Chí Minh',
+        district: 'Quận 1',
         approvalStatus: ApprovalStatus.APPROVED,
       },
       subjects: ['Tiếng Anh'],
@@ -696,6 +725,8 @@ async function seed() {
         experience: '7 năm kinh nghiệm giảng dạy tiểu học.',
         idCardNumber: '079100000011',
         availableAreas: 'Hải Châu, Thanh Khê, Sơn Trà',
+        province: 'Thành phố Đà Nẵng',
+        district: 'Quận Hải Châu',
         approvalStatus: ApprovalStatus.APPROVED,
       },
       subjects: ['Toán học', 'Ngữ văn'],
@@ -742,7 +773,7 @@ async function seed() {
       email,
       fullName,
       phone,
-      address: `${area}, TP.HCM`,
+      address: `${area.district}, ${area.province}`,
       avatarUrl,
       tutor: {
         educationLevel: pickRandom(EDU_LEVELS),
@@ -750,7 +781,9 @@ async function seed() {
         university: pickRandom(UNIVERSITIES),
         experience: `${Math.floor(1 + Math.random() * 7)} năm kinh nghiệm dạy kèm môn ${tutorSubjects.join(', ')}`,
         idCardNumber: nextIdCard(),
-        availableAreas: area,
+        availableAreas: area.district,
+        province: area.province,
+        district: area.district,
         approvalStatus:
           i % 8 === 0 ? ApprovalStatus.PENDING : ApprovalStatus.APPROVED,
       },
@@ -779,6 +812,8 @@ async function seed() {
         existingTutor.educationLevel = item.tutor.educationLevel;
         existingTutor.experience = item.tutor.experience;
         existingTutor.availableAreas = item.tutor.availableAreas;
+        existingTutor.province = item.tutor.province;
+        existingTutor.district = item.tutor.district;
         existingTutor.approvalStatus = item.tutor.approvalStatus;
         await tutorRepo.save(existingTutor);
         seededTutorsMap.set(item.email, existingTutor);
@@ -1031,7 +1066,7 @@ async function seed() {
       requestRepo.create({
         student,
         subject,
-        preferredArea: area,
+        preferredArea: `${area.district}, ${area.province}`,
         preferredSchedule: pickRandom(schedules),
         requirements: pickRandom(requirements),
         status: pickRandom(requestStatuses),
@@ -1253,6 +1288,7 @@ async function seed() {
 
     const fee = Math.floor((150 + Math.random() * 250) * 1000); // 150k-400k
     const totalSessions = Math.floor(10 + Math.random() * 20); // 10-30
+    const randomArea = pickRandom(AREAS);
 
     const newClass = await classRepo.save(
       classRepo.create({
@@ -1264,7 +1300,7 @@ async function seed() {
         status: classStatus,
         startDate,
         endDate,
-        location: req.preferredArea || pickRandom(AREAS),
+        location: req.preferredArea || `${randomArea.district}, ${randomArea.province}`,
       }),
     );
     seededClasses.push(newClass);

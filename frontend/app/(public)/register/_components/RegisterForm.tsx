@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useState, useRef, useEffect } from "react";
+import { useProvinces, useDistricts } from "@/lib/hooks/useProvinces";
 
 // Sử dụng Next.js rewrite proxy thay vì gọi trực tiếp backend
 // để tránh lỗi double /api khi NEXT_PUBLIC_BACKEND_URL đã có /api
@@ -72,6 +73,26 @@ export default function RegisterForm() {
     const [error, setError] = useState("");
     const [success, setSuccess] = useState(false);
     const [loading, setLoading] = useState(false);
+
+    // Location States
+    const [selectedProvinceCode, setSelectedProvinceCode] = useState<number | null>(null);
+    const [selectedProvinceName, setSelectedProvinceName] = useState("");
+    const [selectedDistrictName, setSelectedDistrictName] = useState("");
+    const [isOpenProvince, setIsOpenProvince] = useState(false);
+    const [isOpenDistrict, setIsOpenDistrict] = useState(false);
+    const [provinceSearch, setProvinceSearch] = useState("");
+    const [districtSearch, setDistrictSearch] = useState("");
+
+    const { provinces, loading: provincesLoading } = useProvinces();
+    const { districts, loading: districtsLoading } = useDistricts(selectedProvinceCode);
+
+    // Filtered lists for dropdowns
+    const filteredProvincesList = provinces.filter(p => 
+        p.name.toLowerCase().includes(provinceSearch.toLowerCase())
+    );
+    const filteredDistrictsList = districts.filter(d => 
+        d.name.toLowerCase().includes(districtSearch.toLowerCase())
+    );
 
     // Lọc danh sách môn học theo từ đang nhập (loại trừ đã chọn)
     const filteredSubjects = ALL_SUBJECTS.filter(
@@ -160,9 +181,16 @@ export default function RegisterForm() {
         };
 
         if (selectedRole === "tutor") {
+            if (!selectedProvinceName) {
+                setError("Vui lòng chọn Tỉnh/Thành phố giảng dạy.");
+                setLoading(false);
+                return;
+            }
             payload.education = education;
             payload.experience = experience;
             payload.subjects = subjects_selected;
+            payload.province = selectedProvinceName;
+            payload.district = selectedDistrictName || undefined;
             if (cvFile?.url) {
                 payload.cvUrl = cvFile.url;
             }
@@ -676,6 +704,177 @@ export default function RegisterForm() {
                                                     );
                                                 })}
                                             </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Location Dropdowns (Tỉnh/Thành & Quận/Huyện) */}
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                                        {/* Tỉnh/Thành phố */}
+                                        <div className="relative">
+                                            <label className="block text-sm font-medium mb-2" style={{ color: "var(--foreground)" }}>
+                                                Tỉnh / Thành phố nhận dạy <span style={{ color: "var(--destructive)" }}>*</span>
+                                            </label>
+                                            
+                                            {isOpenProvince && (
+                                                <div className="fixed inset-0 z-30" onClick={() => { setIsOpenProvince(false); setProvinceSearch(""); }} />
+                                            )}
+
+                                            <div 
+                                                onClick={() => {
+                                                    setIsOpenProvince(!isOpenProvince);
+                                                    setIsOpenDistrict(false);
+                                                    setProvinceSearch("");
+                                                }}
+                                                className="flex items-center justify-between w-full h-11 px-3.5 rounded-md border text-sm cursor-pointer z-40 relative"
+                                                style={{
+                                                    borderColor: "var(--border)",
+                                                    backgroundColor: "var(--card)",
+                                                    color: "var(--foreground)",
+                                                }}
+                                            >
+                                                <span className="truncate">{selectedProvinceName || "Chọn Tỉnh/Thành..."}</span>
+                                                <ChevronDown size={16} className={`text-slate-400 transition-transform duration-200 ${isOpenProvince ? 'rotate-180' : ''}`} />
+                                            </div>
+
+                                            {isOpenProvince && (
+                                                <div 
+                                                    className="absolute left-0 right-0 top-full mt-1 border rounded-lg shadow-xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-1 duration-100"
+                                                    style={{
+                                                        borderColor: "var(--border)",
+                                                        backgroundColor: "var(--card)",
+                                                        maxHeight: "220px",
+                                                        overflowY: "auto",
+                                                    }}
+                                                >
+                                                    <div className="p-2 border-b border-border bg-slate-50 sticky top-0">
+                                                        <input
+                                                            type="text"
+                                                            value={provinceSearch}
+                                                            onChange={(e) => setProvinceSearch(e.target.value)}
+                                                            placeholder="Tìm Tỉnh/Thành..."
+                                                            className="w-full h-8 px-2.5 rounded border border-border text-xs outline-none bg-card text-foreground"
+                                                            autoFocus
+                                                            onClick={(e) => e.stopPropagation()}
+                                                        />
+                                                    </div>
+                                                    
+                                                    {provincesLoading ? (
+                                                        <div className="p-3 space-y-2">
+                                                            <div className="h-3 bg-slate-100 dark:bg-slate-800 rounded animate-pulse w-3/4"></div>
+                                                            <div className="h-3 bg-slate-100 dark:bg-slate-800 rounded animate-pulse w-1/2"></div>
+                                                            <div className="h-3 bg-slate-100 dark:bg-slate-800 rounded animate-pulse w-5/6"></div>
+                                                        </div>
+                                                    ) : filteredProvincesList.length === 0 ? (
+                                                        <div className="px-4 py-3 text-xs text-muted-foreground text-center">Không tìm thấy</div>
+                                                    ) : (
+                                                        filteredProvincesList.map((p) => (
+                                                            <div
+                                                                key={p.code}
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    setSelectedProvinceCode(p.code);
+                                                                    setSelectedProvinceName(p.name);
+                                                                    setSelectedDistrictName(""); // reset district
+                                                                    setIsOpenProvince(false);
+                                                                    setProvinceSearch("");
+                                                                }}
+                                                                className={`px-4 py-2 text-xs sm:text-sm transition-colors cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 text-left ${
+                                                                    selectedProvinceName === p.name ? "bg-slate-50 font-semibold text-primary" : "text-foreground"
+                                                                }`}
+                                                            >
+                                                                {p.name}
+                                                            </div>
+                                                        ))
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* Quận/Huyện */}
+                                        <div className="relative">
+                                            <label className="block text-sm font-medium mb-2" style={{ color: "var(--foreground)" }}>
+                                                Quận / Huyện chi tiết
+                                            </label>
+                                            
+                                            {isOpenDistrict && (
+                                                <div className="fixed inset-0 z-30" onClick={() => { setIsOpenDistrict(false); setDistrictSearch(""); }} />
+                                            )}
+
+                                            <div 
+                                                onClick={() => {
+                                                    if (!selectedProvinceCode) return;
+                                                    setIsOpenDistrict(!isOpenDistrict);
+                                                    setIsOpenProvince(false);
+                                                    setDistrictSearch("");
+                                                }}
+                                                className={`flex items-center justify-between w-full h-11 px-3.5 rounded-md border text-sm relative z-40 ${
+                                                    selectedProvinceCode ? 'cursor-pointer' : 'cursor-not-allowed opacity-60'
+                                                }`}
+                                                style={{
+                                                    borderColor: "var(--border)",
+                                                    backgroundColor: "var(--card)",
+                                                    color: "var(--foreground)",
+                                                }}
+                                            >
+                                                <span className="truncate">
+                                                    {!selectedProvinceCode 
+                                                        ? "Chọn Tỉnh/Thành trước..." 
+                                                        : selectedDistrictName || "Chọn Quận/Huyện..."
+                                                    }
+                                                </span>
+                                                <ChevronDown size={16} className={`text-slate-400 transition-transform duration-200 ${isOpenDistrict ? 'rotate-180' : ''}`} />
+                                            </div>
+
+                                            {isOpenDistrict && selectedProvinceCode && (
+                                                <div 
+                                                    className="absolute left-0 right-0 top-full mt-1 border rounded-lg shadow-xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-1 duration-100"
+                                                    style={{
+                                                        borderColor: "var(--border)",
+                                                        backgroundColor: "var(--card)",
+                                                        maxHeight: "220px",
+                                                        overflowY: "auto",
+                                                    }}
+                                                >
+                                                    <div className="p-2 border-b border-border bg-slate-50 sticky top-0">
+                                                        <input
+                                                            type="text"
+                                                            value={districtSearch}
+                                                            onChange={(e) => setDistrictSearch(e.target.value)}
+                                                            placeholder="Tìm Quận/Huyện..."
+                                                            className="w-full h-8 px-2.5 rounded border border-border text-xs outline-none bg-card text-foreground"
+                                                            autoFocus
+                                                            onClick={(e) => e.stopPropagation()}
+                                                        />
+                                                    </div>
+                                                    
+                                                    {districtsLoading ? (
+                                                        <div className="p-3 space-y-2">
+                                                            <div className="h-3 bg-slate-100 dark:bg-slate-800 rounded animate-pulse w-3/4"></div>
+                                                            <div className="h-3 bg-slate-100 dark:bg-slate-800 rounded animate-pulse w-1/2"></div>
+                                                            <div className="h-3 bg-slate-100 dark:bg-slate-800 rounded animate-pulse w-5/6"></div>
+                                                        </div>
+                                                    ) : filteredDistrictsList.length === 0 ? (
+                                                        <div className="px-4 py-3 text-xs text-muted-foreground text-center">Không tìm thấy</div>
+                                                    ) : (
+                                                        filteredDistrictsList.map((d) => (
+                                                            <div
+                                                                key={d.code}
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    setSelectedDistrictName(d.name);
+                                                                    setIsOpenDistrict(false);
+                                                                    setDistrictSearch("");
+                                                                }}
+                                                                className={`px-4 py-2 text-xs sm:text-sm transition-colors cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 text-left ${
+                                                                    selectedDistrictName === d.name ? "bg-slate-50 font-semibold text-primary" : "text-foreground"
+                                                                }`}
+                                                            >
+                                                                {d.name}
+                                                            </div>
+                                                        ))
+                                                    )}
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
 

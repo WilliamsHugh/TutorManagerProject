@@ -48,4 +48,12 @@ export class UpdateProfileDto {
   @IsString()
   @IsOptional()
   graduationYear?: string;
+
+  @IsString()
+  @IsOptional()
+  province?: string;
+
+  @IsString()
+  @IsOptional()
+  district?: string;
 }

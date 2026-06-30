@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-
+import { useProvinces, useDistricts } from '@/lib/hooks/useProvinces';
 import { Icon } from '@iconify/react';
 import { getTutorProfile, updateTutorProfile, getAllSubjects } from '@/lib/api';
 import Header from '@/components/tutor/Header';
@@ -19,12 +19,39 @@ export default function ProfessionalProfilePage() {
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const certInputRef = useRef<HTMLInputElement>(null);
 
+  // Location States
+  const [selectedProvinceCode, setSelectedProvinceCode] = useState<number | null>(null);
+  const [isOpenProvince, setIsOpenProvince] = useState(false);
+  const [isOpenDistrict, setIsOpenDistrict] = useState(false);
+  const [provinceSearch, setProvinceSearch] = useState("");
+  const [districtSearch, setDistrictSearch] = useState("");
+
+  const { provinces, loading: provincesLoading } = useProvinces();
+  const { districts, loading: districtsLoading } = useDistricts(selectedProvinceCode);
+
+  // Filtered lists for dropdowns
+  const filteredProvincesList = provinces.filter(p => 
+    p.name.toLowerCase().includes(provinceSearch.toLowerCase())
+  );
+  const filteredDistrictsList = districts.filter(d => 
+    d.name.toLowerCase().includes(districtSearch.toLowerCase())
+  );
+
   useEffect(() => {
     const fetchProfileAndSubjects = async () => {
       try {
         const data = await getTutorProfile(); 
-        setProfile(data.profile || {});
-        setFormData(data.profile || {}); // Khởi tạo dữ liệu form từ profile
+        const prof = data.profile || {};
+        setProfile(prof);
+        setFormData(prof);
+
+        // Tìm mã provinceCode nếu có sẵn province trong profile để load quận huyện
+        if (prof.province && provinces.length > 0) {
+          const match = provinces.find(p => p.name === prof.province);
+          if (match) {
+            setSelectedProvinceCode(match.code);
+          }
+        }
 
         const subjectsData = await getAllSubjects();
         setAllSubjects(subjectsData || []);
@@ -35,7 +62,7 @@ export default function ProfessionalProfilePage() {
       }
     };
     fetchProfileAndSubjects();
-  }, []);
+  }, [provinces]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -60,13 +87,11 @@ export default function ProfessionalProfilePage() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Validate file size (5MB max)
     if (file.size > 5 * 1024 * 1024) {
       alert('File ảnh phải nhỏ hơn 5MB');
       return;
     }
 
-    // Validate file type
     const allowed = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
     if (!allowed.includes(file.type)) {
       alert('Chỉ chấp nhận file ảnh (JPEG, PNG, GIF, WebP)');
@@ -76,13 +101,13 @@ export default function ProfessionalProfilePage() {
     setUploadingAvatar(true);
 
     try {
-      const formData = new FormData();
-      formData.append('file', file);
+      const fd = new FormData();
+      fd.append('file', file);
 
       const uploadRes = await fetch('/api/upload/avatar', {
         method: 'POST',
         credentials: 'include',
-        body: formData,
+        body: fd,
       });
 
       if (!uploadRes.ok) {
@@ -132,7 +157,13 @@ export default function ProfessionalProfilePage() {
           </div>
           <div className="flex gap-3">
             <button 
-              onClick={() => setFormData(profile)}
+              onClick={() => {
+                setFormData(profile);
+                if (profile.province && provinces.length > 0) {
+                  const match = provinces.find(p => p.name === profile.province);
+                  if (match) setSelectedProvinceCode(match.code);
+                }
+              }}
               className="px-4 py-2 border border-slate-200 rounded-md text-sm font-medium bg-white hover:bg-slate-50 transition-colors"
             >
               Hủy
@@ -158,7 +189,138 @@ export default function ProfessionalProfilePage() {
                 <InputField label="Email" name="email" value={formData.email} onChange={handleInputChange} />
                 <InputField label="Số điện thoại" name="phone" value={formData.phone} onChange={handleInputChange} />
               </div>
-              <InputField label="Địa chỉ hiện tại" name="address" value={formData.address} onChange={handleInputChange} className="mt-4" />
+              
+              {/* Location Selectors */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                {/* Tỉnh/Thành */}
+                <div className="relative flex flex-col gap-2">
+                  <label className="text-sm font-medium text-slate-900">Tỉnh / Thành phố nhận dạy</label>
+                  {isOpenProvince && (
+                    <div className="fixed inset-0 z-30" onClick={() => { setIsOpenProvince(false); setProvinceSearch(""); }} />
+                  )}
+                  <div
+                    onClick={() => {
+                      setIsOpenProvince(!isOpenProvince);
+                      setIsOpenDistrict(false);
+                      setProvinceSearch("");
+                    }}
+                    className="p-2.5 border border-slate-200 rounded-md bg-slate-50 text-sm text-slate-700 flex justify-between items-center cursor-pointer relative z-40"
+                  >
+                    <span className="truncate">{formData.province || "Chọn Tỉnh/Thành..."}</span>
+                    <Icon icon="lucide:chevron-down" className={`text-slate-400 transition-transform ${isOpenProvince ? "rotate-180" : ""}`} />
+                  </div>
+
+                  {isOpenProvince && (
+                    <div className="absolute left-0 right-0 top-full mt-1 border rounded-lg bg-white shadow-xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-1 duration-100" style={{ maxHeight: "200px", overflowY: "auto" }}>
+                      <div className="p-2 border-b border-slate-100 bg-slate-50 sticky top-0">
+                        <input
+                          type="text"
+                          value={provinceSearch}
+                          onChange={(e) => setProvinceSearch(e.target.value)}
+                          placeholder="Tìm Tỉnh/Thành..."
+                          className="w-full h-8 px-2 rounded border border-slate-200 text-xs outline-none"
+                          autoFocus
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                      </div>
+                      {provincesLoading ? (
+                        <div className="p-3 space-y-2">
+                          <div className="h-3.5 bg-slate-100 rounded animate-pulse w-3/4"></div>
+                          <div className="h-3.5 bg-slate-100 rounded animate-pulse w-1/2"></div>
+                          <div className="h-3.5 bg-slate-100 rounded animate-pulse w-5/6"></div>
+                        </div>
+                      ) : filteredProvincesList.length === 0 ? (
+                        <div className="px-4 py-2 text-xs text-slate-400 text-center">Không tìm thấy</div>
+                      ) : (
+                        filteredProvincesList.map((p) => (
+                          <div
+                            key={p.code}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedProvinceCode(p.code);
+                              setFormData((prev: any) => ({ ...prev, province: p.name, district: "" }));
+                              setIsOpenProvince(false);
+                              setProvinceSearch("");
+                            }}
+                            className={`px-4 py-2 text-xs sm:text-sm hover:bg-slate-150 cursor-pointer text-left text-slate-700 ${
+                              formData.province === p.name ? "bg-blue-50 font-bold text-blue-600" : ""
+                            }`}
+                          >
+                            {p.name}
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* Quận/Huyện */}
+                <div className="relative flex flex-col gap-2">
+                  <label className="text-sm font-medium text-slate-900">Quận / Huyện chi tiết</label>
+                  {isOpenDistrict && (
+                    <div className="fixed inset-0 z-30" onClick={() => { setIsOpenDistrict(false); setDistrictSearch(""); }} />
+                  )}
+                  <div
+                    onClick={() => {
+                      if (!selectedProvinceCode) return;
+                      setIsOpenDistrict(!isOpenDistrict);
+                      setIsOpenProvince(false);
+                      setDistrictSearch("");
+                    }}
+                    className={`p-2.5 border border-slate-200 rounded-md bg-slate-50 text-sm flex justify-between items-center relative z-40 ${
+                      selectedProvinceCode ? 'cursor-pointer text-slate-700' : 'cursor-not-allowed text-slate-400 opacity-60'
+                    }`}
+                  >
+                    <span className="truncate">
+                      {!selectedProvinceCode ? "Chọn Tỉnh/Thành trước..." : formData.district || "Chọn Quận/Huyện..."}
+                    </span>
+                    <Icon icon="lucide:chevron-down" className={`text-slate-400 transition-transform ${isOpenDistrict ? "rotate-180" : ""}`} />
+                  </div>
+
+                  {isOpenDistrict && selectedProvinceCode && (
+                    <div className="absolute left-0 right-0 top-full mt-1 border rounded-lg bg-white shadow-xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-1 duration-100" style={{ maxHeight: "200px", overflowY: "auto" }}>
+                      <div className="p-2 border-b border-slate-100 bg-slate-50 sticky top-0">
+                        <input
+                          type="text"
+                          value={districtSearch}
+                          onChange={(e) => setDistrictSearch(e.target.value)}
+                          placeholder="Tìm Quận/Huyện..."
+                          className="w-full h-8 px-2 rounded border border-slate-200 text-xs outline-none"
+                          autoFocus
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                      </div>
+                      {districtsLoading ? (
+                        <div className="p-3 space-y-2">
+                          <div className="h-3.5 bg-slate-100 rounded animate-pulse w-3/4"></div>
+                          <div className="h-3.5 bg-slate-100 rounded animate-pulse w-1/2"></div>
+                          <div className="h-3.5 bg-slate-100 rounded animate-pulse w-5/6"></div>
+                        </div>
+                      ) : filteredDistrictsList.length === 0 ? (
+                        <div className="px-4 py-2 text-xs text-slate-400 text-center">Không tìm thấy</div>
+                      ) : (
+                        filteredDistrictsList.map((d) => (
+                          <div
+                            key={d.code}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setFormData((prev: any) => ({ ...prev, district: d.name }));
+                              setIsOpenDistrict(false);
+                              setDistrictSearch("");
+                            }}
+                            className={`px-4 py-2 text-xs sm:text-sm hover:bg-slate-150 cursor-pointer text-left text-slate-700 ${
+                              formData.district === d.name ? "bg-blue-50 font-bold text-blue-600" : ""
+                            }`}
+                          >
+                            {d.name}
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+
               <div className="mt-4">
                 <label className="text-sm font-medium text-slate-900 mb-2 block">Giới thiệu bản thân</label>
                 <textarea 
@@ -177,7 +339,7 @@ export default function ProfessionalProfilePage() {
                 <InputField label="Năm tốt nghiệp" name="graduationYear" value={formData.graduationYear} onChange={handleInputChange} />
                 <div className="flex flex-col gap-2">
                   <label className="text-sm font-medium text-slate-900">Nghề nghiệp hiện tại</label>
-                  <div className="flex items-center justify-between p-2.5 border border-slate-200 rounded-md bg-slate-50 text-sm">
+                  <div className="flex items-center justify-between p-2.5 border border-slate-200 rounded-md bg-slate-50 text-sm text-slate-700 font-medium">
                     {profile?.currentJob || 'Giáo viên tự do'}
                     <Icon icon="lucide:chevron-down" className="text-slate-400" />
                   </div>
@@ -393,8 +555,6 @@ function TutorProfileSkeleton() {
     </main>
   );
 }
-
-// --- SUB-COMPONENTS ---
 
 function SectionCard({ icon, title, children, action }: { icon: string; title: string; children: React.ReactNode; action?: React.ReactNode }) {
   return (

@@ -94,7 +94,10 @@ export class UsersService {
     const role = await this.getOrCreateRole('tutor');
 
     const user = this.usersRepository.create();
-    Object.assign(user, { ...userData, role, isActive: true });
+    const address = userData.address || (tutorData.province 
+      ? `${tutorData.district ? tutorData.district + ', ' : ''}${tutorData.province}` 
+      : undefined);
+    Object.assign(user, { ...userData, address, role, isActive: true });
     const savedUser = await this.usersRepository.save(user);
 
     const tutor = this.tutorsRepository.create();

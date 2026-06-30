@@ -86,5 +86,8 @@ tsbuildinfo
 
 # Backend specific
 dist
-
+screenshots
 *.docx
+*.pdf
+*.txt
+*.py

@@ -10,6 +10,26 @@ interface WeeklyCalendarProps {
   weekRangeLabel: string;
 }
 
+const checkOverlap = (time1: string, time2: string) => {
+  try {
+    const parseTime = (str: string) => {
+      const parts = str.trim().split(':');
+      const h = parseInt(parts[0], 10) || 0;
+      const m = parseInt(parts[1], 10) || 0;
+      return h * 60 + m;
+    };
+    const ranges1 = time1.split(' - ');
+    const ranges2 = time2.split(' - ');
+    const s1 = parseTime(ranges1[0]);
+    const e1 = parseTime(ranges1[1]);
+    const s2 = parseTime(ranges2[0]);
+    const e2 = parseTime(ranges2[1]);
+    return s1 < e2 && s2 < e1;
+  } catch (e) {
+    return false;
+  }
+};
+
 export function WeeklyCalendar({
   calendar,
   isUpdating,
@@ -61,17 +81,34 @@ export function WeeklyCalendar({
                 </div>
                 {item.events && item.events.length > 0 && (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    {item.events.map((evt: any, idx: number) => (
-                      <div 
-                        key={idx}
-                        className={`event ${evt.color}`} 
-                        style={{ padding: '8px', borderRadius: '4px', fontSize: '11px', background: '#dbeafe', borderLeft: '3px solid #3b82f6', cursor: 'pointer' }}
-                      >
-                        <div style={{ fontWeight: 700 }} className="text-blue-900">{evt.time}</div>
-                        <div style={{ fontWeight: 600 }} className="text-blue-800">{evt.title}</div>
-                        <div style={{ marginTop: '4px' }} className="text-blue-700">{evt.student}</div>
-                      </div>
-                    ))}
+                    {item.events.map((evt: any, idx: number) => {
+                      const hasConflict = item.events.some((otherEvt: any, otherIdx: number) => {
+                        if (idx === otherIdx) return false;
+                        return checkOverlap(evt.time, otherEvt.time);
+                      });
+                      return (
+                        <div 
+                          key={idx}
+                          className={`event ${evt.color}`} 
+                          style={{ 
+                            padding: '8px', 
+                            borderRadius: '4px', 
+                            fontSize: '11px', 
+                            background: hasConflict ? '#fef2f2' : '#dbeafe', 
+                            borderLeft: hasConflict ? '3px solid #ef4444' : '3px solid #3b82f6', 
+                            cursor: 'pointer' 
+                          }}
+                          title={hasConflict ? "Lịch dạy bị trùng thời gian!" : ""}
+                        >
+                          <div style={{ fontWeight: 700 }} className={hasConflict ? "text-red-900" : "text-blue-900"}>
+                            {evt.time}
+                            {hasConflict && <span style={{ marginLeft: '4px', color: '#ef4444', fontWeight: 800 }}>⚠️ Trùng!</span>}
+                          </div>
+                          <div style={{ fontWeight: 600 }} className={hasConflict ? "text-red-800" : "text-blue-800"}>{evt.title}</div>
+                          <div style={{ marginTop: '4px' }} className={hasConflict ? "text-red-700" : "text-blue-700"}>{evt.student}</div>
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               </div>

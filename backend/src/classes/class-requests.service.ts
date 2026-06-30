@@ -143,13 +143,13 @@ export class ClassRequestsService {
 
   async proposeTutors(id: string, tutorIds: string[]) {
     const request = await this.findOne(id);
-    
+
     // Fetch tutors
     const tutors = await this.tutorsRepository.find({
       where: { id: In(tutorIds) },
       relations: { user: true },
     });
-    
+
     request.proposedTutors = tutors;
     request.status = RequestStatus.PROCESSING;
     await this.classRequestsRepository.save(request);
@@ -190,12 +190,16 @@ export class ClassRequestsService {
 
     if (!request) throw new NotFoundException('Không tìm thấy yêu cầu');
     if (request.student?.user?.id !== studentUserId) {
-      throw new BadRequestException('Bạn không có quyền chọn gia sư cho yêu cầu này');
+      throw new BadRequestException(
+        'Bạn không có quyền chọn gia sư cho yêu cầu này',
+      );
     }
 
     const selectedTutor = request.proposedTutors.find((t) => t.id === tutorId);
     if (!selectedTutor) {
-      throw new BadRequestException('Gia sư này không nằm trong danh sách đề xuất của trung tâm');
+      throw new BadRequestException(
+        'Gia sư này không nằm trong danh sách đề xuất của trung tâm',
+      );
     }
 
     request.preferredTutor = selectedTutor;

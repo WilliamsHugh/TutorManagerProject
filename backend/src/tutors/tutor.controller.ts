@@ -16,6 +16,13 @@ import { TutorsService } from './tutors.service';
 import { ClassesService } from '../classes/classes.service';
 import { CreateLearningReportDto } from '../classes/dto/create-learning-report.dto';
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type ReqUser = any;
+
+interface TutorRequest {
+  user: ReqUser;
+}
+
 @Controller('tutor')
 @UseGuards(JwtAuthGuard) // Kích hoạt lại bảo mật JWT
 export class TutorController {
@@ -26,28 +33,28 @@ export class TutorController {
 
   // Lấy hồ sơ chi tiết của gia sư
   @Get('profile')
-  async getProfile(@Request() req) {
+  async getProfile(@Request() req: TutorRequest) {
     const tutorId = req.user.id || req.user.sub;
     return { profile: await this.tutorsService.getTutorProfileData(tutorId) };
   }
 
   // Lấy danh sách môn học của gia sư
   @Get('subjects')
-  async getSubjects(@Request() req) {
+  async getSubjects(@Request() req: TutorRequest) {
     const tutorId = req.user.id || req.user.sub;
     return this.tutorsService.getTutorSubjects(tutorId);
   }
 
   // Cập nhật danh sách môn học của gia sư
   @Put('subjects')
-  async updateSubjects(@Request() req, @Body('subjects') subjects: string[]) {
+  async updateSubjects(@Request() req: TutorRequest, @Body('subjects') subjects: string[]) {
     const tutorId = req.user.id || req.user.sub;
     return this.tutorsService.updateTutorSubjects(tutorId, subjects);
   }
 
   // Lấy dữ liệu tổng quan cho Dashboard từ Database
   @Get('dashboard')
-  async getDashboard(@Request() req, @Query('date') date?: string) {
+  async getDashboard(@Request() req: TutorRequest, @Query('date') date?: string) {
     // Đảm bảo lấy đúng ID từ payload JWT (trường sub hoặc id)
     const tutorId = req.user.id || req.user.sub;
     if (!tutorId)
@@ -58,7 +65,7 @@ export class TutorController {
   // Lấy lịch dạy cá nhân (TUTOR_QĐ2)
   @Get('schedule')
   async getMySchedule(
-    @Request() req,
+    @Request() req: TutorRequest,
     @Query('date') date?: string,
     @Query('view') view?: string,
   ) {
@@ -69,37 +76,28 @@ export class TutorController {
   // Đăng ký lịch nghỉ học cho gia sư (theo khoảng thời gian)
   @Post('schedule/leave')
   async createLeaveSchedule(
-    @Request() req,
-    @Body()
-    body: {
-      startDate: string;
-      endDate: string;
-      startTime: string;
-      endTime: string;
-      note: string;
-    },
-  ) {
+    @Request() req: TutorRequest,
     const tutorId = req.user.id || req.user.sub;
     return this.tutorsService.createLeaveSchedule(tutorId, body);
   }
 
   // Hủy lịch nghỉ (phục hồi lại lịch dạy bình thường cho một buổi học cụ thể)
   @Delete('schedule/leave/:id')
-  async cancelLeaveSchedule(@Param('id') id: string, @Request() req) {
+  async cancelLeaveSchedule(@Param('id') id: string, @Request() req: TutorRequest) {
     const tutorId = req.user.id || req.user.sub;
     return this.tutorsService.cancelLeaveSchedule(tutorId, id);
   }
 
   // Lấy danh sách học viên của tôi
   @Get('students')
-  async getMyStudents(@Request() req) {
+  async getMyStudents(@Request() req: TutorRequest) {
     const tutorId = req.user.id || req.user.sub;
     return this.tutorsService.getTutorStudents(tutorId);
   }
 
   // Xem danh sách lớp mới chờ gia sư (TUTOR_QĐ1)
   @Get('new-classes')
-  async getNewClasses(@Request() req) {
+  async getNewClasses(@Request() req: TutorRequest) {
     const tutorId = req.user.id || req.user.sub;
     return this.tutorsService.getAvailableClasses(tutorId);
   }
@@ -112,34 +110,33 @@ export class TutorController {
 
   // Chấp nhận nhận lớp học
   @Post('class-requests/:id/accept')
-  async acceptClass(@Param('id') id: string, @Request() req) {
+  async acceptClass(@Param('id') id: string, @Request() req: TutorRequest) {
     const tutorId = req.user.id || req.user.sub;
     return this.tutorsService.acceptClassRequest(id, tutorId);
   }
 
   // Lấy danh sách thông báo của gia sư
   @Get('notifications')
-  async getNotifications(@Request() req) {
+  async getNotifications(@Request() req: TutorRequest) {
     const tutorId = req.user.id || req.user.sub;
     return this.tutorsService.getNotifications(tutorId);
   }
 
   // Cập nhật hồ sơ chuyên môn
-  @Patch('profile')
-  async updateProfile(@Request() req, @Body() updateData: any) {
+  async updateProfile(@Request() req: TutorRequest, @Body() updateData: Record<string, unknown>) {
     const tutorId = req.user.id || req.user.sub;
     return this.tutorsService.updateTutorProfile(tutorId, updateData);
   }
 
   @Get('classes/:classId/reports')
-  async getClassReports(@Param('classId') classId: string, @Request() req) {
+  async getClassReports(@Param('classId') classId: string, @Request() req: TutorRequest) {
     const tutorId = req.user?.sub || req.user?.id;
     return this.tutorsService.getReportsByClass(classId, tutorId);
   }
 
   // Nộp báo cáo buổi học (TUTOR_BM2)
   @Post('report')
-  async submitReport(@Request() req, @Body() dto: CreateLearningReportDto) {
+  async submitReport(@Request() req: TutorRequest, @Body() dto: CreateLearningReportDto) {
     const tutorId = req.user?.sub || req.user?.id;
     return this.tutorsService.createReport(tutorId, dto);
   }
@@ -147,7 +144,7 @@ export class TutorController {
   @Patch('reports/:id')
   async updateReport(
     @Param('id') id: string,
-    @Request() req,
+    @Request() req: TutorRequest,
     @Body() dto: Partial<CreateLearningReportDto>,
   ) {
     const tutorId = req.user?.sub || req.user?.id;
@@ -155,28 +152,28 @@ export class TutorController {
   }
 
   @Delete('reports/:id')
-  async deleteReport(@Param('id') id: string, @Request() req) {
+  async deleteReport(@Param('id') id: string, @Request() req: TutorRequest) {
     const tutorId = req.user?.sub || req.user?.id;
     return this.tutorsService.deleteReport(id, tutorId);
   }
 
   // Lấy báo cáo thu nhập của gia sư
   @Get('earnings')
-  async getEarnings(@Request() req) {
+  async getEarnings(@Request() req: TutorRequest) {
     const tutorId = req.user?.sub || req.user?.id;
     return this.tutorsService.getTutorEarnings(tutorId);
   }
 
   // Lấy danh sách đề xuất từ học sinh
   @Get('recommendations')
-  async getRecommendations(@Request() req) {
+  async getRecommendations(@Request() req: TutorRequest) {
     const tutorId = req.user.id || req.user.sub;
     return this.tutorsService.getTutorRecommendations(tutorId);
   }
 
   // Lấy danh sách đề xuất đang chờ (PROPOSED + NEGOTIATING)
   @Get('recommendations/pending')
-  async getPendingRecommendations(@Request() req) {
+  async getPendingRecommendations(@Request() req: TutorRequest) {
     const tutorId = req.user.id || req.user.sub;
     return this.tutorsService.getTutorPendingProposals(tutorId);
   }
@@ -185,8 +182,9 @@ export class TutorController {
   @Post('recommendations/:id/propose')
   async proposeRecommendation(
     @Param('id') id: string,
-    @Body() body: { feePerSession: number; totalSessions: number; schedule?: string },
-    @Request() req,
+    @Body()
+    body: { feePerSession: number; totalSessions: number; schedule?: string },
+    @Request() req: TutorRequest,
   ) {
     const tutorId = req.user.id || req.user.sub;
     return this.tutorsService.proposeRecommendation(
@@ -200,7 +198,7 @@ export class TutorController {
 
   // Từ chối đề xuất từ học sinh
   @Post('recommendations/:id/decline')
-  async declineRecommendation(@Param('id') id: string, @Request() req) {
+  async declineRecommendation(@Param('id') id: string, @Request() req: TutorRequest) {
     const tutorId = req.user.id || req.user.sub;
     return this.tutorsService.declineRecommendation(id, tutorId);
   }
@@ -209,8 +207,9 @@ export class TutorController {
   @Post('recommendations/:id/modify')
   async modifyProposal(
     @Param('id') id: string,
-    @Body() body: { feePerSession: number; totalSessions: number; schedule?: string },
-    @Request() req,
+    @Body()
+    body: { feePerSession: number; totalSessions: number; schedule?: string },
+    @Request() req: TutorRequest,
   ) {
     const tutorId = req.user.id || req.user.sub;
     return this.tutorsService.modifyProposal(
@@ -224,14 +223,14 @@ export class TutorController {
 
   // Gia sư đồng ý đề xuất điều chỉnh của học sinh
   @Post('recommendations/:id/confirm')
-  async confirmProposal(@Param('id') id: string, @Request() req) {
+  async confirmProposal(@Param('id') id: string, @Request() req: TutorRequest) {
     const tutorId = req.user.id || req.user.sub;
     return this.tutorsService.confirmProposalByTutor(id, tutorId);
   }
 
   // Rút đề xuất
   @Post('recommendations/:id/withdraw')
-  async withdrawProposal(@Param('id') id: string, @Request() req) {
+  async withdrawProposal(@Param('id') id: string, @Request() req: TutorRequest) {
     const tutorId = req.user.id || req.user.sub;
     return this.tutorsService.withdrawProposal(id, tutorId);
   }
@@ -241,10 +240,15 @@ export class TutorController {
   async requestCancellation(
     @Param('classId') classId: string,
     @Body('reason') reason: string,
-    @Request() req,
+    @Request() req: TutorRequest,
   ) {
     const tutorId = req.user.id || req.user.sub;
-    return this.classesService.requestClassCancellation(classId, tutorId, 'tutor', reason);
+    return this.classesService.requestClassCancellation(
+      classId,
+      tutorId,
+      'tutor',
+      reason,
+    );
   }
 
   // Gia sư phản hồi yêu cầu hủy lớp
@@ -252,22 +256,34 @@ export class TutorController {
   async respondCancellation(
     @Param('classId') classId: string,
     @Body('agree') agree: boolean,
-    @Request() req,
+    @Request() req: TutorRequest,
   ) {
     const tutorId = req.user.id || req.user.sub;
-    return this.classesService.respondToCancellation(classId, tutorId, 'tutor', agree);
+    return this.classesService.respondToCancellation(
+      classId,
+      tutorId,
+      'tutor',
+      agree,
+    );
   }
 
   // Gia sư xem thông tin hủy lớp
   @Get('classes/:classId/cancellation')
-  async getClassCancellation(@Param('classId') classId: string, @Request() req) {
+  async getClassCancellation(
+    @Param('classId') classId: string,
+    @Request() req: TutorRequest,
+  ) {
     const tutorId = req.user.id || req.user.sub;
-    return this.classesService.getClassCancellationInfo(classId, tutorId, 'tutor');
+    return this.classesService.getClassCancellationInfo(
+      classId,
+      tutorId,
+      'tutor',
+    );
   }
 
   // Gia sư lấy danh sách lớp có yêu cầu hủy
   @Get('classes/cancellations')
-  async getCancellations(@Request() req) {
+  async getCancellations(@Request() req: TutorRequest) {
     const tutorId = req.user.id || req.user.sub;
     return this.classesService.getTutorCancellations(tutorId);
   }

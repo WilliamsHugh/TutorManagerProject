@@ -40,7 +40,10 @@ export class AuditLogInterceptor implements NestInterceptor {
               action = 'Cập nhật trạng thái tài khoản';
             } else if (url.includes('/admin/users') && method === 'PUT') {
               action = 'Cập nhật tài khoản';
-            } else if (url.includes('/admin/tutors') && url.includes('/approve')) {
+            } else if (
+              url.includes('/admin/tutors') &&
+              url.includes('/approve')
+            ) {
               action = 'Phê duyệt hồ sơ Gia sư';
             } else if (url.includes('/admin/subjects') && method === 'POST') {
               action = 'Thêm môn học mới';
@@ -57,7 +60,8 @@ export class AuditLogInterceptor implements NestInterceptor {
             // Sanitize body (remove sensitive password keys)
             const sanitizedBody = { ...body };
             if (sanitizedBody.password) delete sanitizedBody.password;
-            if (sanitizedBody.confirmPassword) delete sanitizedBody.confirmPassword;
+            if (sanitizedBody.confirmPassword)
+              delete sanitizedBody.confirmPassword;
 
             try {
               await this.systemLogsService.create({

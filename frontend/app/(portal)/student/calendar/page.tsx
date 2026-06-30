@@ -23,7 +23,7 @@ export default function StudentCalendarPage() {
 
     // Extract classId from various possible locations in the event data
     const classId = event.class?.id || event.classId || (event as any).class_id;
-    let sessionDate = event.sessionDate || (event as any).date;
+    const sessionDate = event.sessionDate || (event as any).date;
     const subjectName = event.class?.subject?.name || event.subject || 'Môn học';
     const tutorName = event.class?.tutor?.user?.fullName || (event as any).tutorName || '';
 

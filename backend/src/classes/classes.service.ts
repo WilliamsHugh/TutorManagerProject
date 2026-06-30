@@ -64,7 +64,9 @@ export class ClassesService {
     }
 
     if (request.status !== RequestStatus.MATCHED) {
-      throw new BadRequestException('Yêu cầu này chưa được thống nhất ghép lớp giữa gia sư và học viên');
+      throw new BadRequestException(
+        'Yêu cầu này chưa được thống nhất ghép lớp giữa gia sư và học viên',
+      );
     }
 
     const tutor = await this.tutorsRepository.findOne({
@@ -164,7 +166,14 @@ export class ClassesService {
     await this.classRequestsRepository.save(request);
 
     // Automatically generate weekly session schedules
-    console.log('[createClass] request.preferredSchedule:', request.preferredSchedule, '| totalSessions:', savedClass.totalSessions, '| startDate:', savedClass.startDate);
+    console.log(
+      '[createClass] request.preferredSchedule:',
+      request.preferredSchedule,
+      '| totalSessions:',
+      savedClass.totalSessions,
+      '| startDate:',
+      savedClass.startDate,
+    );
     if (request.preferredSchedule) {
       await this.generateSchedulesForClass(
         savedClass,
@@ -173,7 +182,9 @@ export class ClassesService {
         savedClass.startDate || new Date(),
       );
     } else {
-      console.log('[createClass] No preferredSchedule found on request - skipping schedule generation');
+      console.log(
+        '[createClass] No preferredSchedule found on request - skipping schedule generation',
+      );
     }
 
     if (request.student?.user?.id) {
@@ -196,8 +207,17 @@ export class ClassesService {
     return savedClass;
   }
 
-  async generateSchedulesForClass(classEntity: Class, scheduleStr: string, totalSessions: number, startDate: Date) {
-    console.log('[generateSchedules] Called with:', { scheduleStr, totalSessions, startDate: startDate?.toISOString() });
+  async generateSchedulesForClass(
+    classEntity: Class,
+    scheduleStr: string,
+    totalSessions: number,
+    startDate: Date,
+  ) {
+    console.log('[generateSchedules] Called with:', {
+      scheduleStr,
+      totalSessions,
+      startDate: startDate?.toISOString(),
+    });
     if (!scheduleStr || scheduleStr === 'Linh hoạt') {
       console.log('[generateSchedules] Skipped: empty or flexible schedule');
       return;
@@ -212,11 +232,24 @@ export class ClassesService {
         'thứ 6': 5,
         'thứ 7': 6,
         'chủ nhật': 0,
-        'cn': 0
+        cn: 0,
       };
 
-      const dayNames = ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'Chủ nhật'];
-      const parsedSchedules: { dayVal: number; dayName: string; startTime: string; endTime: string }[] = [];
+      const dayNames = [
+        'Thứ 2',
+        'Thứ 3',
+        'Thứ 4',
+        'Thứ 5',
+        'Thứ 6',
+        'Thứ 7',
+        'Chủ nhật',
+      ];
+      const parsedSchedules: {
+        dayVal: number;
+        dayName: string;
+        startTime: string;
+        endTime: string;
+      }[] = [];
 
       // Helper: normalize time string to HH:MM:SS
       const normalizeTime = (t: string): string => {
@@ -236,22 +269,28 @@ export class ClassesService {
           if (timeParts.length === 2) {
             const startTimeStr = normalizeTime(timeParts[0]);
             const endTimeStr = normalizeTime(timeParts[1]);
-            
+
             Object.keys(dayMap).forEach((dayKey) => {
               if (daysPart.toLowerCase().includes(dayKey)) {
                 const dayVal = dayMap[dayKey];
-                const dayName = dayNames.find(d => d.toLowerCase() === dayKey) || 'Thứ 2';
-                parsedSchedules.push({ dayVal, dayName, startTime: startTimeStr, endTime: endTimeStr });
+                const dayName =
+                  dayNames.find((d) => d.toLowerCase() === dayKey) || 'Thứ 2';
+                parsedSchedules.push({
+                  dayVal,
+                  dayName,
+                  startTime: startTimeStr,
+                  endTime: endTimeStr,
+                });
               }
             });
           }
         }
       }
-      
+
       // Check for parentheses format: "Thứ 3 (19:00-21:00), Thứ 6 (19:00-21:00)"
       if (parsedSchedules.length === 0 && scheduleStr.includes('(')) {
         const items = scheduleStr.split(',');
-        items.forEach(item => {
+        items.forEach((item) => {
           const trimmedItem = item.trim().toLowerCase();
           const timeMatch = trimmedItem.match(/\(([^)]+)\)/);
           if (timeMatch) {
@@ -265,8 +304,14 @@ export class ClassesService {
                 const dayTextOnly = trimmedItem.split('(')[0];
                 if (dayTextOnly.includes(dayKey)) {
                   const dayVal = dayMap[dayKey];
-                  const dayName = dayNames.find(d => d.toLowerCase() === dayKey) || 'Thứ 2';
-                  parsedSchedules.push({ dayVal, dayName, startTime: startTimeStr, endTime: endTimeStr });
+                  const dayName =
+                    dayNames.find((d) => d.toLowerCase() === dayKey) || 'Thứ 2';
+                  parsedSchedules.push({
+                    dayVal,
+                    dayName,
+                    startTime: startTimeStr,
+                    endTime: endTimeStr,
+                  });
                 }
               });
             }
@@ -274,18 +319,24 @@ export class ClassesService {
         });
       }
 
-      console.log('[generateSchedules] Parsed schedules:', JSON.stringify(parsedSchedules));
+      console.log(
+        '[generateSchedules] Parsed schedules:',
+        JSON.stringify(parsedSchedules),
+      );
 
       if (parsedSchedules.length === 0) {
-        console.log('[generateSchedules] No schedules parsed from:', scheduleStr);
+        console.log(
+          '[generateSchedules] No schedules parsed from:',
+          scheduleStr,
+        );
         return;
       }
 
-      let currentDate = new Date(startDate);
+      const currentDate = new Date(startDate);
       currentDate.setHours(0, 0, 0, 0);
 
       let sessionsCreated = 0;
-      const targetDays = parsedSchedules.map(p => p.dayVal);
+      const targetDays = parsedSchedules.map((p) => p.dayVal);
 
       // Safety: prevent infinite loop (max 365 days lookahead)
       let maxIterations = 365;
@@ -293,7 +344,9 @@ export class ClassesService {
         maxIterations--;
         const dayOfWeekVal = currentDate.getDay(); // 0-6
         if (targetDays.includes(dayOfWeekVal)) {
-          const matchedItem = parsedSchedules.find(p => p.dayVal === dayOfWeekVal);
+          const matchedItem = parsedSchedules.find(
+            (p) => p.dayVal === dayOfWeekVal,
+          );
           if (matchedItem) {
             const schedule = this.scheduleRepository.create({
               class: classEntity,
@@ -311,7 +364,9 @@ export class ClassesService {
         }
         currentDate.setDate(currentDate.getDate() + 1);
       }
-      console.log(`[generateSchedules] Created ${sessionsCreated} sessions for class ${classEntity.id}`);
+      console.log(
+        `[generateSchedules] Created ${sessionsCreated} sessions for class ${classEntity.id}`,
+      );
     } catch (err) {
       console.error('Failed to generate schedules for class:', err);
     }
@@ -361,7 +416,10 @@ export class ClassesService {
     // Cancel remaining scheduled sessions if class is cancelled
     if (status === ClassStatus.CANCELLED) {
       await this.scheduleRepository.update(
-        { class: { id: classEntity.id }, sessionStatus: SessionStatus.SCHEDULED },
+        {
+          class: { id: classEntity.id },
+          sessionStatus: SessionStatus.SCHEDULED,
+        },
         { sessionStatus: SessionStatus.CANCELLED },
       );
     }
@@ -650,7 +708,11 @@ export class ClassesService {
   async createSchedule(classId: string, dto: CreateScheduleDto) {
     const classEntity = await this.classesRepository.findOne({
       where: { id: classId },
-      relations: { tutor: { user: true }, student: { user: true }, subject: true },
+      relations: {
+        tutor: { user: true },
+        student: { user: true },
+        subject: true,
+      },
     });
     if (!classEntity) throw new NotFoundException('Không tìm thấy lớp học');
 
@@ -693,7 +755,13 @@ export class ClassesService {
   ) {
     const schedule = await this.scheduleRepository.findOne({
       where: { id: scheduleId, class: { id: classId } },
-      relations: { class: { tutor: { user: true }, student: { user: true }, subject: true } },
+      relations: {
+        class: {
+          tutor: { user: true },
+          student: { user: true },
+          subject: true,
+        },
+      },
     });
     if (!schedule)
       throw new NotFoundException(
@@ -739,7 +807,13 @@ export class ClassesService {
   async deleteSchedule(classId: string, scheduleId: string) {
     const schedule = await this.scheduleRepository.findOne({
       where: { id: scheduleId, class: { id: classId } },
-      relations: { class: { tutor: { user: true }, student: { user: true }, subject: true } },
+      relations: {
+        class: {
+          tutor: { user: true },
+          student: { user: true },
+          subject: true,
+        },
+      },
     });
     if (!schedule)
       throw new NotFoundException(
@@ -809,7 +883,11 @@ export class ClassesService {
 
     const request = await this.classRequestsRepository.findOne({
       where: { id: requestId },
-      relations: { student: { user: true }, preferredTutor: { user: true }, subject: true },
+      relations: {
+        student: { user: true },
+        preferredTutor: { user: true },
+        subject: true,
+      },
     });
 
     if (!request) throw new NotFoundException('Không tìm thấy yêu cầu');
@@ -817,7 +895,9 @@ export class ClassesService {
       throw new BadRequestException('Bạn không có quyền từ chối yêu cầu này');
     }
     if (request.status !== RequestStatus.PROPOSED) {
-      throw new BadRequestException('Yêu cầu này không ở trạng thái chờ xác nhận');
+      throw new BadRequestException(
+        'Yêu cầu này không ở trạng thái chờ xác nhận',
+      );
     }
 
     const tutor = request.preferredTutor;
@@ -863,15 +943,23 @@ export class ClassesService {
 
     const request = await this.classRequestsRepository.findOne({
       where: { id: requestId },
-      relations: { student: { user: true }, preferredTutor: { user: true }, subject: true },
+      relations: {
+        student: { user: true },
+        preferredTutor: { user: true },
+        subject: true,
+      },
     });
 
     if (!request) throw new NotFoundException('Không tìm thấy yêu cầu');
     if (request.student.id !== student.id) {
-      throw new BadRequestException('Bạn không có quyền yêu cầu sửa đề xuất này');
+      throw new BadRequestException(
+        'Bạn không có quyền yêu cầu sửa đề xuất này',
+      );
     }
     if (request.status !== RequestStatus.PROPOSED) {
-      throw new BadRequestException('Yêu cầu này không ở trạng thái chờ xác nhận');
+      throw new BadRequestException(
+        'Yêu cầu này không ở trạng thái chờ xác nhận',
+      );
     }
 
     if (feePerSession) request.proposedFee = feePerSession;
@@ -882,10 +970,14 @@ export class ClassesService {
 
     const adjustText = [
       note ? `Lời nhắn: ${note}` : '',
-      feePerSession ? `Học phí: ${feePerSession.toLocaleString('vi-VN')}đ/buổi` : '',
+      feePerSession
+        ? `Học phí: ${feePerSession.toLocaleString('vi-VN')}đ/buổi`
+        : '',
       totalSessions ? `Số buổi: ${totalSessions} buổi` : '',
       schedule ? `Lịch học: ${schedule}` : '',
-    ].filter(Boolean).join(', ');
+    ]
+      .filter(Boolean)
+      .join(', ');
 
     request.requirements = [
       request.requirements || '',
@@ -938,7 +1030,9 @@ export class ClassesService {
     }
 
     if (classEntity.status !== ClassStatus.ACTIVE) {
-      throw new BadRequestException('Chỉ có thể yêu cầu hủy lớp đang hoạt động');
+      throw new BadRequestException(
+        'Chỉ có thể yêu cầu hủy lớp đang hoạt động',
+      );
     }
 
     classEntity.status = ClassStatus.CANCELLATION_REQUESTED;
@@ -991,7 +1085,9 @@ export class ClassesService {
         throw new BadRequestException('Bạn không phải gia sư của lớp này');
       }
       if (classEntity.cancellationRequestedBy === 'tutor') {
-        throw new BadRequestException('Bạn đã yêu cầu hủy, không thể tự phản hồi');
+        throw new BadRequestException(
+          'Bạn đã yêu cầu hủy, không thể tự phản hồi',
+        );
       }
     } else if (role === 'student') {
       const student = await this.studentsRepository.findOne({
@@ -1001,7 +1097,9 @@ export class ClassesService {
         throw new BadRequestException('Bạn không phải học viên của lớp này');
       }
       if (classEntity.cancellationRequestedBy === 'student') {
-        throw new BadRequestException('Bạn đã yêu cầu hủy, không thể tự phản hồi');
+        throw new BadRequestException(
+          'Bạn đã yêu cầu hủy, không thể tự phản hồi',
+        );
       }
     }
 
@@ -1066,7 +1164,9 @@ export class ClassesService {
       where: { user: { id: userId } },
     });
     if (!student) {
-      throw new NotFoundException('Không tìm thấy học viên tương ứng với tài khoản này');
+      throw new NotFoundException(
+        'Không tìm thấy học viên tương ứng với tài khoản này',
+      );
     }
 
     const request = await this.classRequestsRepository.findOne({
@@ -1088,11 +1188,15 @@ export class ClassesService {
     }
 
     if (request.status !== RequestStatus.PROPOSED) {
-      throw new BadRequestException('Yêu cầu này không ở trạng thái chờ xác nhận');
+      throw new BadRequestException(
+        'Yêu cầu này không ở trạng thái chờ xác nhận',
+      );
     }
 
     if (!request.proposedFee || !request.proposedSessions) {
-      throw new BadRequestException('Gia sư chưa gửi đề xuất học phí và số buổi');
+      throw new BadRequestException(
+        'Gia sư chưa gửi đề xuất học phí và số buổi',
+      );
     }
 
     if (!request.preferredTutor) {
@@ -1139,7 +1243,8 @@ export class ClassesService {
     }
 
     return {
-      message: 'Bạn đã xác nhận đề xuất của gia sư thành công! Yêu cầu đã được gửi tới nhân viên trung tâm để duyệt tạo lớp.',
+      message:
+        'Bạn đã xác nhận đề xuất của gia sư thành công! Yêu cầu đã được gửi tới nhân viên trung tâm để duyệt tạo lớp.',
     };
   }
 
@@ -1148,7 +1253,9 @@ export class ClassesService {
       where: { user: { id: userId } },
     });
     if (!student) {
-      throw new NotFoundException('Không tìm thấy học viên tương ứng với tài khoản này');
+      throw new NotFoundException(
+        'Không tìm thấy học viên tương ứng với tài khoản này',
+      );
     }
 
     const requests = await this.classRequestsRepository.find({
@@ -1192,7 +1299,11 @@ export class ClassesService {
     });
   }
 
-  async getClassCancellationInfo(classId: string, userId: string, role: 'tutor' | 'student') {
+  async getClassCancellationInfo(
+    classId: string,
+    userId: string,
+    role: 'tutor' | 'student',
+  ) {
     const classEntity = await this.findOne(classId);
 
     // Verify ownership
@@ -1217,7 +1328,8 @@ export class ClassesService {
     }
 
     // Get the requesting party name
-    const otherRole = classEntity.cancellationRequestedBy === 'tutor' ? 'student' : 'tutor';
+    const otherRole =
+      classEntity.cancellationRequestedBy === 'tutor' ? 'student' : 'tutor';
     let requestedByName = '';
     if (classEntity.cancellationRequestedBy === 'tutor') {
       requestedByName = classEntity.tutor?.user?.fullName || 'Gia sư';
@@ -1236,7 +1348,11 @@ export class ClassesService {
     };
   }
 
-  async getStudentScheduleReport(userId: string, classId: string, sessionDate: string) {
+  async getStudentScheduleReport(
+    userId: string,
+    classId: string,
+    sessionDate: string,
+  ) {
     const student = await this.studentsRepository.findOne({
       where: { user: { id: userId } },
     });
@@ -1280,7 +1396,9 @@ export class ClassesService {
       relations: { user: true },
     });
     if (!student) {
-      throw new NotFoundException('Không tìm thấy học viên tương ứng với tài khoản này');
+      throw new NotFoundException(
+        'Không tìm thấy học viên tương ứng với tài khoản này',
+      );
     }
 
     const classEntity = await this.classesRepository.findOne({
@@ -1295,8 +1413,13 @@ export class ClassesService {
       throw new NotFoundException('Không tìm thấy lớp học cũ của bạn');
     }
 
-    if (classEntity.status !== ClassStatus.CANCELLED && classEntity.status !== ClassStatus.COMPLETED) {
-      throw new BadRequestException('Chỉ có thể đăng ký học lại từ lớp học đã kết thúc hoặc bị hủy');
+    if (
+      classEntity.status !== ClassStatus.CANCELLED &&
+      classEntity.status !== ClassStatus.COMPLETED
+    ) {
+      throw new BadRequestException(
+        'Chỉ có thể đăng ký học lại từ lớp học đã kết thúc hoặc bị hủy',
+      );
     }
 
     // Check if there is already a pending class request with this tutor for this student and subject
@@ -1305,12 +1428,20 @@ export class ClassesService {
         student: { id: student.id },
         preferredTutor: { id: classEntity.tutor.id },
         subject: { id: classEntity.subject.id },
-        status: In([RequestStatus.PENDING, RequestStatus.PROCESSING, RequestStatus.PROPOSED, RequestStatus.NEGOTIATING, RequestStatus.MATCHED]),
+        status: In([
+          RequestStatus.PENDING,
+          RequestStatus.PROCESSING,
+          RequestStatus.PROPOSED,
+          RequestStatus.NEGOTIATING,
+          RequestStatus.MATCHED,
+        ]),
       },
     });
 
     if (existingRequest) {
-      throw new ConflictException('Đã tồn tại một yêu cầu đang xử lý với gia sư này cho môn học này');
+      throw new ConflictException(
+        'Đã tồn tại một yêu cầu đang xử lý với gia sư này cho môn học này',
+      );
     }
 
     // Create a new ClassRequest with MATCHED status
@@ -1318,7 +1449,8 @@ export class ClassesService {
       student,
       subject: classEntity.subject,
       preferredTutor: classEntity.tutor,
-      preferredArea: classEntity.location || student.user.phone || 'Chưa cập nhật',
+      preferredArea:
+        classEntity.location || student.user.phone || 'Chưa cập nhật',
       preferredSchedule: classEntity.notes || 'Linh hoạt',
       requirements: `Đăng ký học lại với gia sư ${classEntity.tutor.user?.fullName || 'Gia sư'} từ lớp cũ (Mã lớp: CLASS-${classEntity.id.replace(/-/g, '').slice(0, 6).toUpperCase()})`,
       status: RequestStatus.MATCHED,

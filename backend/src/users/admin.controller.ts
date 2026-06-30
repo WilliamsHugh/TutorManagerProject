@@ -28,6 +28,57 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles, RoleType } from '../auth/decorators/roles.decorator';
 import * as bcrypt from 'bcryptjs';
 
+interface CreateUserBody {
+  email: string;
+  password: string;
+  fullName: string;
+  phone?: string;
+  address?: string;
+  roleName: string;
+}
+
+interface UpdateUserBody {
+  fullName?: string;
+  phone?: string;
+  address?: string;
+  email?: string;
+  isActive?: boolean;
+  roleName?: string;
+}
+
+interface CreateSubjectBody {
+  name: string;
+  gradeLevel?: string;
+  description?: string;
+}
+
+interface UpdateSubjectBody {
+  name?: string;
+  gradeLevel?: string;
+  description?: string;
+  isActive?: boolean;
+}
+
+interface AuthenticatedRequest {
+  user: {
+    id: string;
+    sub?: string;
+    email?: string;
+    role?: { name: string };
+    [key: string]: unknown;
+  };
+}
+
+interface ClassStatusCount {
+  status: string;
+  count: string;
+}
+
+interface SubjectPopularityRow {
+  subject: string | null;
+  count: string;
+}
+
 @Controller('admin')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(RoleType.ADMIN, RoleType.STAFF)
@@ -58,7 +109,7 @@ export class AdminController {
   }
 
   @Post('users')
-  async createUser(@Body() body: any) {
+  async createUser(@Body() body: CreateUserBody) {
     const { email, password, fullName, phone, address, roleName } = body;
     if (!email || !password || !fullName || !roleName) {
       throw new ConflictException('Thiếu thông tin bắt buộc');
@@ -114,7 +165,7 @@ export class AdminController {
   async toggleUserStatus(
     @Param('id') id: string,
     @Body() body: { isActive: boolean },
-    @Request() req: any,
+    @Request() req: AuthenticatedRequest,
   ) {
     const user = await this.usersRepo.findOneBy({ id });
     if (!user) throw new NotFoundException('Không tìm thấy người dùng');
@@ -137,7 +188,7 @@ export class AdminController {
   }
 
   @Put('users/:id')
-  async updateUser(@Param('id') id: string, @Body() body: any) {
+  async updateUser(@Param('id') id: string, @Body() body: UpdateUserBody) {
     const user = await this.usersRepo.findOne({
       where: { id },
       relations: ['role'],
@@ -239,7 +290,7 @@ export class AdminController {
   async approveTutor(
     @Param('id') id: string,
     @Body() body: { status: string },
-    @Request() req: any,
+    @Request() req: AuthenticatedRequest,
   ) {
     const tutor = await this.tutorsRepo.findOne({
       where: { id },
@@ -248,7 +299,7 @@ export class AdminController {
     if (!tutor) throw new NotFoundException('Không tìm thấy gia sư');
 
     const statusInput = body.status?.toLowerCase();
-    if (!Object.values(ApprovalStatus).includes(statusInput as any)) {
+    if (!Object.values(ApprovalStatus).includes(statusInput as ApprovalStatus)) {
       throw new ConflictException('Trạng thái phê duyệt không hợp lệ');
     }
     const statusEnum = statusInput as ApprovalStatus;
@@ -272,7 +323,7 @@ export class AdminController {
   }
 
   @Post('subjects')
-  async createSubject(@Body() body: any) {
+  async createSubject(@Body() body: CreateSubjectBody) {
     const { name, gradeLevel, description } = body;
     if (!name) throw new ConflictException('Tên môn học không được để trống');
 
@@ -286,7 +337,7 @@ export class AdminController {
   }
 
   @Put('subjects/:id')
-  async updateSubject(@Param('id') id: string, @Body() body: any) {
+  async updateSubject(@Param('id') id: string, @Body() body: UpdateSubjectBody) {
     const subject = await this.subjectsRepo.findOneBy({ id });
     if (!subject) throw new NotFoundException('Không tìm thấy môn học');
 
@@ -318,8 +369,8 @@ export class AdminController {
     @Query('fromDate') fromDate?: string,
     @Query('toDate') toDate?: string,
   ) {
-    const classWhere: any = {};
-    const requestWhere: any = {};
+    const classWhere: Record<string, unknown> = {};
+    const requestWhere: Record<string, unknown> = {};
 
     if (fromDate && toDate) {
       const start = new Date(fromDate);
@@ -355,13 +406,13 @@ export class AdminController {
       ...monthlyTrendCounts
     ] = await Promise.all([
       this.classesRepo.count({
-        where: { ...classWhere, status: 'active' as any },
+        where: { ...classWhere, status: 'active' as const },
       }),
       this.classesRepo.count({
-        where: { ...classWhere, status: 'completed' as any },
+        where: { ...classWhere, status: 'completed' as const },
       }),
       this.requestsRepo.count({
-        where: { ...requestWhere, status: 'pending' as any },
+        where: { ...requestWhere, status: 'pending' as const },
       }),
       this.tutorsRepo.count({
         where: {
@@ -370,7 +421,7 @@ export class AdminController {
         },
       }),
       this.classesRepo.find({
-        where: { status: 'active' as any },
+        where: { status: 'active' as const },
         relations: ['student'],
       }),
 
@@ -423,7 +474,7 @@ export class AdminController {
       cancelled: 0,
       suspended: 0,
     };
-    classStatusCounts.forEach((c) => {
+    classStatusCounts.forEach((c: ClassStatusCount) => {
       if (c.status in classStatusDistribution) {
         classStatusDistribution[c.status] = parseInt(c.count, 10);
       }
@@ -436,13 +487,13 @@ export class AdminController {
       matched: 0,
       cancelled: 0,
     };
-    requestStatusCounts.forEach((r) => {
+    requestStatusCounts.forEach((r: ClassStatusCount) => {
       if (r.status in requestStatusDistribution) {
         requestStatusDistribution[r.status] = parseInt(r.count, 10);
       }
     });
 
-    const subjectPopularity = subjectPopularityRaw.map((item) => ({
+    const subjectPopularity = (subjectPopularityRaw as SubjectPopularityRow[]).map((item) => ({
       subject: item.subject || 'Khác',
       count: parseInt(item.count, 10),
     }));

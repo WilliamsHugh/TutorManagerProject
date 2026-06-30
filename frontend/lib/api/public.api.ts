@@ -116,12 +116,14 @@ export async function getStudentTutors(params?: {
 export async function getPublicTutors(params?: {
   search?: string;
   subject?: string;
+  province?: string;
   page?: number;
   limit?: number;
 }) {
   const searchParams = new URLSearchParams();
   if (params?.search) searchParams.set('search', params.search);
   if (params?.subject) searchParams.set('subject', params.subject);
+  if (params?.province) searchParams.set('province', params.province);
   if (params?.page) searchParams.set('page', String(params.page));
   if (params?.limit) searchParams.set('limit', String(params.limit));
   const query = searchParams.toString();

@@ -146,7 +146,7 @@ export default function TutorDashboard() {
       setIsEditingReport(null);
       setReportFormData({ content: '', homework: '', progressRating: 'good', attendanceStatus: true });
     } catch (err: any) { 
-      console.error("Report Save Error:", err);
+      console.warn("Report Save Error:", err.message);
       showToast(err.message || "Lỗi khi lưu báo cáo. Vui lòng kiểm tra lại dữ liệu.", "error"); 
     }
   };
@@ -227,8 +227,18 @@ export default function TutorDashboard() {
                   <div className="stat-data" style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                     <span className="stat-label" style={{ fontSize: '13px', color: '#64748b' }}>{stat.label}</span>
                     <span className="stat-value" style={{ fontSize: '24px', fontWeight: 700 }}>
-                      {stat.value} {stat.sub && <span style={{ fontSize: '13px', color: '#64748b' }}>{stat.sub}</span>}
+                      {stat.value}
+                      {stat.sub && stat.sub.startsWith('/') && (
+                        <span style={{ fontSize: '13px', color: '#64748b', fontWeight: 500, marginLeft: '4px' }}>
+                          {stat.sub}
+                        </span>
+                      )}
                     </span>
+                    {stat.sub && !stat.sub.startsWith('/') && (
+                      <span className="stat-sub" style={{ fontSize: '13px', color: '#64748b', fontWeight: 500, marginTop: '2px' }}>
+                        {stat.sub}
+                      </span>
+                    )}
                   </div>
                 </div>
               )) : (
@@ -358,8 +368,14 @@ export default function TutorDashboard() {
                       </td>
                       <td style={{ padding: '16px 24px' }}>
                         <button 
-                          onClick={() => setReportingClass({ id: cls.id, classId: cls.rawId, name: cls.subject, student: cls.student })}
-                          style={{ background: 'none', border: 'none', cursor: 'pointer', marginRight: '8px' }} 
+                          onClick={() => {
+                            if (cls.submittedReportsCount >= cls.completedSessions) {
+                              showToast("Bạn đã nộp đủ báo cáo cho các buổi học tính đến hiện tại. Không thể nộp báo cáo cho các buổi học trong tương lai.", "error");
+                            } else {
+                              setReportingClass({ id: cls.id, classId: cls.rawId, name: cls.subject, student: cls.student });
+                            }
+                          }}
+                          style={{ background: 'none', border: 'none', cursor: cls.submittedReportsCount >= cls.completedSessions ? 'not-allowed' : 'pointer', marginRight: '8px', opacity: cls.submittedReportsCount >= cls.completedSessions ? 0.5 : 1 }} 
                           title="Báo cáo"
                         ><Icon icon="lucide:file-text" fontSize={18} /></button>
                         <button 

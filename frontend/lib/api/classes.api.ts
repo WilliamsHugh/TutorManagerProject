@@ -68,7 +68,7 @@ export async function submitLearningReport(data: any) {
       ? errorData.message.join(', ') 
       : (errorData.message || 'Không thể nộp báo cáo');
     
-    console.error("Chi tiết lỗi từ Backend:", errorData);
+    console.warn("Chi tiết lỗi từ Backend:", errorData);
     // Quăng lỗi với nội dung cụ thể (ví dụ: "classId must be a UUID")
     throw new Error(message);
   }

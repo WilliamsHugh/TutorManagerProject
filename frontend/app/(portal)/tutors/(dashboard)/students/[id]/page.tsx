@@ -128,11 +128,11 @@ export default function StudentDetailPage() {
     const totalReports = reports.length;
     const completedCount = classDetail?.completedSessions || totalReports;
     const totalSessions = classDetail?.totalSessions || 20;
-    const progressPercent = classDetail?.progress || 0;
 
-    // 1. Đã học (buổi): số buổi có mặt hoặc số báo cáo
-    const attended = reports.filter(r => r.attendanceStatus === true).length;
-    const displayAttended = totalReports > 0 ? attended : completedCount;
+    // 1. Đã học (buổi): số buổi từ khi bắt đầu khóa học đến hiện tại, không tính nghỉ
+    const displayAttended = Math.min(totalSessions, completedCount);
+
+    const progressPercent = Math.min(100, Math.round((displayAttended / totalSessions) * 100));
 
     // 2. Vắng mặt: số báo cáo vắng mặt
     const absent = reports.filter(r => r.attendanceStatus === false).length;
@@ -313,8 +313,18 @@ export default function StudentDetailPage() {
             </button>
             {classDetail && (
               <button 
-                onClick={() => setIsModalOpen(true)} 
-                className="px-5 py-2.5 rounded-xl bg-blue-600 text-white hover:bg-blue-700 text-sm font-bold flex items-center gap-2 transition-all duration-205 shadow-[0_4px_14px_rgba(37,99,235,0.15)] hover:shadow-[0_6px_20px_rgba(37,99,235,0.25)] active:scale-95 cursor-pointer border-none"
+                onClick={() => {
+                  if (reports.length >= computedStats.attended) {
+                    showToast("Bạn đã nộp đủ báo cáo cho các buổi học tính đến hiện tại. Không thể nộp báo cáo cho các buổi học trong tương lai.", "error");
+                    return;
+                  }
+                  setIsModalOpen(true);
+                }}
+                className={`px-5 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 transition-all duration-205 border-none ${
+                  reports.length >= computedStats.attended 
+                    ? 'bg-slate-300 text-slate-500 cursor-not-allowed'
+                    : 'bg-blue-600 text-white hover:bg-blue-700 shadow-[0_4px_14px_rgba(37,99,235,0.15)] hover:shadow-[0_6px_20px_rgba(37,99,235,0.25)] active:scale-95 cursor-pointer'
+                }`}
               >
                 <ClipboardEdit size={16} /> Nộp báo cáo học tập
               </button>

@@ -7,8 +7,7 @@ import {
   ConflictException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Between, In, IsNull, Not } from 'typeorm';
-
+import { Repository, Between, In, IsNull, Not, LessThanOrEqual } from 'typeorm';
 // Entities
 import { Class, ClassStatus } from '../classes/entities/class.entity';
 import { Schedule, SessionStatus } from '../classes/entities/schedule.entity';
@@ -334,23 +333,42 @@ export class TutorsService implements OnModuleInit {
     });
 
     const totalHours = weeklySchedules.length * 2; // Giả sử mỗi buổi 2h
-    const weeklyIncome = weeklySchedules
-      .filter((s) => s.sessionStatus === SessionStatus.COMPLETED)
-      .reduce((acc, curr) => acc + Number(curr.class?.feePerSession || 0), 0);
-
-    // Tính tổng thu nhập tất cả các thời kỳ
-    const allCompletedSchedules = await this.scheduleRepository.find({
+    // Tính tổng thu nhập tất cả các thời kỳ và thu nhập tháng hiện tại dựa trên lịch dạy đã qua (không tính buổi nghỉ)
+    const allSchedules = await this.scheduleRepository.find({
       where: {
         class: { tutor: { id: tutorId } },
-        sessionStatus: SessionStatus.COMPLETED,
+        sessionStatus: Not(SessionStatus.CANCELLED),
       },
       relations: ['class'],
     });
-    const totalEarnings = allCompletedSchedules.reduce(
-      (acc, curr) => acc + Number(curr.class?.feePerSession || 0),
-      0,
-    );
-    const totalCompletedSessions = allCompletedSchedules.length;
+    
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+
+    let monthlyIncome = 0;
+    let totalEarnings = 0;
+    let totalCompletedSessions = 0;
+
+    for (const s of allSchedules) {
+      const sDateObj = s.sessionDate instanceof Date ? s.sessionDate : new Date(s.sessionDate);
+      const year = sDateObj.getFullYear();
+      const month = sDateObj.getMonth() + 1;
+      const day = sDateObj.getDate();
+      const [sh, sm] = s.startTime.split(':').map(Number);
+      const sessionStart = new Date(year, month - 1, day, sh, sm, 0, 0);
+
+      if (sessionStart <= now) {
+        const fee = Number(s.class?.feePerSession || 0);
+        totalEarnings += fee;
+        totalCompletedSessions++;
+
+        // so sánh tháng học (sDateObj của buổi học) với tháng hiện tại
+        if (sDateObj.getMonth() === currentMonth && sDateObj.getFullYear() === currentYear) {
+          monthlyIncome += fee;
+        }
+      }
+    }
 
     const stats = [
       {
@@ -375,10 +393,7 @@ export class TutorsService implements OnModuleInit {
       {
         label: 'Tổng thu nhập',
         value: `${totalEarnings.toLocaleString('vi-VN')}đ`,
-        sub:
-          weeklyIncome > 0
-            ? `Tuần này: ${weeklyIncome.toLocaleString('vi-VN')}đ`
-            : `${totalCompletedSessions} buổi đã dạy`,
+        sub: `Tháng này: ${monthlyIncome.toLocaleString('vi-VN')}đ`,
         icon: 'lucide:wallet',
         color: 'purple',
       },
@@ -459,13 +474,27 @@ export class TutorsService implements OnModuleInit {
 
     const currentClasses = await Promise.all(
       myClasses.map(async (cls) => {
-        const completedCount = await this.scheduleRepository.count({
+        const schedules = await this.scheduleRepository.find({
           where: {
             class: { id: cls.id },
-            sessionStatus: SessionStatus.COMPLETED,
+            sessionStatus: Not(SessionStatus.CANCELLED),
           },
         });
+        const now = new Date();
+        const completedCount = schedules.filter(s => {
+          const sDateObj = s.sessionDate instanceof Date ? s.sessionDate : new Date(s.sessionDate);
+          const year = sDateObj.getFullYear();
+          const month = sDateObj.getMonth() + 1;
+          const day = sDateObj.getDate();
+          const [sh, sm] = s.startTime.split(':').map(Number);
+          const sessionStart = new Date(year, month - 1, day, sh, sm, 0, 0);
+          return sessionStart <= now;
+        }).length;
         const total = cls.totalSessions || 1;
+
+        const submittedReportsCount = await this.learningReportRepository.count({
+          where: { class: { id: cls.id } },
+        });
 
         return {
           id: `#L${cls.id?.substring(0, 4).toUpperCase() || 'XXXX'}`,
@@ -479,10 +508,11 @@ export class TutorsService implements OnModuleInit {
           initials:
             cls.student?.user?.fullName?.substring(0, 2).toUpperCase() || 'NA',
           schedule: 'Hàng tuần',
-          progress: Math.round((completedCount / total) * 100),
-          sessions: `${completedCount}/${total}`,
-          completedSessions: completedCount,
+          progress: Math.min(100, Math.round((completedCount / total) * 100)),
+          sessions: `${Math.min(completedCount, total)}/${total}`,
+          completedSessions: Math.min(completedCount, total),
           totalSessions: total,
+          submittedReportsCount,
           status: 'success',
         };
       }),
@@ -600,14 +630,27 @@ export class TutorsService implements OnModuleInit {
 
     const formattedStudents = await Promise.all(
       classes.map(async (cls) => {
-        // Tính số buổi đã học thực tế cho từng lớp học cụ thể
-        const completedCount = await this.scheduleRepository.count({
+        const schedules = await this.scheduleRepository.find({
           where: {
             class: { id: cls.id },
-            sessionStatus: SessionStatus.COMPLETED,
+            sessionStatus: Not(SessionStatus.CANCELLED),
           },
         });
+        const now = new Date();
+        const completedCount = schedules.filter(s => {
+          const sDateObj = s.sessionDate instanceof Date ? s.sessionDate : new Date(s.sessionDate);
+          const year = sDateObj.getFullYear();
+          const month = sDateObj.getMonth() + 1;
+          const day = sDateObj.getDate();
+          const [sh, sm] = s.startTime.split(':').map(Number);
+          const sessionStart = new Date(year, month - 1, day, sh, sm, 0, 0);
+          return sessionStart <= now;
+        }).length;
         const total = cls.totalSessions || 24;
+
+        const submittedReportsCount = await this.learningReportRepository.count({
+          where: { class: { id: cls.id } },
+        });
 
         return {
           id: cls.id, // Class ID làm định danh quản lý
@@ -620,7 +663,8 @@ export class TutorsService implements OnModuleInit {
           avatar: cls.student?.user?.avatarUrl || 'https://storage.googleapis.com/banani-avatars/avatar%2Ffemale%2F25-35%2FSoutheast%20Asian%2F1',
           lastSubject: cls.subject?.name || 'Môn học',
           totalSessions: total,
-          completedSessions: completedCount,
+          completedSessions: Math.min(completedCount, total),
+          submittedReportsCount,
           feePerSession: Number(cls.feePerSession || 0),
           status: cls.status === ClassStatus.ACTIVE ? 'Đang học' : cls.status === ClassStatus.SUSPENDED ? 'Tạm dừng' : 'Đã kết thúc',
           rawStatus: cls.status,
@@ -868,8 +912,9 @@ export class TutorsService implements OnModuleInit {
         schedule.sessionDate instanceof Date
           ? schedule.sessionDate
           : new Date(schedule.sessionDate);
-      const dateStr = sDateObj.toISOString().split('T')[0];
-      const [year, month, day] = dateStr.split('-').map(Number);
+      const year = sDateObj.getFullYear();
+      const month = sDateObj.getMonth() + 1;
+      const day = sDateObj.getDate();
 
       const [sh, sm] = schedule.startTime.split(':').map(Number);
       const [eh, em] = schedule.endTime.split(':').map(Number);
@@ -925,6 +970,47 @@ export class TutorsService implements OnModuleInit {
     };
   }
 
+  async cancelLeaveScheduleRange(
+    userId: string,
+    body: {
+      startDate: string;
+      endDate: string;
+    },
+  ) {
+    const profile = await this.getTutorProfileData(userId);
+    const tutorId = profile.id;
+
+    // Fetch cancelled schedules spanning the entire date range
+    const startRange = new Date(body.startDate);
+    startRange.setHours(0, 0, 0, 0);
+    const endRange = new Date(body.endDate);
+    endRange.setHours(23, 59, 59, 999);
+
+    const schedules = await this.scheduleRepository.find({
+      where: {
+        class: { tutor: { id: tutorId } },
+        sessionDate: Between(startRange, endRange),
+        sessionStatus: SessionStatus.CANCELLED,
+      },
+    });
+
+    let restoredCount = 0;
+    for (const schedule of schedules) {
+      schedule.sessionStatus = SessionStatus.SCHEDULED;
+      schedule.note = null as any; // Clear the leave note
+      await this.scheduleRepository.save(schedule);
+      restoredCount++;
+    }
+
+    return {
+      message:
+        restoredCount > 0
+          ? `Đã hủy lịch nghỉ và khôi phục ${restoredCount} buổi học thành công`
+          : 'Hủy lịch nghỉ thành công (không có buổi học nào bị nghỉ trong khoảng thời gian này)',
+      restoredCount,
+    };
+  }
+
   async getReportsByClass(classId: string, userId: string) {
     try {
       const profile = await this.getTutorProfileData(userId);
@@ -961,6 +1047,63 @@ export class TutorsService implements OnModuleInit {
     if (classInstance.tutor.id !== tutorId)
       throw new ForbiddenException('Bạn không có quyền nộp báo cáo.');
 
+    // Kiểm tra tổng số lượng báo cáo đã nộp so với tổng số buổi học đã diễn ra đến hiện tại (không tính buổi nghỉ)
+    const schedulesForClass = await this.scheduleRepository.find({
+      where: {
+        class: { id: dto.classId },
+        sessionStatus: Not(SessionStatus.CANCELLED),
+      },
+    });
+    const nowCheck = new Date();
+    const elapsedCount = schedulesForClass.filter(s => {
+      const sDateObj = s.sessionDate instanceof Date ? s.sessionDate : new Date(s.sessionDate);
+      const year = sDateObj.getFullYear();
+      const month = sDateObj.getMonth() + 1;
+      const day = sDateObj.getDate();
+      const [sh, sm] = s.startTime.split(':').map(Number);
+      const sessionStart = new Date(year, month - 1, day, sh, sm, 0, 0);
+      return sessionStart <= nowCheck;
+    }).length;
+
+    const reportsCount = await this.learningReportRepository.count({
+      where: { class: { id: dto.classId } },
+    });
+
+    if (reportsCount >= elapsedCount) {
+      throw new BadRequestException(
+        'Bạn đã nộp đủ báo cáo cho các buổi học tính đến hiện tại. Không thể nộp báo cáo cho các buổi học trong tương lai.'
+      );
+    }
+
+    // Lấy buổi học cũ nhất chưa được báo cáo
+    const schedule = await this.scheduleRepository.findOne({
+      where: {
+        class: { id: dto.classId },
+        sessionStatus: SessionStatus.SCHEDULED,
+      },
+      order: { sessionDate: 'ASC', startTime: 'ASC' },
+    });
+
+    if (!schedule) {
+      throw new BadRequestException('Bạn đã nộp đủ báo cáo cho các buổi học.');
+    }
+
+    // Kiểm tra xem buổi học này có ở tương lai hay không (so sánh cả ngày và giờ bắt đầu)
+    const sDateObj =
+      schedule.sessionDate instanceof Date
+        ? schedule.sessionDate
+        : new Date(schedule.sessionDate);
+    const year = sDateObj.getFullYear();
+    const month = sDateObj.getMonth() + 1;
+    const day = sDateObj.getDate();
+
+    const [sh, sm] = schedule.startTime.split(':').map(Number);
+    const sessionStart = new Date(year, month - 1, day, sh, sm, 0, 0);
+
+    if (sessionStart > new Date()) {
+      throw new BadRequestException('Bạn đã nộp đủ báo cáo cho các buổi học tính đến hiện tại. Không thể nộp báo cáo cho các buổi học trong tương lai.');
+    }
+
     const { classId, ...reportData } = dto;
 
     const newReport = this.learningReportRepository.create({
@@ -972,35 +1115,10 @@ export class TutorsService implements OnModuleInit {
 
     const savedReport = await this.learningReportRepository.save(newReport);
 
-    // Auto-update the oldest SCHEDULED schedule of this class to COMPLETED
+    // Cập nhật trạng thái buổi học thành đã hoàn thành
     try {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-
-      // Check if there is a scheduled session today
-      let schedule = await this.scheduleRepository.findOne({
-        where: {
-          class: { id: classId },
-          sessionDate: today,
-          sessionStatus: SessionStatus.SCHEDULED,
-        },
-      });
-
-      // If not, find the oldest scheduled session
-      if (!schedule) {
-        schedule = await this.scheduleRepository.findOne({
-          where: {
-            class: { id: classId },
-            sessionStatus: SessionStatus.SCHEDULED,
-          },
-          order: { sessionDate: 'ASC', startTime: 'ASC' },
-        });
-      }
-
-      if (schedule) {
-        schedule.sessionStatus = SessionStatus.COMPLETED;
-        await this.scheduleRepository.save(schedule);
-      }
+      schedule.sessionStatus = SessionStatus.COMPLETED;
+      await this.scheduleRepository.save(schedule);
     } catch (err) {
       console.error('Error auto-completing schedule on report submit:', err);
     }
@@ -1359,14 +1477,27 @@ export class TutorsService implements OnModuleInit {
       throw new NotFoundException('Không tìm thấy hồ sơ gia sư');
     const tutorId = tutorEntity.id;
 
-    // Lấy completed schedules + class với relations đơn giản hơn (student.user có eager loading)
-    const completedSchedules = await this.scheduleRepository.find({
+    // Lấy danh sách lịch dạy của gia sư để tính thu nhập (không tính lịch nghỉ)
+    const allSchedules = await this.scheduleRepository.find({
       where: {
         class: { tutor: { id: tutorId } },
-        sessionStatus: SessionStatus.COMPLETED,
+        sessionStatus: Not(SessionStatus.CANCELLED),
       },
       relations: ['class', 'class.subject', 'class.student'],
       order: { sessionDate: 'DESC' },
+    });
+
+    const now = new Date();
+
+    // Lọc ra các buổi học đã diễn ra tính đến hiện tại
+    const elapsedSchedules = allSchedules.filter(s => {
+      const sDateObj = s.sessionDate instanceof Date ? s.sessionDate : new Date(s.sessionDate);
+      const year = sDateObj.getFullYear();
+      const month = sDateObj.getMonth() + 1;
+      const day = sDateObj.getDate();
+      const [sh, sm] = s.startTime.split(':').map(Number);
+      const sessionStart = new Date(year, month - 1, day, sh, sm, 0, 0);
+      return sessionStart <= now;
     });
 
     // Tính tổng thu nhập
@@ -1383,7 +1514,7 @@ export class TutorsService implements OnModuleInit {
       }
     >();
 
-    for (const s of completedSchedules) {
+    for (const s of elapsedSchedules) {
       const fee = Number(s.class?.feePerSession || 0);
       totalEarnings += fee;
 
@@ -1405,7 +1536,7 @@ export class TutorsService implements OnModuleInit {
 
     // Tính thu nhập theo tháng
     const monthlyMap = new Map<string, number>();
-    for (const s of completedSchedules) {
+    for (const s of elapsedSchedules) {
       const date =
         s.sessionDate instanceof Date ? s.sessionDate : new Date(s.sessionDate);
       const monthKey = `${date.getMonth() + 1}/${date.getFullYear()}`;
@@ -1422,12 +1553,11 @@ export class TutorsService implements OnModuleInit {
       });
 
     // Thống kê tháng hiện tại
-    const now = new Date();
     const currentMonthKey = `${now.getMonth() + 1}/${now.getFullYear()}`;
     const currentMonthEarnings = monthlyMap.get(currentMonthKey) || 0;
 
     // Số buổi đã dạy
-    const totalSessions = completedSchedules.length;
+    const totalSessions = elapsedSchedules.length;
 
     return {
       totalEarnings,

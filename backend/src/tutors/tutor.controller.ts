@@ -90,6 +90,20 @@ export class TutorController {
     return this.tutorsService.cancelLeaveSchedule(tutorId, id);
   }
 
+  // Hủy lịch nghỉ hàng loạt theo khoảng thời gian
+  @Post('schedule/cancel-leave-range')
+  async cancelLeaveScheduleRange(
+    @Request() req,
+    @Body()
+    body: {
+      startDate: string;
+      endDate: string;
+    },
+  ) {
+    const tutorId = req.user.id || req.user.sub;
+    return this.tutorsService.cancelLeaveScheduleRange(tutorId, body);
+  }
+
   // Lấy danh sách học viên của tôi
   @Get('students')
   async getMyStudents(@Request() req) {

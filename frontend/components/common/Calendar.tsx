@@ -116,10 +116,10 @@ function EventBadge({ event, compact = false, onClick }: {
       <div
         className="rounded px-1.5 py-1 text-[11px] font-semibold leading-tight truncate shadow-sm border-l-2 cursor-pointer hover:shadow-md transition-shadow"
         style={{ background: bg, borderColor: border, borderLeftColor, color: text }}
-        title={`${subjectName}\n${start} - ${end}`}
+        title={`${subjectName}${personName ? ` - ${personName}` : ''}\n${start} - ${end}`}
         onClick={() => onClick?.(event)}
       >
-        {start} {subjectName}
+        {start} {subjectName}{personName ? ` - ${personName}` : ''}
       </div>
     );
   }

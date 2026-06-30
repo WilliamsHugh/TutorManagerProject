@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Icon } from '@iconify/react';
 import { getTutorStudents } from '@/lib/api';
 import Header from '@/components/tutor/Header';
+import Pagination from '@/components/common/Pagination';
 
 export default function MyStudentsPage() {
   const [students, setStudents] = useState<any[]>([]);
@@ -14,6 +15,8 @@ export default function MyStudentsPage() {
   // Search & Filter State
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL'); // 'ALL', 'Đang học', 'Tạm dừng'
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
   
   const router = useRouter();
 
@@ -43,6 +46,7 @@ export default function MyStudentsPage() {
 
   // Filter students dynamically based on search & filter dropdown
   const filteredStudents = useMemo(() => {
+    setCurrentPage(1); // Reset page on filter changes
     return students.filter(student => {
       const matchesSearch = 
         student.fullName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -162,9 +166,28 @@ export default function MyStudentsPage() {
 
           {/* Table / List View */}
           {loading ? (
-            <div className="py-24 text-center flex flex-col items-center justify-center gap-3">
-              <Icon icon="lucide:loader-2" className="animate-spin text-blue-600" fontSize={40} />
-              <p className="text-slate-500 font-medium text-sm">Đang tải danh sách học viên...</p>
+            <div className="p-6 space-y-4">
+              <div className="flex items-center gap-4">
+                <div className="h-4 bg-slate-100 rounded animate-pulse w-24"></div>
+                <div className="h-4 bg-slate-100 rounded animate-pulse w-48"></div>
+                <div className="h-4 bg-slate-100 rounded animate-pulse w-32"></div>
+              </div>
+              <div className="space-y-3 pt-2">
+                {Array.from({ length: 4 }).map((_, index) => (
+                  <div key={index} className="flex justify-between items-center py-4 border-b border-slate-100">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-slate-100 rounded-full animate-pulse"></div>
+                      <div className="space-y-2">
+                        <div className="h-3.5 bg-slate-100 rounded animate-pulse w-28"></div>
+                        <div className="h-3 bg-slate-100 rounded animate-pulse w-40"></div>
+                      </div>
+                    </div>
+                    <div className="h-4 bg-slate-100 rounded animate-pulse w-20"></div>
+                    <div className="h-4 bg-slate-100 rounded animate-pulse w-24"></div>
+                    <div className="h-8 bg-slate-100 rounded-lg animate-pulse w-20"></div>
+                  </div>
+                ))}
+              </div>
             </div>
           ) : filteredStudents.length > 0 ? (
             <div className="overflow-x-auto">
@@ -181,7 +204,7 @@ export default function MyStudentsPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {filteredStudents.map((student) => (
+                  {filteredStudents.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((student) => (
                     <tr 
                       key={student.id} 
                       className="hover:bg-blue-50/10 transition-colors duration-150 group"
@@ -297,6 +320,17 @@ export default function MyStudentsPage() {
                 </button>
               )}
             </div>
+          )}
+
+          {/* Table Pagination Controls */}
+          {!loading && (
+            <Pagination 
+              currentPage={currentPage}
+              totalItems={filteredStudents.length}
+              itemsPerPage={itemsPerPage}
+              onPageChange={setCurrentPage}
+              label="lớp học"
+            />
           )}
         </div>
       </main>

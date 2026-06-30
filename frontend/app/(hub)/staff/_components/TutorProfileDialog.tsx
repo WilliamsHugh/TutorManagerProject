@@ -15,8 +15,10 @@ export interface TutorData {
   graduationYear: string
   experience: string
   bio: string
-  approvalStatus: string
   availableAreas: string
+  province?: string
+  district?: string
+  approvalStatus: string
   subjects: string[]
   user: {
     id: string
@@ -380,7 +382,9 @@ export function TutorProfileDialog({ tutor, onClose, onRefresh, showToast }: Tut
               </div>
               <div className="space-y-1">
                 <span className="text-muted-foreground font-medium block">Khu vực nhận dạy:</span>
-                <span className="font-semibold text-foreground block">{tutor.availableAreas || "Toàn quốc"}</span>
+                <span className="font-semibold text-foreground block">
+                  {tutor.province ? `${tutor.district ? tutor.district + ", " : ""}${tutor.province}` : tutor.availableAreas || "Toàn quốc"}
+                </span>
               </div>
             </div>
           </div>

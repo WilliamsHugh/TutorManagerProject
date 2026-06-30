@@ -13,12 +13,14 @@ export class PublicTutorController {
   async getPublicTutors(
     @Query('search') search?: string,
     @Query('subject') subject?: string,
+    @Query('province') province?: string,
     @Query('page') page = '1',
     @Query('limit') limit = '12',
   ) {
     return this.tutorsService.getPublicTutors({
       search,
       subject,
+      province,
       page: +page,
       limit: +limit,
     });

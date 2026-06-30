@@ -46,11 +46,11 @@ import { AuditLogInterceptor } from './system-logs/audit-log.interceptor';
         return {
           type: 'postgres',
           url: dbUrl,
-          host: !dbUrl ? config.get('DB_HOST') : undefined,
+          host: !dbUrl ? config.get<string>('DB_HOST') : undefined,
           port: !dbUrl ? config.get<number>('DB_PORT') : undefined,
-          username: !dbUrl ? config.get('DB_USERNAME') : undefined,
-          password: !dbUrl ? config.get('DB_PASSWORD') : undefined,
-          database: !dbUrl ? config.get('DB_NAME') : undefined,
+          username: !dbUrl ? config.get<string>('DB_USERNAME') : undefined,
+          password: !dbUrl ? config.get<string>('DB_PASSWORD') : undefined,
+          database: !dbUrl ? config.get<string>('DB_NAME') : undefined,
 
           entities: [
             Role,

@@ -26,7 +26,16 @@ export class AuditLogInterceptor implements NestInterceptor {
         next: async (response) => {
           if (isMutation) {
             const user = request.user;
-            const userId = user?.id || null;
+            let userId = user?.id || null;
+
+            // Lấy userId từ dữ liệu phản hồi (response) đối với các tác vụ Đăng nhập/Đăng ký thành công
+            if (!userId && response) {
+              if (response.user && response.user.id) {
+                userId = response.user.id;
+              } else if (response.id) {
+                userId = response.id;
+              }
+            }
 
             // Determine readable action name from method & route
             let action = `${method} ${url}`;
@@ -40,7 +49,10 @@ export class AuditLogInterceptor implements NestInterceptor {
               action = 'Cập nhật trạng thái tài khoản';
             } else if (url.includes('/admin/users') && method === 'PUT') {
               action = 'Cập nhật tài khoản';
-            } else if (url.includes('/admin/tutors') && url.includes('/approve')) {
+            } else if (
+              url.includes('/admin/tutors') &&
+              url.includes('/approve')
+            ) {
               action = 'Phê duyệt hồ sơ Gia sư';
             } else if (url.includes('/admin/subjects') && method === 'POST') {
               action = 'Thêm môn học mới';
@@ -57,7 +69,8 @@ export class AuditLogInterceptor implements NestInterceptor {
             // Sanitize body (remove sensitive password keys)
             const sanitizedBody = { ...body };
             if (sanitizedBody.password) delete sanitizedBody.password;
-            if (sanitizedBody.confirmPassword) delete sanitizedBody.confirmPassword;
+            if (sanitizedBody.confirmPassword)
+              delete sanitizedBody.confirmPassword;
 
             try {
               await this.systemLogsService.create({

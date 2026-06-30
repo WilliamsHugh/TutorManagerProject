@@ -51,7 +51,7 @@ function calculateEndDate(startDateStr: string, scheduleStr: string, totalSessio
 
     if (targetDays.length === 0) return "";
 
-    let currentDate = new Date(startDate);
+    const currentDate = new Date(startDate);
     let sessionsFound = 0;
     let finalDate = new Date(startDate);
 

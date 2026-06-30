@@ -66,7 +66,13 @@ export class ClassesController {
   @Roles(RoleType.STUDENT)
   async counterProposal(
     @Param('requestId') requestId: string,
-    @Body() body: { note: string; feePerSession?: number; totalSessions?: number; schedule?: string },
+    @Body()
+    body: {
+      note: string;
+      feePerSession?: number;
+      totalSessions?: number;
+      schedule?: string;
+    },
     @Request() req,
   ) {
     const userId = req.user.id || req.user.sub;
@@ -89,7 +95,12 @@ export class ClassesController {
     @Request() req,
   ) {
     const userId = req.user.id || req.user.sub;
-    return this.classesService.requestClassCancellation(classId, userId, 'student', reason);
+    return this.classesService.requestClassCancellation(
+      classId,
+      userId,
+      'student',
+      reason,
+    );
   }
 
   // Student: phản hồi yêu cầu hủy lớp (đồng ý/từ chối)
@@ -101,15 +112,27 @@ export class ClassesController {
     @Request() req,
   ) {
     const userId = req.user.id || req.user.sub;
-    return this.classesService.respondToCancellation(classId, userId, 'student', agree);
+    return this.classesService.respondToCancellation(
+      classId,
+      userId,
+      'student',
+      agree,
+    );
   }
 
   // Student: xem thông tin hủy lớp
   @Get('student/cancellation/:classId')
   @Roles(RoleType.STUDENT)
-  async getClassCancellation(@Param('classId') classId: string, @Request() req) {
+  async getClassCancellation(
+    @Param('classId') classId: string,
+    @Request() req,
+  ) {
     const userId = req.user.id || req.user.sub;
-    return this.classesService.getClassCancellationInfo(classId, userId, 'student');
+    return this.classesService.getClassCancellationInfo(
+      classId,
+      userId,
+      'student',
+    );
   }
 
   @Get('student/my-classes')
@@ -122,7 +145,10 @@ export class ClassesController {
   // Student: đăng ký học lại từ lớp cũ bị hủy hoặc hoàn thành
   @Post('student/recreate/:classId')
   @Roles(RoleType.STUDENT)
-  async recreateClassRequest(@Param('classId') classId: string, @Request() req) {
+  async recreateClassRequest(
+    @Param('classId') classId: string,
+    @Request() req,
+  ) {
     const userId = req.user.id || req.user.sub;
     return this.classesService.recreateClassRequest(classId, userId);
   }

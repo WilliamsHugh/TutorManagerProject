@@ -103,9 +103,15 @@ export default function RegisterForm() {
             if (filteredSubjects.length > 0) {
                 // Chọn phần tử đầu tiên trong dropdown
                 addSubject(filteredSubjects[0]);
-            } else if (val && !subjects_selected.includes(val)) {
-                // Cho phép nhập tự do nếu không có gợi ý
-                addSubject(val);
+            } else if (val) {
+                // Chỉ cho phép thêm nếu khớp chính xác (không phân biệt hoa thường) với môn học có sẵn
+                const exactMatch = ALL_SUBJECTS.find((s) => s.toLowerCase() === val.toLowerCase());
+                if (exactMatch) {
+                    addSubject(exactMatch);
+                } else {
+                    setError("Môn học không hợp lệ. Vui lòng chọn từ danh sách hệ thống.");
+                    setTimeout(() => setError(""), 3000);
+                }
             }
         } else if (e.key === "Escape") {
             setShowDropdown(false);
@@ -130,6 +136,14 @@ export default function RegisterForm() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError("");
+
+        // Validate phone number (Việt Nam format)
+        const phoneRegex = /(84|0[3|5|7|8|9])+([0-9]{8})\b/;
+        if (!phoneRegex.test(phone)) {
+            setError("Số điện thoại không hợp lệ. Vui lòng nhập số điện thoại Việt Nam hợp lệ (VD: 0912345678).");
+            return;
+        }
+
         setLoading(true);
 
         const endpoint = selectedRole === "student"
@@ -591,23 +605,7 @@ export default function RegisterForm() {
                                                             />
                                                         </button>
                                                     ))}
-                                                    {/* Cho phép nhập tùy chỉnh nếu không có kết quả chính xác */}
-                                                    {subjectInput.trim() && !ALL_SUBJECTS.some(
-                                                        (s) => s.toLowerCase() === subjectInput.trim().toLowerCase()
-                                                    ) && (
-                                                        <button
-                                                            type="button"
-                                                            onMouseDown={(e) => {
-                                                                e.preventDefault();
-                                                                addSubject(subjectInput.trim());
-                                                            }}
-                                                            className="w-full text-left px-4 py-2.5 text-sm flex items-center gap-2"
-                                                            style={{ color: "var(--primary)", backgroundColor: "transparent" }}
-                                                        >
-                                                            <span className="text-base">+</span>
-                                                            Thêm &ldquo;{subjectInput.trim()}&rdquo;
-                                                        </button>
-                                                    )}
+                                                    {/* Đã gỡ bỏ tính năng nhập môn học tùy chỉnh theo yêu cầu */}
                                                 </div>
                                             )}
 

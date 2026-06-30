@@ -188,7 +188,7 @@ export default function SessionTimeoutHandler() {
       events.forEach((event) => window.removeEventListener(event, handleActivity));
       window.removeEventListener('keydown', handleKeyDown);
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+   
   }, [startTimers, clearAllTimers]);
 
   // Click outside overlay để đóng warning và reset timer

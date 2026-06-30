@@ -20,13 +20,64 @@ import { Role } from './entities/role.entity';
 import { Tutor, ApprovalStatus } from './entities/tutor.entity';
 import { Student } from './entities/student.entity';
 import { Subject } from '../subjects/subject.entity';
-import { Class } from '../classes/entities/class.entity';
+import { Class, ClassStatus } from '../classes/entities/class.entity';
 import { ClassRequest } from '../classes/entities/class-request.entity';
 import { TutorSubject } from '../tutors/tutor-subject.entity';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles, RoleType } from '../auth/decorators/roles.decorator';
 import * as bcrypt from 'bcryptjs';
+
+interface CreateUserBody {
+  email: string;
+  password: string;
+  fullName: string;
+  phone?: string;
+  address?: string;
+  roleName: string;
+}
+
+interface UpdateUserBody {
+  fullName?: string;
+  phone?: string;
+  address?: string;
+  email?: string;
+  isActive?: boolean;
+  roleName?: string;
+}
+
+interface CreateSubjectBody {
+  name: string;
+  gradeLevel?: string;
+  description?: string;
+}
+
+interface UpdateSubjectBody {
+  name?: string;
+  gradeLevel?: string;
+  description?: string;
+  isActive?: boolean;
+}
+
+interface AuthenticatedRequest {
+  user: {
+    id: string;
+    sub?: string;
+    email?: string;
+    role?: { name: string };
+    [key: string]: unknown;
+  };
+}
+
+interface ClassStatusCount {
+  status: string;
+  count: string;
+}
+
+interface SubjectPopularityRow {
+  subject: string | null;
+  count: string;
+}
 
 @Controller('admin')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -52,13 +103,23 @@ export class AdminController {
   @Get('users')
   async getAllUsers() {
     return this.usersRepo.find({
+      select: {
+        id: true,
+        fullName: true,
+        email: true,
+        phone: true,
+        address: true,
+        avatarUrl: true,
+        isActive: true,
+        createdAt: true,
+      },
       relations: ['role'],
       order: { createdAt: 'DESC' },
     });
   }
 
   @Post('users')
-  async createUser(@Body() body: any) {
+  async createUser(@Body() body: CreateUserBody) {
     const { email, password, fullName, phone, address, roleName } = body;
     if (!email || !password || !fullName || !roleName) {
       throw new ConflictException('Thiếu thông tin bắt buộc');
@@ -114,13 +175,37 @@ export class AdminController {
   async toggleUserStatus(
     @Param('id') id: string,
     @Body() body: { isActive: boolean },
-    @Request() req: any,
+    @Request() req: AuthenticatedRequest,
   ) {
     const user = await this.usersRepo.findOneBy({ id });
     if (!user) throw new NotFoundException('Không tìm thấy người dùng');
     user.isActive = body.isActive;
     user.lockedBy = body.isActive ? null : req.user;
-    return this.usersRepo.save(user);
+    const savedUser = await this.usersRepo.save(user);
+
+    // Tự động tạm dừng lớp học đang hoạt động khi tài khoản bị khóa (Lock)
+    if (!body.isActive) {
+      const roleName = user.role?.name;
+      if (roleName === 'tutor') {
+        const tutor = await this.tutorsRepo.findOneBy({ user: { id: user.id } });
+        if (tutor) {
+          await this.classesRepo.update(
+            { tutor: { id: tutor.id }, status: ClassStatus.ACTIVE },
+            { status: ClassStatus.SUSPENDED, suspendedBy: req.user },
+          );
+        }
+      } else if (roleName === 'student') {
+        const student = await this.studentsRepo.findOneBy({ user: { id: user.id } });
+        if (student) {
+          await this.classesRepo.update(
+            { student: { id: student.id }, status: ClassStatus.ACTIVE },
+            { status: ClassStatus.SUSPENDED, suspendedBy: req.user },
+          );
+        }
+      }
+    }
+
+    return savedUser;
   }
 
   @Delete('users/:id')
@@ -128,16 +213,41 @@ export class AdminController {
     const user = await this.usersRepo.findOneBy({ id });
     if (!user) throw new NotFoundException('Không tìm thấy người dùng');
 
-    // Delete student or tutor records related to the user first to clear foreign constraints
-    await this.studentsRepo.delete({ user: { id } });
-    await this.tutorsRepo.delete({ user: { id } });
+    // Delete related student/tutor records to clear foreign constraints
+    const tutor = await this.tutorsRepo.findOneBy({ user: { id } });
+    if (tutor) {
+      // Kiểm tra ràng buộc khoá ngoại với bảng lớp học (classes)
+      const hasClasses = await this.classesRepo.findOneBy({ tutor: { id: tutor.id } });
+      if (hasClasses) {
+        throw new ConflictException(
+          'Không thể xóa gia sư này vì tài khoản đã được liên kết với lớp học trong hệ thống. Vui lòng sử dụng tính năng Khóa tài khoản.',
+        );
+      }
+
+      // Xoá các môn học của gia sư (tránh lỗi foreign key constraint)
+      await this.tutorSubjectsRepo.delete({ tutor: { id: tutor.id } });
+      await this.tutorsRepo.delete({ id: tutor.id });
+    }
+
+    const student = await this.studentsRepo.findOneBy({ user: { id } });
+    if (student) {
+      // Kiểm tra ràng buộc khoá ngoại với bảng lớp học và yêu cầu lớp học
+      const hasClasses = await this.classesRepo.findOneBy({ student: { id: student.id } });
+      const hasRequests = await this.requestsRepo.findOneBy({ student: { id: student.id } });
+      if (hasClasses || hasRequests) {
+        throw new ConflictException(
+          'Không thể xóa học viên này vì tài khoản đã có lớp học hoặc yêu cầu lớp học liên kết. Vui lòng sử dụng tính năng Khóa tài khoản.',
+        );
+      }
+      await this.studentsRepo.delete({ id: student.id });
+    }
 
     await this.usersRepo.delete({ id });
     return { success: true, message: 'Xóa người dùng thành công' };
   }
 
   @Put('users/:id')
-  async updateUser(@Param('id') id: string, @Body() body: any) {
+  async updateUser(@Param('id') id: string, @Body() body: UpdateUserBody) {
     const user = await this.usersRepo.findOne({
       where: { id },
       relations: ['role'],
@@ -239,7 +349,7 @@ export class AdminController {
   async approveTutor(
     @Param('id') id: string,
     @Body() body: { status: string },
-    @Request() req: any,
+    @Request() req: AuthenticatedRequest,
   ) {
     const tutor = await this.tutorsRepo.findOne({
       where: { id },
@@ -248,7 +358,7 @@ export class AdminController {
     if (!tutor) throw new NotFoundException('Không tìm thấy gia sư');
 
     const statusInput = body.status?.toLowerCase();
-    if (!Object.values(ApprovalStatus).includes(statusInput as any)) {
+    if (!Object.values(ApprovalStatus).includes(statusInput as ApprovalStatus)) {
       throw new ConflictException('Trạng thái phê duyệt không hợp lệ');
     }
     const statusEnum = statusInput as ApprovalStatus;
@@ -272,7 +382,7 @@ export class AdminController {
   }
 
   @Post('subjects')
-  async createSubject(@Body() body: any) {
+  async createSubject(@Body() body: CreateSubjectBody) {
     const { name, gradeLevel, description } = body;
     if (!name) throw new ConflictException('Tên môn học không được để trống');
 
@@ -286,7 +396,7 @@ export class AdminController {
   }
 
   @Put('subjects/:id')
-  async updateSubject(@Param('id') id: string, @Body() body: any) {
+  async updateSubject(@Param('id') id: string, @Body() body: UpdateSubjectBody) {
     const subject = await this.subjectsRepo.findOneBy({ id });
     if (!subject) throw new NotFoundException('Không tìm thấy môn học');
 
@@ -318,8 +428,8 @@ export class AdminController {
     @Query('fromDate') fromDate?: string,
     @Query('toDate') toDate?: string,
   ) {
-    const classWhere: any = {};
-    const requestWhere: any = {};
+    const classWhere: Record<string, unknown> = {};
+    const requestWhere: Record<string, unknown> = {};
 
     if (fromDate && toDate) {
       const start = new Date(fromDate);
@@ -355,13 +465,13 @@ export class AdminController {
       ...monthlyTrendCounts
     ] = await Promise.all([
       this.classesRepo.count({
-        where: { ...classWhere, status: 'active' as any },
+        where: { ...classWhere, status: 'active' as const },
       }),
       this.classesRepo.count({
-        where: { ...classWhere, status: 'completed' as any },
+        where: { ...classWhere, status: 'completed' as const },
       }),
       this.requestsRepo.count({
-        where: { ...requestWhere, status: 'pending' as any },
+        where: { ...requestWhere, status: 'pending' as const },
       }),
       this.tutorsRepo.count({
         where: {
@@ -370,7 +480,7 @@ export class AdminController {
         },
       }),
       this.classesRepo.find({
-        where: { status: 'active' as any },
+        where: { status: 'active' as const },
         relations: ['student'],
       }),
 
@@ -423,7 +533,7 @@ export class AdminController {
       cancelled: 0,
       suspended: 0,
     };
-    classStatusCounts.forEach((c) => {
+    classStatusCounts.forEach((c: ClassStatusCount) => {
       if (c.status in classStatusDistribution) {
         classStatusDistribution[c.status] = parseInt(c.count, 10);
       }
@@ -436,13 +546,13 @@ export class AdminController {
       matched: 0,
       cancelled: 0,
     };
-    requestStatusCounts.forEach((r) => {
+    requestStatusCounts.forEach((r: ClassStatusCount) => {
       if (r.status in requestStatusDistribution) {
         requestStatusDistribution[r.status] = parseInt(r.count, 10);
       }
     });
 
-    const subjectPopularity = subjectPopularityRaw.map((item) => ({
+    const subjectPopularity = (subjectPopularityRaw as SubjectPopularityRow[]).map((item) => ({
       subject: item.subject || 'Khác',
       count: parseInt(item.count, 10),
     }));

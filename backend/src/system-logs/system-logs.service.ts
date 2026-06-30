@@ -61,7 +61,9 @@ export class SystemLogsService {
     }
 
     if (query.fromDate) {
-      qb.andWhere('log.createdAt >= :fromDate', { fromDate: new Date(query.fromDate) });
+      qb.andWhere('log.createdAt >= :fromDate', {
+        fromDate: new Date(query.fromDate),
+      });
     }
 
     if (query.toDate) {

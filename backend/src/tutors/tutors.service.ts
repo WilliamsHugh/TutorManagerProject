@@ -660,20 +660,27 @@ export class TutorsService implements OnModuleInit {
           email: cls.student?.user?.email || 'Chưa cập nhật',
           phone: cls.student?.user?.phone || 'Chưa cập nhật',
           gradeLevel: cls.student?.gradeLevel || 'Chưa cập nhật',
-          avatar: cls.student?.user?.avatarUrl || 'https://storage.googleapis.com/banani-avatars/avatar%2Ffemale%2F25-35%2FSoutheast%20Asian%2F1',
+          avatar:
+            cls.student?.user?.avatarUrl ||
+            'https://storage.googleapis.com/banani-avatars/avatar%2Ffemale%2F25-35%2FSoutheast%20Asian%2F1',
           lastSubject: cls.subject?.name || 'Môn học',
           totalSessions: total,
           completedSessions: Math.min(completedCount, total),
           submittedReportsCount,
           feePerSession: Number(cls.feePerSession || 0),
-          status: cls.status === ClassStatus.ACTIVE ? 'Đang học' : cls.status === ClassStatus.SUSPENDED ? 'Tạm dừng' : 'Đã kết thúc',
+          status:
+            cls.status === ClassStatus.ACTIVE
+              ? 'Đang học'
+              : cls.status === ClassStatus.SUSPENDED
+                ? 'Tạm dừng'
+                : 'Đã kết thúc',
           rawStatus: cls.status,
           startDate: cls.startDate,
           endDate: cls.endDate,
           notes: cls.notes || '',
           createdAt: cls.student?.user?.createdAt || new Date(),
         };
-      })
+      }),
     );
 
     return { students: formattedStudents, profile };
@@ -1580,18 +1587,32 @@ export class TutorsService implements OnModuleInit {
       where: { name: 'tutor' },
     });
     if (!tutorRole) {
-      tutorRole = await this.roleRepository.save(
-        this.roleRepository.create({ name: 'tutor' }),
-      );
+      try {
+        tutorRole = await this.roleRepository.save(
+          this.roleRepository.create({ name: 'tutor' }),
+        );
+      } catch (err) {
+        tutorRole = await this.roleRepository.findOne({
+          where: { name: 'tutor' },
+        });
+        if (!tutorRole) throw err;
+      }
     }
 
     let studentRole = await this.roleRepository.findOne({
       where: { name: 'student' },
     });
     if (!studentRole) {
-      studentRole = await this.roleRepository.save(
-        this.roleRepository.create({ name: 'student' }),
-      );
+      try {
+        studentRole = await this.roleRepository.save(
+          this.roleRepository.create({ name: 'student' }),
+        );
+      } catch (err) {
+        studentRole = await this.roleRepository.findOne({
+          where: { name: 'student' },
+        });
+        if (!studentRole) throw err;
+      }
     }
 
     // 2. Tạo hoặc lấy User & Tutor/Student mẫu
@@ -1599,48 +1620,76 @@ export class TutorsService implements OnModuleInit {
       where: { email: 'tutor@test.com' },
     });
     if (!tutorUser) {
-      tutorUser = await this.userRepository.save(
-        this.userRepository.create({
-          id: TEST_TUTOR_ID,
-          fullName: 'Gia sư Mẫu',
-          email: 'tutor@test.com',
-          passwordHash: '123456',
-          role: tutorRole,
-        }),
-      );
+      try {
+        tutorUser = await this.userRepository.save(
+          this.userRepository.create({
+            id: TEST_TUTOR_ID,
+            fullName: 'Gia sư Mẫu',
+            email: 'tutor@test.com',
+            passwordHash: '123456',
+            role: tutorRole,
+          }),
+        );
+      } catch (err) {
+        tutorUser = await this.userRepository.findOne({
+          where: { email: 'tutor@test.com' },
+        });
+        if (!tutorUser) throw err;
+      }
     }
     let tutor = await this.tutorRepository.findOne({
       where: { user: { id: tutorUser.id } },
     });
     if (!tutor) {
-      tutor = await this.tutorRepository.save(
-        this.tutorRepository.create({ user: tutorUser }),
-      );
+      try {
+        tutor = await this.tutorRepository.save(
+          this.tutorRepository.create({ user: tutorUser }),
+        );
+      } catch (err) {
+        tutor = await this.tutorRepository.findOne({
+          where: { user: { id: tutorUser.id } },
+        });
+        if (!tutor) throw err;
+      }
     }
 
     let studentUser = await this.userRepository.findOne({
       where: { email: 'student@test.com' },
     });
     if (!studentUser) {
-      studentUser = await this.userRepository.save(
-        this.userRepository.create({
-          fullName: 'Học viên Mẫu',
-          email: 'student@test.com',
-          passwordHash: '123456',
-          role: studentRole,
-        }),
-      );
+      try {
+        studentUser = await this.userRepository.save(
+          this.userRepository.create({
+            fullName: 'Học viên Mẫu',
+            email: 'student@test.com',
+            passwordHash: '123456',
+            role: studentRole,
+          }),
+        );
+      } catch (err) {
+        studentUser = await this.userRepository.findOne({
+          where: { email: 'student@test.com' },
+        });
+        if (!studentUser) throw err;
+      }
     }
     let student = await this.studentRepository.findOne({
       where: { user: { id: studentUser.id } },
     });
     if (!student) {
-      student = await this.studentRepository.save(
-        this.studentRepository.create({
-          user: studentUser,
-          gradeLevel: 'Lớp 12',
-        }),
-      );
+      try {
+        student = await this.studentRepository.save(
+          this.studentRepository.create({
+            user: studentUser,
+            gradeLevel: 'Lớp 12',
+          }),
+        );
+      } catch (err) {
+        student = await this.studentRepository.findOne({
+          where: { user: { id: studentUser.id } },
+        });
+        if (!student) throw err;
+      }
     }
 
     // 3. Tạo hoặc lấy Subject
@@ -1731,7 +1780,8 @@ export class TutorsService implements OnModuleInit {
     const tutorEntity = await this.tutorRepository.findOne({
       where: { user: { id: userId } },
     });
-    if (!tutorEntity) throw new NotFoundException('Không tìm thấy hồ sơ gia sư');
+    if (!tutorEntity)
+      throw new NotFoundException('Không tìm thấy hồ sơ gia sư');
 
     const requests = await this.classRequestRepository.find({
       where: {
@@ -1769,7 +1819,8 @@ export class TutorsService implements OnModuleInit {
     const tutorEntity = await this.tutorRepository.findOne({
       where: { user: { id: userId } },
     });
-    if (!tutorEntity) throw new NotFoundException('Không tìm thấy hồ sơ gia sư');
+    if (!tutorEntity)
+      throw new NotFoundException('Không tìm thấy hồ sơ gia sư');
 
     const requests = await this.classRequestRepository.find({
       where: [
@@ -1830,18 +1881,26 @@ export class TutorsService implements OnModuleInit {
       request.status !== RequestStatus.PENDING &&
       request.status !== RequestStatus.PROPOSED
     ) {
-      throw new BadRequestException('Yêu cầu này không còn khả dụng để đề xuất');
+      throw new BadRequestException(
+        'Yêu cầu này không còn khả dụng để đề xuất',
+      );
     }
 
     const tutorEntity = await this.tutorRepository.findOne({
       where: { user: { id: userId } },
       relations: { user: true },
     });
-    if (!tutorEntity) throw new NotFoundException('Không tìm thấy hồ sơ gia sư');
+    if (!tutorEntity)
+      throw new NotFoundException('Không tìm thấy hồ sơ gia sư');
 
     // If it is a private request proposed to another tutor, block it
-    if (request.preferredTutor && request.preferredTutor.id !== tutorEntity.id) {
-      throw new BadRequestException('Bạn không phải là gia sư được chỉ định cho yêu cầu này');
+    if (
+      request.preferredTutor &&
+      request.preferredTutor.id !== tutorEntity.id
+    ) {
+      throw new BadRequestException(
+        'Bạn không phải là gia sư được chỉ định cho yêu cầu này',
+      );
     }
 
     // Set this tutor as preferred tutor if it's a public request
@@ -1912,8 +1971,12 @@ export class TutorsService implements OnModuleInit {
       where: { user: { id: userId } },
       relations: { user: true },
     });
-    if (!tutorEntity) throw new NotFoundException('Không tìm thấy hồ sơ gia sư');
-    if (!request.preferredTutor || request.preferredTutor.id !== tutorEntity.id) {
+    if (!tutorEntity)
+      throw new NotFoundException('Không tìm thấy hồ sơ gia sư');
+    if (
+      !request.preferredTutor ||
+      request.preferredTutor.id !== tutorEntity.id
+    ) {
       throw new BadRequestException('Bạn không phải là gia sư được đề xuất');
     }
 
@@ -1958,7 +2021,8 @@ export class TutorsService implements OnModuleInit {
       where: { user: { id: userId } },
       relations: { user: true },
     });
-    if (!tutorEntity) throw new NotFoundException('Không tìm thấy hồ sơ gia sư');
+    if (!tutorEntity)
+      throw new NotFoundException('Không tìm thấy hồ sơ gia sư');
 
     const request = await this.classRequestRepository.findOne({
       where: { id: requestId },
@@ -1970,16 +2034,23 @@ export class TutorsService implements OnModuleInit {
     });
 
     if (!request) throw new NotFoundException('Không tìm thấy yêu cầu');
-    if (!request.preferredTutor || request.preferredTutor.id !== tutorEntity.id) {
+    if (
+      !request.preferredTutor ||
+      request.preferredTutor.id !== tutorEntity.id
+    ) {
       throw new BadRequestException('Bạn không phải là gia sư được đề xuất');
     }
 
     if (request.status !== RequestStatus.NEGOTIATING) {
-      throw new BadRequestException('Yêu cầu này không ở trạng thái thương lượng');
+      throw new BadRequestException(
+        'Yêu cầu này không ở trạng thái thương lượng',
+      );
     }
 
     if (!request.proposedFee || !request.proposedSessions) {
-      throw new BadRequestException('Chưa có đề xuất học phí và số buổi để xác nhận');
+      throw new BadRequestException(
+        'Chưa có đề xuất học phí và số buổi để xác nhận',
+      );
     }
 
     request.status = RequestStatus.MATCHED;
@@ -2009,7 +2080,10 @@ export class TutorsService implements OnModuleInit {
       }
     }
 
-    return { message: 'Đồng ý đề xuất thành công. Đã gửi yêu cầu tạo lớp tới nhân viên trung tâm!' };
+    return {
+      message:
+        'Đồng ý đề xuất thành công. Đã gửi yêu cầu tạo lớp tới nhân viên trung tâm!',
+    };
   }
 
   async withdrawProposal(requestId: string, userId: string) {
@@ -2034,8 +2108,12 @@ export class TutorsService implements OnModuleInit {
       where: { user: { id: userId } },
       relations: { user: true },
     });
-    if (!tutorEntity) throw new NotFoundException('Không tìm thấy hồ sơ gia sư');
-    if (!request.preferredTutor || request.preferredTutor.id !== tutorEntity.id) {
+    if (!tutorEntity)
+      throw new NotFoundException('Không tìm thấy hồ sơ gia sư');
+    if (
+      !request.preferredTutor ||
+      request.preferredTutor.id !== tutorEntity.id
+    ) {
       throw new BadRequestException('Bạn không phải là gia sư được đề xuất');
     }
 
@@ -2088,10 +2166,16 @@ export class TutorsService implements OnModuleInit {
       where: { user: { id: userId } },
       relations: { user: true },
     });
-    if (!tutorEntity) throw new NotFoundException('Không tìm thấy hồ sơ gia sư');
+    if (!tutorEntity)
+      throw new NotFoundException('Không tìm thấy hồ sơ gia sư');
 
-    if (!request.preferredTutor || request.preferredTutor.id !== tutorEntity.id) {
-      throw new BadRequestException('Bạn không phải là gia sư được đề xuất trong yêu cầu này');
+    if (
+      !request.preferredTutor ||
+      request.preferredTutor.id !== tutorEntity.id
+    ) {
+      throw new BadRequestException(
+        'Bạn không phải là gia sư được đề xuất trong yêu cầu này',
+      );
     }
 
     // Remove preferredTutor so other tutors can take the request
@@ -2116,7 +2200,8 @@ export class TutorsService implements OnModuleInit {
     }
 
     return {
-      message: 'Bạn đã từ chối đề xuất từ học viên. Yêu cầu sẽ được mở lại cho tất cả gia sư.',
+      message:
+        'Bạn đã từ chối đề xuất từ học viên. Yêu cầu sẽ được mở lại cho tất cả gia sư.',
     };
   }
 

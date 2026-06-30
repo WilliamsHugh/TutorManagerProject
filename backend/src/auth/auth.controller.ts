@@ -23,6 +23,14 @@ import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { Roles, RoleType } from './decorators/roles.decorator';
 import { RolesGuard } from './guards/roles.guard';
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type RequestUser = any;
+
+interface AuthenticatedRequest {
+  user: RequestUser;
+  cookies?: Record<string, string>;
+}
+
 @Controller('auth')
 export class AuthController {
   constructor(
@@ -76,7 +84,7 @@ export class AuthController {
 
   @Post('refresh')
   async refresh(
-    @Request() req: any,
+    @Request() req: AuthenticatedRequest,
     @Res({ passthrough: true }) response: Response,
   ) {
     // Lấy refresh token từ cookie
@@ -111,7 +119,7 @@ export class AuthController {
 
   @Post('logout')
   async logout(
-    @Request() req: any,
+    @Request() req: AuthenticatedRequest,
     @Res({ passthrough: true }) response: Response,
   ) {
     // Thu hồi refresh token nếu có
@@ -152,15 +160,16 @@ export class AuthController {
   // Route chỉ dành cho người đã đăng nhập - lấy thông tin bản thân
   @Get('me')
   @UseGuards(JwtAuthGuard)
-  getProfile(@Request() req) {
-    const { passwordHash, ...user } = req.user;
+  getProfile(@Request() req: AuthenticatedRequest) {
+    const { passwordHash: _pwd, ...user } = req.user;
+    void _pwd;
     return user;
   }
 
   // Lấy thông tin hồ sơ học viên của người đang đăng nhập
   @Get('student-profile')
   @UseGuards(JwtAuthGuard)
-  async getStudentProfile(@Request() req) {
+  async getStudentProfile(@Request() req: AuthenticatedRequest) {
     const userId = req.user.id || req.user.sub;
     const student = await this.usersService.findStudentByUserId(userId);
     return student;
@@ -168,7 +177,7 @@ export class AuthController {
 
   @Patch('profile')
   @UseGuards(JwtAuthGuard)
-  updateProfile(@Request() req, @Body() dto: UpdateProfileDto) {
+  updateProfile(@Request() req: AuthenticatedRequest, @Body() dto: UpdateProfileDto) {
     // Kiểm tra resource ownership - user chỉ được update profile của chính họ
     this.accessControl.ensureResourceOwnership(req.user.id, req.user.id);
     return this.usersService.updateProfile(req.user.id, dto);

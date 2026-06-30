@@ -5,6 +5,7 @@ import { X, Mail, Phone, MapPin, Calendar, BookOpen } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/common/Skeleton"
 import { getClasses, getTutorScheduleForStaff, toggleUserStatusForStaff, deleteUserForStaff } from "@/lib/api"
+import { TablePagination } from "./TablePagination"
 
 export interface TutorData {
   id: string
@@ -43,6 +44,26 @@ export function TutorProfileDialog({ tutor, onClose, onRefresh, showToast }: Tut
   const [loadingSchedule, setLoadingSchedule] = useState(false)
   const [showSchedule, setShowSchedule] = useState(false)
   const [actionLoading, setActionLoading] = useState(false)
+
+  const [activeClassesPage, setActiveClassesPage] = useState(1)
+  const [pastClassesPage, setPastClassesPage] = useState(1)
+  const classesPageSize = 3
+
+  const activeClasses = useMemo(() => {
+    return classes.filter(c => c.status === "active" || c.status === "suspended")
+  }, [classes])
+
+  const pastClasses = useMemo(() => {
+    return classes.filter(c => c.status === "completed" || c.status === "cancelled")
+  }, [classes])
+
+  const paginatedActiveClasses = useMemo(() => {
+    return activeClasses.slice((activeClassesPage - 1) * classesPageSize, activeClassesPage * classesPageSize)
+  }, [activeClasses, activeClassesPage])
+
+  const paginatedPastClasses = useMemo(() => {
+    return pastClasses.slice((pastClassesPage - 1) * classesPageSize, pastClassesPage * classesPageSize)
+  }, [pastClasses, pastClassesPage])
 
   const handleToggleStatus = async () => {
     if (actionLoading) return
@@ -401,10 +422,10 @@ export function TutorProfileDialog({ tutor, onClose, onRefresh, showToast }: Tut
               <>
                 {/* Active classes */}
                 <div className="space-y-2">
-                  <h4 className="font-bold text-xs text-slate-400 uppercase tracking-wider">Lớp đang dạy ({classes.filter(c => c.status === "active" || c.status === "suspended").length})</h4>
-                  {classes.filter(c => c.status === "active" || c.status === "suspended").length > 0 ? (
-                    <div className="space-y-2 max-h-[200px] overflow-y-auto pr-1">
-                      {classes.filter(c => c.status === "active" || c.status === "suspended").map((cls) => {
+                  <h4 className="font-bold text-xs text-slate-400 uppercase tracking-wider">Lớp đang dạy ({activeClasses.length})</h4>
+                  {activeClasses.length > 0 ? (
+                    <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
+                      {paginatedActiveClasses.map((cls) => {
                         const statusLabel = cls.status === "active" ? "Đang học" : "Tạm dừng";
                         const statusClass = cls.status === "active" ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-amber-50 text-amber-700 border-amber-200";
                         return (
@@ -432,6 +453,15 @@ export function TutorProfileDialog({ tutor, onClose, onRefresh, showToast }: Tut
                           </div>
                         );
                       })}
+                      {activeClasses.length > classesPageSize && (
+                        <TablePagination
+                          currentPage={activeClassesPage}
+                          totalItems={activeClasses.length}
+                          pageSize={classesPageSize}
+                          onPageChange={setActiveClassesPage}
+                          itemName="lớp đang dạy"
+                        />
+                      )}
                     </div>
                   ) : (
                     <div className="text-xs text-muted-foreground italic bg-slate-50 p-2.5 rounded-lg border border-dashed border-border text-center">
@@ -442,10 +472,10 @@ export function TutorProfileDialog({ tutor, onClose, onRefresh, showToast }: Tut
 
                 {/* Past classes */}
                 <div className="space-y-2">
-                  <h4 className="font-bold text-xs text-slate-400 uppercase tracking-wider">Lớp đã dạy ({classes.filter(c => c.status === "completed" || c.status === "cancelled").length})</h4>
-                  {classes.filter(c => c.status === "completed" || c.status === "cancelled").length > 0 ? (
-                    <div className="space-y-2 max-h-[200px] overflow-y-auto pr-1">
-                      {classes.filter(c => c.status === "completed" || c.status === "cancelled").map((cls) => {
+                  <h4 className="font-bold text-xs text-slate-400 uppercase tracking-wider">Lớp đã dạy ({pastClasses.length})</h4>
+                  {pastClasses.length > 0 ? (
+                    <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
+                      {paginatedPastClasses.map((cls) => {
                         const statusLabel = cls.status === "completed" ? "Hoàn thành" : "Đã hủy";
                         const statusClass = cls.status === "completed" ? "bg-blue-50 text-blue-700 border-blue-200" : "bg-slate-50 text-slate-700 border-slate-200";
                         return (
@@ -473,6 +503,15 @@ export function TutorProfileDialog({ tutor, onClose, onRefresh, showToast }: Tut
                           </div>
                         );
                       })}
+                      {pastClasses.length > classesPageSize && (
+                        <TablePagination
+                          currentPage={pastClassesPage}
+                          totalItems={pastClasses.length}
+                          pageSize={classesPageSize}
+                          onPageChange={setPastClassesPage}
+                          itemName="lớp đã dạy"
+                        />
+                      )}
                     </div>
                   ) : (
                     <div className="text-xs text-muted-foreground italic bg-slate-50 p-2.5 rounded-lg border border-dashed border-border text-center">

@@ -1,7 +1,6 @@
 import {
   Injectable,
   UnauthorizedException,
-  ConflictException,
   NotFoundException,
   BadRequestException,
   ServiceUnavailableException,
@@ -19,7 +18,6 @@ import { LoginDto } from './dto/login.dto';
 import { ApprovalStatus } from '../users/entities/tutor.entity';
 import { Otp } from './entities/otp.entity';
 import { RefreshToken } from './entities/refresh-token.entity';
-import { MailService } from '../mail/mail.service';
 
 @Injectable()
 export class AuthService {
@@ -43,7 +41,8 @@ export class AuthService {
       passwordHash: passwordHash,
     });
 
-    const { passwordHash: _, ...result } = user;
+    const { passwordHash: _passwordHash, ...result } = user;
+    void _passwordHash;
     return {
       message: 'Đăng ký thành công',
       user: result,
@@ -69,7 +68,8 @@ export class AuthService {
       dto.subjects || [],
     );
 
-    const { passwordHash: _, ...result } = user;
+    const { passwordHash: _pwHash, ...result } = user;
+    void _pwHash;
     return {
       message: 'Đăng ký thành công. Hồ sơ đang chờ xét duyệt.',
       user: result,
@@ -131,7 +131,8 @@ export class AuthService {
       }
     }
 
-    const { passwordHash, ...result } = user;
+    const { passwordHash: _pwdHash, ...result } = user;
+    void _pwdHash;
     return {
       message: 'Đăng nhập thành công',
       user: result,

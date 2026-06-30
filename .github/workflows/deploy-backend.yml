@@ -1,0 +1,50 @@
+# ============================================================
+# Deploy Backend → Render
+# ============================================================
+# Triển khai backend lên Render khi có push lên main.
+# Yêu cầu CI phải pass trước khi deploy.
+#
+# Cách thiết lập:
+#   ⚠️ BẮT BUỘC: Kết nối repo trên Render Dashboard
+#      Render tự động deploy từ Git branch main.
+#      Vào Render → Backend Service → Settings → Git Repo
+#      Chọn branch "main" và bật "Auto-Deploy".
+#
+#   TÙY CHỌN (nếu muốn trigger qua webhook):
+#     1. Render Dashboard → Backend Service → Settings
+#     2. Tại "Deploy Hook", tạo hook → copy URL
+#     3. Set vào GitHub Secret: RENDER_DEPLOY_HOOK
+#     4. Workflow này sẽ gọi hook sau CI pass
+# ============================================================
+
+name: Deploy Backend
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+
+concurrency:
+  group: deploy-backend-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    name: 🚀 Deploy to Render
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: 🚀 Trigger Render deploy
+        run: |
+          if [ -n "${{ secrets.RENDER_DEPLOY_HOOK }}" ]; then
+            echo "📡 Gọi Render Deploy Hook..."
+            HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" -X POST "${{ secrets.RENDER_DEPLOY_HOOK }}" 2>&1)
+            echo "✅ Render trả về HTTP $HTTP_CODE"
+          else
+            echo "ℹ️  Không có RENDER_DEPLOY_HOOK — Render sẽ auto-deploy từ Git"
+            echo "   (Kết nối repo trên Render Dashboard → Settings → Git Repo)"
+            echo "   Chọn branch 'main' và bật 'Auto-Deploy' để tự động triển khai"
+          fi

@@ -54,6 +54,13 @@ export class Tutor {
   @Column({ name: 'available_areas', type: 'text', nullable: true })
   availableAreas!: string;
 
+  @Index()
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  province!: string;
+
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  district!: string;
+
   @Column({ type: 'text', nullable: true })
   bio!: string;
 

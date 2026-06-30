@@ -19,7 +19,6 @@ import { LoginDto } from './dto/login.dto';
 import { ApprovalStatus } from '../users/entities/tutor.entity';
 import { Otp } from './entities/otp.entity';
 import { RefreshToken } from './entities/refresh-token.entity';
-import { MailService } from '../mail/mail.service';
 
 @Injectable()
 export class AuthService {
@@ -34,7 +33,6 @@ export class AuthService {
   ) {}
 
   async registerStudent(dto: RegisterStudentDto) {
-    // const passwordHash = await bcrypt.hash(dto.password, 10);
     const passwordHash = dto.password; // Lưu text thuần để test theo yêu cầu
     const user = await this.usersService.createStudent({
       fullName: dto.fullName,
@@ -52,7 +50,6 @@ export class AuthService {
   }
 
   async registerTutor(dto: RegisterTutorDto) {
-    // const passwordHash = await bcrypt.hash(dto.password, 10);
     const passwordHash = dto.password; // Lưu text thuần để test theo yêu cầu
     const user = await this.usersService.createTutor(
       {
@@ -65,6 +62,8 @@ export class AuthService {
         educationLevel: dto.education,
         experience: dto.experience,
         cvUrl: dto.cvUrl,
+        province: dto.province,
+        district: dto.district,
       },
       dto.subjects || [],
     );
@@ -73,7 +72,6 @@ export class AuthService {
     return {
       message: 'Đăng ký thành công. Hồ sơ đang chờ xét duyệt.',
       user: result,
-      // Tutor chưa được cấp token vì chờ duyệt
     };
   }
 
@@ -83,7 +81,6 @@ export class AuthService {
       throw new UnauthorizedException('Email hoặc mật khẩu không đúng');
     }
 
-    // Kiểm tra bằng Bcrypt, nếu thất bại thì thử so sánh chuỗi thuần (để hỗ trợ dữ liệu SQL mẫu)
     let isPasswordValid = await bcrypt
       .compare(dto.password, user.passwordHash)
       .catch(() => false);
@@ -107,7 +104,6 @@ export class AuthService {
 
     const roleName = user.role?.name ?? '';
 
-    // Phân luồng đăng nhập dựa theo Portal
     if (dto.portal === 'hub') {
       if (roleName !== 'admin' && roleName !== 'staff') {
         throw new UnauthorizedException(
@@ -115,7 +111,6 @@ export class AuthService {
         );
       }
     } else {
-      // Đăng nhập từ cổng công cộng (hoặc không truyền portal)
       if (roleName === 'admin' || roleName === 'staff') {
         throw new UnauthorizedException(
           'Tài khoản quản trị. Vui lòng đăng nhập tại cổng nội bộ: /hub/login',
@@ -123,7 +118,6 @@ export class AuthService {
       }
     }
 
-    // Check tutor approval status
     if (roleName === 'tutor') {
       const tutor = await this.usersService.findTutorByUserId(user.id);
       if (tutor && tutor.approvalStatus === ApprovalStatus.PENDING) {
@@ -145,10 +139,9 @@ export class AuthService {
       throw new NotFoundException('Không tìm thấy người dùng với email này');
     }
 
-    // Generate 6-digit OTP
     const code = Math.floor(100000 + Math.random() * 900000).toString();
     const expiresAt = new Date();
-    expiresAt.setMinutes(expiresAt.getMinutes() + 10); // Expire in 10 minutes
+    expiresAt.setMinutes(expiresAt.getMinutes() + 10);
 
     const otp = this.otpRepository.create({
       email,
@@ -157,13 +150,12 @@ export class AuthService {
     });
     await this.otpRepository.save(otp);
 
-    // Send real email using MailerService
     try {
       await this.mailerService.sendMail({
         to: email,
         subject: '[Tutor Manager] Mã OTP Đặt Lại Mật Khẩu',
         html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; rounded-lg: 8px;">
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0;">
             <h2 style="color: #0b5fff; text-align: center;">Yêu cầu đặt lại mật khẩu</h2>
             <p>Xin chào,</p>
             <p>Chúng tôi nhận được yêu cầu đặt lại mật khẩu cho tài khoản liên kết với email này. Vui lòng sử dụng mã OTP dưới đây để hoàn tất quá trình:</p>
@@ -178,9 +170,6 @@ export class AuthService {
           </div>
         `,
       });
-      console.log(
-        `[MAILER] Đã gửi OTP đặt lại mật khẩu thành công tới ${email}`,
-      );
     } catch (error) {
       console.error(`[MAILER ERROR] Lỗi khi gửi mail tới ${email}:`, error);
       await this.otpRepository.delete({ id: otp.id });
@@ -211,11 +200,9 @@ export class AuthService {
       throw new NotFoundException('Người dùng không tồn tại');
     }
 
-    // Update password
     const passwordHash = await bcrypt.hash(newPassword, 10);
     await this.usersService.updatePassword(user.id, passwordHash);
 
-    // Mark OTP as used
     otp.isUsed = true;
     await this.otpRepository.save(otp);
 
@@ -233,7 +220,7 @@ export class AuthService {
   async generateRefreshToken(user: any): Promise<string> {
     const token = uuidv4();
     const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 7); // 7 ngày
+    expiresAt.setDate(expiresAt.getDate() + 7);
 
     const refreshToken = this.refreshTokenRepository.create({
       user,
@@ -250,43 +237,31 @@ export class AuthService {
       throw new UnauthorizedException('Refresh token không hợp lệ');
     }
 
-    // Tìm refresh token trong DB
     const refreshToken = await this.refreshTokenRepository.findOne({
       where: { token: refreshTokenStr, isRevoked: false },
       relations: ['user'],
     });
 
     if (!refreshToken) {
-      throw new UnauthorizedException(
-        'Refresh token không hợp lệ hoặc đã bị thu hồi',
-      );
+      throw new UnauthorizedException('Refresh token không hợp lệ hoặc đã bị thu hồi');
     }
 
     if (new Date() > refreshToken.expiresAt) {
       throw new UnauthorizedException('Refresh token đã hết hạn');
     }
 
-    // Kiểm tra user còn hoạt động
     const user = refreshToken.user;
     if (!user.isActive) {
       const userDetail = await this.usersService.findById(user.id);
       const staffName = userDetail?.lockedBy?.fullName || 'Quản trị viên';
-      const staffId = userDetail?.lockedBy?.id
-        ? userDetail.lockedBy.id.slice(0, 8)
-        : 'ADMIN';
-      throw new UnauthorizedException(
-        `Tài khoản của bạn đã bị khóa bởi nhân viên ${staffName} (ID: ${staffId}).`,
-      );
+      const staffId = userDetail?.lockedBy?.id ? userDetail.lockedBy.id.slice(0, 8) : 'ADMIN';
+      throw new UnauthorizedException(`Tài khoản của bạn đã bị khóa bởi nhân viên ${staffName} (ID: ${staffId}).`);
     }
 
-    // Thu hồi refresh token cũ (rotation)
     refreshToken.isRevoked = true;
     await this.refreshTokenRepository.save(refreshToken);
 
-    // Cấp access token mới
     const accessToken = this.generateToken(user);
-
-    // Cấp refresh token mới
     const newRefreshToken = await this.generateRefreshToken(user);
 
     return {

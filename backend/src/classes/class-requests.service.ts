@@ -246,7 +246,14 @@ export class ClassRequestsService {
     }
 
     if (subject) {
-      const subjectNames = subject.split(',');
+      const subjectNames = subject.split(',').map((name) => {
+        const trimmed = name.trim();
+        if (trimmed === 'Toán') return 'Toán học';
+        if (trimmed === 'Vật Lý') return 'Vật lí';
+        if (trimmed === 'Hóa Học') return 'Hóa học';
+        if (trimmed === 'Ngữ Văn') return 'Ngữ văn';
+        return trimmed;
+      });
       qb.andWhere('subject.name IN (:...subjectNames)', { subjectNames });
     }
 

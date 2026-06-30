@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import TutorCard from "@/components/common/TutorCard";
 import ListingLayout from "@/components/common/ListingLayout";
 import { Tutor } from "@/types/tutor";
@@ -44,11 +44,22 @@ const TUTOR_SORT_OPTIONS = [
 
 export default function PublicTutorsClient() {
   const router = useRouter();
+  const searchParams = useSearchParams();
 
-  const [search, setSearch] = useState("");
+  const initialSearch = searchParams.get("search") || "";
+  const initialSubject = searchParams.get("subject") || "";
+  const initialProvince = searchParams.get("province") || "";
+
+  const [search, setSearch] = useState(initialSearch);
   const debouncedSearch = useDebounce(search, 500);
 
-  const [checked, setChecked] = useState<Record<string, boolean>>({});
+  const [checked, setChecked] = useState<Record<string, boolean>>(() => {
+    const initChecked: Record<string, boolean> = {};
+    if (initialSubject) {
+      initChecked[`subject:${initialSubject}`] = true;
+    }
+    return initChecked;
+  });
   const [sort, setSort] = useState(TUTOR_SORT_OPTIONS[0]);
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -67,7 +78,7 @@ export default function PublicTutorsClient() {
     setShowDetailModal(true);
   };
 
-  const handleRecommendTutor = (tutor: Tutor) => {
+  const handleRecommendTutor = () => {
     // Chuyển hướng đến trang đăng ký để người dùng tạo tài khoản và gửi yêu cầu
     router.push("/register");
   };
@@ -85,15 +96,14 @@ export default function PublicTutorsClient() {
       .join(",");
 
     // Khi có search hoặc filter, luôn về trang 1 để tránh lỗi
-    // API trả về page rỗng nếu currentPage > 1 và kết quả tìm kiếm ít
-    const hasFilters = debouncedSearch !== "" || subject !== "";
+    const hasFilters = debouncedSearch !== "" || subject !== "" || initialProvince !== "";
     const page = hasFilters ? 1 : currentPage;
 
     if (hasFilters && currentPage !== 1) {
       setCurrentPage(1);
     }
 
-    getPublicTutors({ search: debouncedSearch, subject, page })
+    getPublicTutors({ search: debouncedSearch, subject, province: initialProvince, page })
       .then((res) => {
         setItems(res.data ?? []);
         setTotalItems(res.meta?.total ?? 0);
@@ -101,7 +111,7 @@ export default function PublicTutorsClient() {
       })
       .catch((err) => setError(err.message || "Không thể tải danh sách gia sư"))
       .finally(() => setIsLoading(false));
-  }, [debouncedSearch, checked, sort, currentPage]);
+  }, [debouncedSearch, checked, sort, currentPage, initialProvince]);
 
   return (
     <>

@@ -737,8 +737,15 @@ export class TutorsService implements OnModuleInit {
       tutorEntity.user.fullName = updateData.fullName;
     if (updateData.phone !== undefined)
       tutorEntity.user.phone = updateData.phone;
-    if (updateData.address !== undefined)
+    if (updateData.address !== undefined) {
       tutorEntity.user.address = updateData.address;
+    } else if (updateData.province !== undefined || updateData.district !== undefined) {
+      const prov = updateData.province !== undefined ? updateData.province : tutorEntity.province;
+      const dist = updateData.district !== undefined ? updateData.district : tutorEntity.district;
+      if (prov) {
+        tutorEntity.user.address = `${dist ? dist + ', ' : ''}${prov}`;
+      }
+    }
     if (updateData.avatarUrl !== undefined)
       tutorEntity.user.avatarUrl = updateData.avatarUrl;
     await this.userRepository.save(tutorEntity.user);
@@ -763,6 +770,10 @@ export class TutorsService implements OnModuleInit {
       tutorEntity.university = updateData.university;
     if (updateData.graduationYear !== undefined)
       tutorEntity.graduationYear = updateData.graduationYear;
+    if (updateData.province !== undefined)
+      tutorEntity.province = updateData.province;
+    if (updateData.district !== undefined)
+      tutorEntity.district = updateData.district;
 
     await this.tutorRepository.save(tutorEntity);
 
@@ -2032,10 +2043,11 @@ export class TutorsService implements OnModuleInit {
   async getPublicTutors(params: {
     search?: string;
     subject?: string;
+    province?: string;
     page?: number;
     limit?: number;
   }) {
-    const { search = '', subject = '', page = 1, limit = 12 } = params;
+    const { search = '', subject = '', province = '', page = 1, limit = 12 } = params;
 
     const qb = this.tutorRepository
       .createQueryBuilder('tutor')
@@ -2045,13 +2057,27 @@ export class TutorsService implements OnModuleInit {
       });
 
     if (search) {
-      qb.andWhere('(user.fullName ILIKE :search OR user.email ILIKE :search)', {
-        search: `%${search}%`,
-      });
+      qb.andWhere(
+        '(user.fullName ILIKE :search OR user.email ILIKE :search)',
+        {
+          search: `%${search.trim()}%`,
+        },
+      );
+    }
+
+    if (province) {
+      qb.andWhere('tutor.province = :province', { province: province.trim() });
     }
 
     if (subject) {
-      const subjectNames = subject.split(',');
+      const subjectNames = subject.split(',').map((name) => {
+        const trimmed = name.trim();
+        if (trimmed === 'Toán') return 'Toán học';
+        if (trimmed === 'Vật Lý') return 'Vật lí';
+        if (trimmed === 'Hóa Học') return 'Hóa học';
+        if (trimmed === 'Ngữ Văn') return 'Ngữ văn';
+        return trimmed;
+      });
       const subQuery = this.tutorSubjectRepository
         .createQueryBuilder('ts')
         .select('ts.tutor_id')

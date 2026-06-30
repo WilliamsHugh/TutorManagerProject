@@ -24,7 +24,7 @@ export function TutorDetailModal({
     if (!tutor?.user?.fullName?.trim()) {
       return `tutor${Date.now()}@tutoredu.com`;
     }
-    let name = tutor.user.fullName
+    const name = tutor.user.fullName
       .normalize("NFD")
       .replace(/[\u0300-\u036f]/g, "")
       .toLowerCase()
@@ -106,7 +106,9 @@ export function TutorDetailModal({
           </div>
           <div className="space-y-1 col-span-2">
             <span className="text-slate-500">Khu vực đăng ký dạy:</span>
-            <p className="font-semibold text-white">{tutor.availableAreas || "Toàn thành phố"}</p>
+            <p className="font-semibold text-white">
+              {tutor.province ? `${tutor.district ? tutor.district + ", " : ""}${tutor.province}` : tutor.availableAreas || "Toàn thành phố"}
+            </p>
           </div>
           <div className="space-y-1 col-span-2">
             <span className="text-slate-500">Môn học đăng ký dạy:</span>
@@ -167,11 +169,23 @@ export function TutorDetailModal({
             </div>
           )}
 
-          {/* Email cá nhân của gia sư (đã đăng ký) */}
+          {/* Email hiển thị */}
           {tutor.user?.email && (
-            <div className="col-span-2 bg-[#0f172a] p-3 rounded-lg border border-slate-800">
-              <span className="text-slate-500 text-xs">Email cá nhân (nhận thông báo):</span>
-              <p className="font-semibold text-emerald-400 mt-0.5">{tutor.user.email}</p>
+            <div className="col-span-2 bg-[#0f172a] p-3 rounded-lg border border-slate-800 space-y-2">
+              <div>
+                <span className="text-slate-500 text-xs">Email cá nhân (nhận thông báo):</span>
+                <p className="font-semibold text-emerald-400 mt-0.5">
+                  {tutor.user.contactEmail || tutor.user.email}
+                </p>
+              </div>
+              {tutor.user.contactEmail && (
+                <div>
+                  <span className="text-slate-500 text-xs">Email hệ thống (dùng đăng nhập):</span>
+                  <p className="font-semibold text-blue-400 mt-0.5">
+                    {tutor.user.email}
+                  </p>
+                </div>
+              )}
             </div>
           )}
         </div>

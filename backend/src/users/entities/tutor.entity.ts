@@ -5,6 +5,8 @@ import {
   OneToOne,
   JoinColumn,
   ManyToOne,
+  OneToMany,
+  Index,
 } from 'typeorm';
 import { User } from './user.entity';
 
@@ -19,6 +21,7 @@ export class Tutor {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
+  @Index()
   @OneToOne(() => User, { eager: true })
   @JoinColumn({ name: 'user_id' })
   user!: User;
@@ -68,6 +71,7 @@ export class Tutor {
   })
   graduationYear!: string;
 
+  @Index()
   @Column({
     name: 'approval_status',
     type: 'varchar',

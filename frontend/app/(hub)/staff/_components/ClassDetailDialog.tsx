@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useMemo } from "react"
 import { BookOpen, Clock, Mail, Phone, GraduationCap, X, Calendar, FileText, CheckCircle2, XCircle } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
@@ -14,6 +14,7 @@ import {
   updateClassStatusForStaff,
 } from "@/lib/api"
 import type { StaffClassItem } from "@/types/staff"
+import { TablePagination } from "./TablePagination"
 
 export function getStatusBadge(status?: string, size: "sm" | "md" = "sm") {
   const sizeClasses = size === "sm"
@@ -61,6 +62,13 @@ export function ClassDetailDialog({ classItem, onClose, onRefresh, showToast }: 
   const [schedules, setSchedules] = useState<any[]>([])
   const [loadingSchedules, setLoadingSchedules] = useState(true)
   const [statusLoading, setStatusLoading] = useState(false)
+
+  const [reportsPage, setReportsPage] = useState(1)
+  const reportsPageSize = 3
+
+  const paginatedReports = useMemo(() => {
+    return reports.slice((reportsPage - 1) * reportsPageSize, reportsPage * reportsPageSize)
+  }, [reports, reportsPage])
 
   async function handleStatusChange(newStatus: string) {
     if (statusLoading) return
@@ -490,8 +498,8 @@ export function ClassDetailDialog({ classItem, onClose, onRefresh, showToast }: 
                 ))}
               </div>
             ) : reports.length > 0 ? (
-              <div className="space-y-3 max-h-[320px] overflow-y-auto pr-1">
-                {reports.map((report: any, idx: number) => {
+              <div className="space-y-3 max-h-[400px] overflow-y-auto pr-1">
+                {paginatedReports.map((report: any, idx: number) => {
                   const progressLabels: Record<string, string> = {
                     excellent: 'Xuất sắc',
                     good: 'Tốt',
@@ -569,6 +577,15 @@ export function ClassDetailDialog({ classItem, onClose, onRefresh, showToast }: 
                     </div>
                   )
                 })}
+                {reports.length > reportsPageSize && (
+                  <TablePagination
+                    currentPage={reportsPage}
+                    totalItems={reports.length}
+                    pageSize={reportsPageSize}
+                    onPageChange={setReportsPage}
+                    itemName="báo cáo học tập"
+                  />
+                )}
               </div>
             ) : (
               <div className="text-center py-4 border border-dashed border-slate-200 rounded-lg text-xs text-muted-foreground bg-slate-50/30">

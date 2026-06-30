@@ -26,7 +26,16 @@ export class AuditLogInterceptor implements NestInterceptor {
         next: async (response) => {
           if (isMutation) {
             const user = request.user;
-            const userId = user?.id || null;
+            let userId = user?.id || null;
+
+            // Lấy userId từ dữ liệu phản hồi (response) đối với các tác vụ Đăng nhập/Đăng ký thành công
+            if (!userId && response) {
+              if (response.user && response.user.id) {
+                userId = response.user.id;
+              } else if (response.id) {
+                userId = response.id;
+              }
+            }
 
             // Determine readable action name from method & route
             let action = `${method} ${url}`;

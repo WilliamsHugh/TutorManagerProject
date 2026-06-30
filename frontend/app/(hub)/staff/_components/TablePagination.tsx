@@ -1,5 +1,3 @@
-import { Button } from "@/components/ui/button"
-
 type TablePaginationProps = {
   currentPage: number
   totalItems: number
@@ -21,43 +19,121 @@ export function TablePagination({
   const startIdx = (currentPage - 1) * pageSize + 1
   const endIdx = Math.min(currentPage * pageSize, totalItems)
 
-  const pages = Array.from({ length: totalPages }, (_, i) => i + 1)
+  const getVisiblePages = () => {
+    const delta = 1
+    const range: number[] = []
+    const rangeWithDots: (number | string)[] = []
+    let l: number | undefined
+
+    for (let i = 1; i <= totalPages; i++) {
+      if (
+        i === 1 ||
+        i === totalPages ||
+        (i >= currentPage - delta && i <= currentPage + delta)
+      ) {
+        range.push(i)
+      }
+    }
+
+    for (const i of range) {
+      if (l !== undefined) {
+        if (i - l === 2) {
+          rangeWithDots.push(l + 1)
+        } else if (i - l > 2) {
+          rangeWithDots.push("...")
+        }
+      }
+      rangeWithDots.push(i)
+      l = i
+    }
+
+    return rangeWithDots
+  }
+
+  const visiblePages = getVisiblePages()
+
+  const baseButtonClass =
+    "h-8 px-3 rounded text-[11px] font-semibold transition-all duration-200 flex items-center justify-center border select-none shrink-0"
 
   return (
-    <div className="flex items-center justify-between text-xs text-muted-foreground mt-4 pt-3 border-t border-slate-100 bg-white">
-      <span>
+    <div className="flex flex-col sm:flex-row items-center justify-between gap-3 text-xs mt-4 pt-3 border-t border-slate-200/20 dark:border-white/5 w-full">
+      <span className="text-slate-200 font-semibold shrink-0 text-center sm:text-left">
         Hiển thị {startIdx}-{endIdx} trong số {totalItems} {itemName}
       </span>
-      <div className="flex gap-1.5 items-center">
-        <Button
-          className="h-7 rounded text-[11px] px-2.5 disabled:opacity-50 disabled:cursor-not-allowed"
-          variant="outline"
+      <div className="flex gap-1.5 items-center flex-wrap justify-center max-w-full">
+        {/* Nút Trước */}
+        <button
+          className={baseButtonClass}
+          style={{
+            color: "#ffffff",
+            borderColor: currentPage === 1 ? "rgba(255, 255, 255, 0.1)" : "rgba(255, 255, 255, 0.3)",
+            backgroundColor: "transparent",
+            opacity: currentPage === 1 ? 0.3 : 1,
+            cursor: currentPage === 1 ? "not-allowed" : "pointer",
+          }}
           disabled={currentPage === 1}
           onClick={() => onPageChange(currentPage - 1)}
         >
           Trước
-        </Button>
-        {pages.map((p) => (
-          <Button
-            key={p}
-            className={`h-7 w-7 rounded text-[11px] p-0 font-medium ${
-              currentPage === p
-                ? "bg-primary text-primary-foreground hover:bg-primary/90"
-                : "bg-transparent text-muted-foreground hover:bg-slate-100 border border-slate-200"
-            }`}
-            onClick={() => onPageChange(p)}
-          >
-            {p}
-          </Button>
-        ))}
-        <Button
-          className="h-7 rounded text-[11px] px-2.5 disabled:opacity-50 disabled:cursor-not-allowed"
-          variant="outline"
+        </button>
+
+        {visiblePages.map((p, idx) => {
+          if (p === "...") {
+            return (
+              <span
+                key={`dots-${idx}`}
+                className="px-2 font-bold select-none"
+                style={{ color: "rgba(255, 255, 255, 0.4)" }}
+              >
+                ...
+              </span>
+            )
+          }
+          const pageNum = p as number
+          const isActive = currentPage === pageNum
+
+          return (
+            <button
+              key={pageNum}
+              className={`${baseButtonClass} w-8 p-0`}
+              style={
+                isActive
+                  ? {
+                      color: "#0f172a", // Chữ tối trên nền vàng nổi bật
+                      backgroundColor: "#f59e0b",
+                      borderColor: "#f59e0b",
+                      fontWeight: "bold",
+                      cursor: "pointer",
+                    }
+                  : {
+                      color: "#ffffff", // Chữ màu trắng hoàn toàn cho trang không active
+                      backgroundColor: "transparent",
+                      borderColor: "rgba(255, 255, 255, 0.3)",
+                      cursor: "pointer",
+                    }
+              }
+              onClick={() => onPageChange(pageNum)}
+            >
+              {pageNum}
+            </button>
+          )
+        })}
+
+        {/* Nút Sau */}
+        <button
+          className={baseButtonClass}
+          style={{
+            color: "#ffffff",
+            borderColor: currentPage === totalPages ? "rgba(255, 255, 255, 0.1)" : "rgba(255, 255, 255, 0.3)",
+            backgroundColor: "transparent",
+            opacity: currentPage === totalPages ? 0.3 : 1,
+            cursor: currentPage === totalPages ? "not-allowed" : "pointer",
+          }}
           disabled={currentPage === totalPages}
           onClick={() => onPageChange(currentPage + 1)}
         >
           Sau
-        </Button>
+        </button>
       </div>
     </div>
   )

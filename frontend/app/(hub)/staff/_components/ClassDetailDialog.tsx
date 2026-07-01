@@ -231,8 +231,8 @@ export function ClassDetailDialog({ classItem, onClose, onRefresh, showToast }: 
 
       if (sDay !== day) return false
 
-      const sStart = s.startTime.slice(0, 5)
-      const sEnd = s.endTime.slice(0, 5)
+      const sStart = s.startTime?.slice(0, 5) || ""
+      const sEnd = s.endTime?.slice(0, 5) || ""
       return (sStart < slotEnd && sEnd > slotStart)
     })
   }
@@ -385,8 +385,8 @@ export function ClassDetailDialog({ classItem, onClose, onRefresh, showToast }: 
                                   setEditingSchedule({
                                     id: session.id,
                                     dayOfWeek: session.dayOfWeek,
-                                    startTime: session.startTime.slice(0, 5),
-                                    endTime: session.endTime.slice(0, 5),
+                                    startTime: session.startTime?.slice(0, 5) || "",
+                                    endTime: session.endTime?.slice(0, 5) || "",
                                     sessionDate: session.sessionDate ? session.sessionDate.toString().slice(0, 10) : "",
                                     sessionStatus: session.sessionStatus,
                                     note: session.note || "",
@@ -419,7 +419,7 @@ export function ClassDetailDialog({ classItem, onClose, onRefresh, showToast }: 
                                     {session.class.subject?.name}
                                   </span>
                                   <span className="text-[8px] font-bold text-slate-400 mt-0.5">
-                                    {session.startTime.slice(0, 5)} - {session.endTime.slice(0, 5)}
+                                    {session.startTime?.slice(0, 5) || ""} - {session.endTime?.slice(0, 5) || ""}
                                   </span>
                                   <span className={`text-[8px] font-bold px-1 py-0.2 mt-1 rounded-sm flex items-center gap-0.5 ${statusConf?.bg}`}>
                                     <span className={`size-1 rounded-full ${statusConf?.indicator}`} />

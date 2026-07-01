@@ -26,7 +26,7 @@ export function TutorRecommendationCard({
   onSelectToggle,
 }: TutorRecommendationCardProps) {
   return (
-    <div className="rounded border border-border bg-white p-3 flex min-h-[230px] flex-col justify-between">
+    <div className={`rounded border p-3 flex min-h-[230px] flex-col justify-between transition-colors ${selected ? "border-primary/50 bg-primary/[0.02] ring-1 ring-primary/20" : "border-border bg-white"}`}>
       <div>
         <div className="flex items-start justify-between gap-3">
           <div className="flex min-w-0 gap-3">

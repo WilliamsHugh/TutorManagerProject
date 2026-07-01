@@ -1,6 +1,6 @@
 "use client"
 
-import { ChevronDown, X, Calendar } from "lucide-react"
+import { ChevronDown, X, Calendar, Send, CheckSquare } from "lucide-react"
 import { useState, useMemo, useEffect } from "react"
 
 import { Button } from "@/components/ui/button"
@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import { RequestContactCard } from "./RequestContactCard"
 import { RequestDetailCard } from "./RequestDetailCard"
 import { TutorRecommendationCard } from "./TutorRecommendationCard"
-import { getTutorScheduleForStaff, getStudentScheduleForStaff } from "@/lib/api"
+import { getTutorScheduleForStaff, getStudentScheduleForStaff, proposeTutorsForRequest } from "@/lib/api"
 import type { RequestItem, RequestStatus, TutorRecommendation } from "@/types/class_request"
 import { TutorDetailModal } from "../../../(portal)/student/_components/TutorDetailModal"
 import { TablePagination } from "./TablePagination"
@@ -34,6 +34,53 @@ export function MatchTutorDialog({
 }: MatchTutorDialogProps) {
   const [status, setStatus] = useState<RequestStatus>(request.status)
   const [savingStatus, setSavingStatus] = useState(false)
+
+  // Staff đề xuất gia sư: selection state
+  const [selectedTutorIds, setSelectedTutorIds] = useState<Set<string>>(new Set())
+  const [proposing, setProposing] = useState(false)
+  const [proposeMessage, setProposeMessage] = useState<{ type: "success" | "error"; text: string } | null>(null)
+
+  // Có thể đề xuất khi status là "Chờ xử lý" (pending)
+  const canPropose = status === "Chờ xử lý"
+
+  function toggleTutorSelection(tutorId: string) {
+    setSelectedTutorIds(prev => {
+      const next = new Set(prev)
+      if (next.has(tutorId)) {
+        next.delete(tutorId)
+      } else {
+        next.add(tutorId)
+      }
+      return next
+    })
+  }
+
+  function selectAllTutors() {
+    if (selectedTutorIds.size === filteredTutors.length) {
+      setSelectedTutorIds(new Set())
+    } else {
+      setSelectedTutorIds(new Set(filteredTutors.map(t => t.rawTutorId)))
+    }
+  }
+
+  async function handleProposeTutors() {
+    if (selectedTutorIds.size === 0) return
+    setProposing(true)
+    setProposeMessage(null)
+    try {
+      await proposeTutorsForRequest(request.rawId, Array.from(selectedTutorIds))
+      setProposeMessage({ type: "success", text: `Đã gửi đề xuất ${selectedTutorIds.size} gia sư cho học viên thành công!` })
+      setSelectedTutorIds(new Set())
+      // Update status to "Đang xử lý"
+      if (onStatusChange) {
+        await onStatusChange("Đang xử lý")
+      }
+    } catch (err) {
+      setProposeMessage({ type: "error", text: err instanceof Error ? err.message : "Không thể gửi đề xuất. Vui lòng thử lại." })
+    } finally {
+      setProposing(false)
+    }
+  }
 
   // Đồng bộ status với prop request.status khi nó thay đổi từ bên ngoài
   useEffect(() => {
@@ -307,8 +354,30 @@ export function MatchTutorDialog({
           </div>
 
           <div className="rounded border border-border p-4 flex flex-col min-h-[430px]">
+            {proposeMessage && (
+              <div className={`mb-3 rounded-lg px-4 py-2.5 text-xs font-semibold border ${
+                proposeMessage.type === "success"
+                  ? "bg-green-50 text-green-700 border-green-200"
+                  : "bg-red-50 text-red-700 border-red-200"
+              }`}>
+                {proposeMessage.text}
+              </div>
+            )}
+
             <div className="flex items-center justify-between gap-3 mb-3">
-              <h3 className="text-sm font-bold">Gia sư được đề xuất</h3>
+              <div className="flex items-center gap-2">
+                <h3 className="text-sm font-bold">Gia sư được đề xuất</h3>
+                {canPropose && filteredTutors.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={selectAllTutors}
+                    className="flex items-center gap-1 text-[10px] font-semibold text-primary hover:text-primary/80 transition-colors"
+                  >
+                    <CheckSquare size={12} />
+                    {selectedTutorIds.size === filteredTutors.length ? "Bỏ chọn tất cả" : "Chọn tất cả"}
+                  </button>
+                )}
+              </div>
               <Button
                 className="h-7 rounded text-[11px] px-2.5"
                 type="button"
@@ -487,7 +556,7 @@ export function MatchTutorDialog({
                   {paginatedTutors.map((tutor) => {
                   const isMatched = status === "Đã ghép"
                   const isCancelled = status === "Đã hủy"
-                  const actionLabel = isMatched ? "Tạo lớp học" : isCancelled ? "Bị hủy" : "Chờ đồng ý"
+                  const actionLabel = isMatched ? "Tạo lớp học" : isCancelled ? "Bị hủy" : canPropose ? "Chọn đề xuất" : "Chờ đồng ý"
                   const href = isMatched
                     ? `/staff/request-management/create-class?requestId=${encodeURIComponent(
                         request.rawId
@@ -503,6 +572,8 @@ export function MatchTutorDialog({
                       tutor={tutor}
                       onViewSchedule={() => setActiveScheduleModal({ id: tutor.rawTutorId, name: tutor.name, role: "tutor" })}
                       onViewDetail={() => handleOpenTutorDetail(tutor)}
+                      selected={canPropose ? selectedTutorIds.has(tutor.rawTutorId) : undefined}
+                      onSelectToggle={canPropose ? () => toggleTutorSelection(tutor.rawTutorId) : undefined}
                     />
                   )
                 })}
@@ -524,6 +595,25 @@ export function MatchTutorDialog({
                 </div>
               )}
             </div>
+
+            {/* Floating Action Bar: Đề xuất gia sư cho học viên */}
+            {canPropose && selectedTutorIds.size > 0 && (
+              <div className="mt-4 rounded-lg border-2 border-primary/30 bg-primary/5 p-3.5 flex items-center justify-between gap-3 animate-in slide-in-from-bottom-2 duration-200">
+                <div className="text-xs">
+                  <span className="font-bold text-primary">{selectedTutorIds.size}</span>
+                  <span className="text-muted-foreground font-medium"> gia sư đã chọn — Gửi đề xuất cho học viên </span>
+                  <span className="font-bold">{request.name}</span>
+                </div>
+                <Button
+                  className="h-8 rounded-md text-xs px-4 gap-1.5 font-bold"
+                  disabled={proposing}
+                  onClick={handleProposeTutors}
+                >
+                  <Send size={13} />
+                  {proposing ? "Đang gửi..." : "Đề xuất gia sư"}
+                </Button>
+              </div>
+            )}
           </div>
         </div>
       </section>
@@ -687,8 +777,8 @@ function ScheduleViewDialog({ id, name, role, onClose, request }: ScheduleViewDi
                     s.dayOfWeek === "T7" ? "Thứ 7" :
                     s.dayOfWeek === "CN" ? "Chủ nhật" : s.dayOfWeek
 
-      const sStart = s.startTime.slice(0, 5)
-      const sEnd = s.endTime.slice(0, 5)
+      const sStart = s.startTime?.slice(0, 5) || ""
+      const sEnd = s.endTime?.slice(0, 5) || ""
       const timeMatch = (sStart < slotEnd && sEnd > slotStart)
       if (!timeMatch) return false
 
@@ -738,8 +828,8 @@ function ScheduleViewDialog({ id, name, role, onClose, request }: ScheduleViewDi
                     s.dayOfWeek === "T7" ? "Thứ 7" :
                     s.dayOfWeek === "CN" ? "Chủ nhật" : s.dayOfWeek
 
-      const sStart = s.startTime.slice(0, 5)
-      const sEnd = s.endTime.slice(0, 5)
+      const sStart = s.startTime?.slice(0, 5) || ""
+      const sEnd = s.endTime?.slice(0, 5) || ""
       const timeMatch = (sStart < slotEnd && sEnd > slotStart)
       if (!timeMatch) return false
 
@@ -907,7 +997,9 @@ function ScheduleViewDialog({ id, name, role, onClose, request }: ScheduleViewDi
                           // Nếu chỉ xem lịch học viên bình thường
                           if (studentSession) {
                             bgClass = "bg-amber-50 text-amber-900"
-                            const timeStr = `${studentSession.startTime.slice(0, 5)} - ${studentSession.endTime.slice(0, 5)}`
+                            const startFmt = studentSession.startTime?.slice(0, 5) || ""
+                            const endFmt = studentSession.endTime?.slice(0, 5) || ""
+                            const timeStr = `${startFmt} - ${endFmt}`
                             cellContent = (
                               <div className="flex flex-col items-center justify-center p-0.5 rounded border border-amber-200 bg-white shadow-xs max-w-[90px] mx-auto text-[7px] gap-0.5">
                                 <span className="font-bold text-amber-800 truncate w-full text-[8px]" title={studentSession.class?.subject?.name || 'Môn học'}>

@@ -74,7 +74,7 @@ export class ClassRequestsService {
       preferredArea: dto.preferredArea,
       preferredSchedule: dto.preferredSchedule,
       requirements: requirementLines.join('\n') || undefined,
-      status: preferredTutor ? RequestStatus.PROPOSED : RequestStatus.PENDING,
+      status: preferredTutor ? RequestStatus.PROCESSING : RequestStatus.PENDING,
     });
 
     const savedRequest = await this.classRequestsRepository.save(request);

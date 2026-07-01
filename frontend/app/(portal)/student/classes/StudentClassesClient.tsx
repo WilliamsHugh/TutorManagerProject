@@ -243,6 +243,27 @@ export default function StudentClassesClient() {
             Chờ xử lý
           </span>
         );
+      case "proposed":
+        return (
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700 border border-blue-200">
+            <span className="h-1.5 w-1.5 rounded-full bg-blue-500 animate-pulse" />
+            Đề xuất giá
+          </span>
+        );
+      case "negotiating":
+        return (
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-[#fef3c7] px-2.5 py-1 text-xs font-semibold text-[#b45309] border border-[#fde68a]">
+            <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
+            Đang thương lượng
+          </span>
+        );
+      case "matched":
+        return (
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 border border-emerald-200">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+            Đã ghép lớp
+          </span>
+        );
       case "completed":
         return (
           <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700 border border-blue-200">
@@ -334,7 +355,7 @@ export default function StudentClassesClient() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {classes.map((cls) => {
-              const isPending = cls.status === "pending" || cls.status === "processing";
+              const isRequest = ["pending", "processing", "proposed", "negotiating", "matched"].includes(cls.status);
               const hasTutor = !!cls.tutor;
               const review = reviews[cls.id];
               return (
@@ -350,8 +371,8 @@ export default function StudentClassesClient() {
                           {cls.subject.name}
                         </span>
                         <h3 className="text-lg font-bold text-[#0f172a]">
-                          {isPending 
-                            ? (hasTutor ? `Yêu cầu đề xuất: ${cls.tutor.user.fullName}` : "Yêu cầu tìm gia sư mới")
+                          {isRequest 
+                            ? (hasTutor ? `Đề xuất từ gia sư: ${cls.tutor.user.fullName}` : "Yêu cầu tìm gia sư mới")
                             : `Lớp học với ${cls.tutor?.user?.fullName || "Gia sư"}`}
                         </h3>
                       </div>
@@ -376,12 +397,12 @@ export default function StudentClassesClient() {
                       <div className="flex items-center gap-2.5">
                         <Calendar size={16} className="text-[#64748b] shrink-0" />
                         <span>
-                          {isPending ? "Thời gian đề xuất: " : ""}
+                          {isRequest ? "Thời gian đề xuất: " : ""}
                           {cls.startDate ? new Date(cls.startDate).toLocaleDateString("vi-VN") : "Chưa bắt đầu"}
-                          {!isPending && ` - ${cls.endDate ? new Date(cls.endDate).toLocaleDateString("vi-VN") : "Chưa kết thúc"}`}
+                          {!isRequest && ` - ${cls.endDate ? new Date(cls.endDate).toLocaleDateString("vi-VN") : "Chưa kết thúc"}`}
                         </span>
                       </div>
-                      {!isPending && (
+                      {(cls.feePerSession > 0 || !isRequest) && (
                         <>
                           <div className="flex items-center gap-2.5">
                             <Clock size={16} className="text-[#64748b] shrink-0" />
@@ -390,7 +411,7 @@ export default function StudentClassesClient() {
                           <div className="flex items-center gap-2.5">
                             <div className="font-semibold text-xs text-[#64748b] w-4 text-center">₫</div>
                             <span>
-                              Học phí:{" "}
+                              {isRequest ? "Học phí đề xuất: " : "Học phí: "}{" "}
                               <strong className="text-[#0b5fff]">
                                 {cls.feePerSession?.toLocaleString("vi-VN")}đ
                               </strong>{" "}
@@ -421,14 +442,22 @@ export default function StudentClassesClient() {
 
                   {/* Actions Section */}
                   <div className="mt-6 pt-4 border-t border-slate-100 space-y-3">
-                    {isPending ? (
+                    {isRequest ? (
                       hasTutor ? (
                         <button
-                          onClick={() => handleOpenTutorDetail(cls.tutor)}
+                          onClick={() => {
+                            if (["proposed", "negotiating"].includes(cls.status)) {
+                              router.push("/student");
+                            } else {
+                              handleOpenTutorDetail(cls.tutor);
+                            }
+                          }}
                           className="w-full inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-[#0b5fff] px-4 py-2 text-sm font-semibold text-white hover:opacity-90 active:scale-95 shadow-md shadow-blue-200 transition-all cursor-pointer"
                         >
                           <User size={15} />
-                          Xem hồ sơ & Lịch gia sư đề xuất
+                          {["proposed", "negotiating"].includes(cls.status) 
+                            ? "Xem và phản hồi đề xuất học phí" 
+                            : "Xem hồ sơ & Lịch gia sư đề xuất"}
                         </button>
                       ) : (
                         <button

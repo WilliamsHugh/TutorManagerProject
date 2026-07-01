@@ -5,7 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In, Between } from 'typeorm';
+import { Repository, In, Between, Not, IsNull } from 'typeorm';
 import { Class, ClassStatus } from './entities/class.entity';
 import { ClassRequest, RequestStatus } from './entities/class-request.entity';
 import { Schedule, SessionStatus } from './entities/schedule.entity';
@@ -205,17 +205,25 @@ export class ClassesService {
 
     try {
       const dayMap: Record<string, number> = {
-        'thứ 2': 1,
-        'thứ 3': 2,
-        'thứ 4': 3,
-        'thứ 5': 4,
-        'thứ 6': 5,
-        'thứ 7': 6,
-        'chủ nhật': 0,
-        'cn': 0
+        'thứ 2': 1, 't2': 1, 'mon': 1, 'monday': 1,
+        'thứ 3': 2, 't3': 2, 'tue': 2, 'tuesday': 2,
+        'thứ 4': 3, 't4': 3, 'wed': 3, 'wednesday': 3,
+        'thứ 5': 4, 't5': 4, 'thu': 4, 'thursday': 4,
+        'thứ 6': 5, 't6': 5, 'fri': 5, 'friday': 5,
+        'thứ 7': 6, 't7': 6, 'sat': 6, 'saturday': 6,
+        'chủ nhật': 0, 'cn': 0, 'sun': 0, 'sunday': 0
       };
 
-      const dayNames = ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'Chủ nhật'];
+      const dayNamesMap: Record<number, string> = {
+        1: 'Thứ 2',
+        2: 'Thứ 3',
+        3: 'Thứ 4',
+        4: 'Thứ 5',
+        5: 'Thứ 6',
+        6: 'Thứ 7',
+        0: 'Chủ nhật'
+      };
+
       const parsedSchedules: { dayVal: number; dayName: string; startTime: string; endTime: string }[] = [];
 
       // Helper: normalize time string to HH:MM:SS
@@ -226,53 +234,43 @@ export class ClassesService {
         return clean;
       };
 
-      // Check for middle dot separator (·)
-      if (scheduleStr.includes('·')) {
-        const parts = scheduleStr.split('·');
-        if (parts.length === 2) {
-          const daysPart = parts[0].trim();
-          const timePart = parts[1].trim();
-          const timeParts = timePart.split('-');
-          if (timeParts.length === 2) {
-            const startTimeStr = normalizeTime(timeParts[0]);
-            const endTimeStr = normalizeTime(timeParts[1]);
-            
-            Object.keys(dayMap).forEach((dayKey) => {
-              if (daysPart.toLowerCase().includes(dayKey)) {
-                const dayVal = dayMap[dayKey];
-                const dayName = dayNames.find(d => d.toLowerCase() === dayKey) || 'Thứ 2';
-                parsedSchedules.push({ dayVal, dayName, startTime: startTimeStr, endTime: endTimeStr });
-              }
-            });
-          }
-        }
+      // Extract all time ranges globally
+      const timeRegex = /(\d{1,2}:\d{2})\s*[-–]\s*(\d{1,2}:\d{2})/g;
+      const allRanges: { start: string; end: string }[] = [];
+      let match;
+      const cleanedScheduleStr = scheduleStr.replace(/·/g, ','); // Treat middle dot as comma to unify splitting
+      while ((match = timeRegex.exec(cleanedScheduleStr)) !== null) {
+        allRanges.push({ start: match[1], end: match[2] });
       }
-      
-      // Check for parentheses format: "Thứ 3 (19:00-21:00), Thứ 6 (19:00-21:00)"
-      if (parsedSchedules.length === 0 && scheduleStr.includes('(')) {
-        const items = scheduleStr.split(',');
-        items.forEach(item => {
-          const trimmedItem = item.trim().toLowerCase();
-          const timeMatch = trimmedItem.match(/\(([^)]+)\)/);
-          if (timeMatch) {
-            const timeStr = timeMatch[1].trim();
-            const timeParts = timeStr.split('-');
-            if (timeParts.length === 2) {
-              const startTimeStr = normalizeTime(timeParts[0]);
-              const endTimeStr = normalizeTime(timeParts[1]);
 
-              Object.keys(dayMap).forEach((dayKey) => {
-                const dayTextOnly = trimmedItem.split('(')[0];
-                if (dayTextOnly.includes(dayKey)) {
-                  const dayVal = dayMap[dayKey];
-                  const dayName = dayNames.find(d => d.toLowerCase() === dayKey) || 'Thứ 2';
-                  parsedSchedules.push({ dayVal, dayName, startTime: startTimeStr, endTime: endTimeStr });
-                }
-              });
+      const defaultRange = allRanges[0] || { start: '19:00', end: '21:00' };
+      const items = cleanedScheduleStr.split(',');
+
+      items.forEach(item => {
+        const trimmed = item.trim().toLowerCase();
+        if (!trimmed) return;
+
+        // Find if this specific item has a time range
+        const itemMatch = trimmed.match(/(\d{1,2}:\d{2})\s*[-–]\s*(\d{1,2}:\d{2})/);
+        const itemRange = itemMatch ? { start: itemMatch[1], end: itemMatch[2] } : defaultRange;
+
+        const startTimeStr = normalizeTime(itemRange.start);
+        const endTimeStr = normalizeTime(itemRange.end);
+
+        const sortedDayKeys = Object.keys(dayMap).sort((a, b) => b.length - a.length);
+        const matchedVals = new Set<number>();
+
+        sortedDayKeys.forEach((dayKey) => {
+          if (trimmed.includes(dayKey)) {
+            const dayVal = dayMap[dayKey];
+            if (!matchedVals.has(dayVal)) {
+              matchedVals.add(dayVal);
+              const dayName = dayNamesMap[dayVal];
+              parsedSchedules.push({ dayVal, dayName, startTime: startTimeStr, endTime: endTimeStr });
             }
           }
         });
-      }
+      });
 
       console.log('[generateSchedules] Parsed schedules:', JSON.stringify(parsedSchedules));
 
@@ -458,7 +456,13 @@ export class ClassesService {
     const requests = await this.classRequestsRepository.find({
       where: {
         student: { id: student.id },
-        status: In([RequestStatus.PENDING, RequestStatus.PROCESSING]),
+        status: In([
+          RequestStatus.PENDING,
+          RequestStatus.PROCESSING,
+          RequestStatus.PROPOSED,
+          RequestStatus.NEGOTIATING,
+          RequestStatus.MATCHED,
+        ]),
       },
       relations: {
         preferredTutor: { user: true },
@@ -474,8 +478,8 @@ export class ClassesService {
       id: req.id,
       isRequest: true,
       location: req.preferredArea || 'Chưa xác định',
-      feePerSession: 0,
-      totalSessions: 0,
+      feePerSession: req.proposedFee ? Number(req.proposedFee) : 0,
+      totalSessions: req.proposedSessions || 0,
       status: req.status, // 'pending' or 'processing'
       startDate: req.createdAt
         ? req.createdAt.toISOString()
@@ -1154,7 +1158,8 @@ export class ClassesService {
     const requests = await this.classRequestsRepository.find({
       where: {
         student: { id: student.id },
-        status: RequestStatus.PROPOSED,
+        status: In([RequestStatus.PROPOSED, RequestStatus.NEGOTIATING]),
+        proposedFee: Not(IsNull()),
       },
       relations: {
         subject: true,

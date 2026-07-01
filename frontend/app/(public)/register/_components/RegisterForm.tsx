@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useState, useRef, useEffect } from "react";
-import { useProvinces, useDistricts } from "@/lib/hooks/useProvinces";
+import { useProvinces, useDistricts, useWards } from "@/lib/hooks/useProvinces";
 
 // Sử dụng Next.js rewrite proxy thay vì gọi trực tiếp backend
 // để tránh lỗi double /api khi NEXT_PUBLIC_BACKEND_URL đã có /api
@@ -77,14 +77,19 @@ export default function RegisterForm() {
     // Location States
     const [selectedProvinceCode, setSelectedProvinceCode] = useState<number | null>(null);
     const [selectedProvinceName, setSelectedProvinceName] = useState("");
+    const [selectedDistrictCode, setSelectedDistrictCode] = useState<number | null>(null);
     const [selectedDistrictName, setSelectedDistrictName] = useState("");
+    const [selectedWardName, setSelectedWardName] = useState("");
     const [isOpenProvince, setIsOpenProvince] = useState(false);
     const [isOpenDistrict, setIsOpenDistrict] = useState(false);
+    const [isOpenWard, setIsOpenWard] = useState(false);
     const [provinceSearch, setProvinceSearch] = useState("");
     const [districtSearch, setDistrictSearch] = useState("");
+    const [wardSearch, setWardSearch] = useState("");
 
     const { provinces, loading: provincesLoading } = useProvinces();
     const { districts, loading: districtsLoading } = useDistricts(selectedProvinceCode);
+    const { wards, loading: wardsLoading } = useWards(selectedDistrictCode);
 
     // Filtered lists for dropdowns
     const filteredProvincesList = provinces.filter(p => 
@@ -92,6 +97,9 @@ export default function RegisterForm() {
     );
     const filteredDistrictsList = districts.filter(d => 
         d.name.toLowerCase().includes(districtSearch.toLowerCase())
+    );
+    const filteredWardsList = wards.filter(w => 
+        w.name.toLowerCase().includes(wardSearch.toLowerCase())
     );
 
     // Lọc danh sách môn học theo từ đang nhập (loại trừ đã chọn)
@@ -186,11 +194,22 @@ export default function RegisterForm() {
                 setLoading(false);
                 return;
             }
+            if (!selectedDistrictName) {
+                setError("Vui lòng chọn Quận/Huyện giảng dạy.");
+                setLoading(false);
+                return;
+            }
+            if (!selectedWardName) {
+                setError("Vui lòng chọn Phường/Xã giảng dạy.");
+                setLoading(false);
+                return;
+            }
             payload.education = education;
             payload.experience = experience;
             payload.subjects = subjects_selected;
             payload.province = selectedProvinceName;
-            payload.district = selectedDistrictName || undefined;
+            payload.district = selectedDistrictName;
+            payload.ward = selectedWardName;
             if (cvFile?.url) {
                 payload.cvUrl = cvFile.url;
             }
@@ -708,7 +727,7 @@ export default function RegisterForm() {
                                     </div>
 
                                     {/* Location Dropdowns (Tỉnh/Thành & Quận/Huyện) */}
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
                                         {/* Tỉnh/Thành phố */}
                                         <div className="relative">
                                             <label className="block text-sm font-medium mb-2" style={{ color: "var(--foreground)" }}>
@@ -723,6 +742,7 @@ export default function RegisterForm() {
                                                 onClick={() => {
                                                     setIsOpenProvince(!isOpenProvince);
                                                     setIsOpenDistrict(false);
+                                                    setIsOpenWard(false);
                                                     setProvinceSearch("");
                                                 }}
                                                 className="flex items-center justify-between w-full h-11 px-3.5 rounded-md border text-sm cursor-pointer z-40 relative"
@@ -774,7 +794,9 @@ export default function RegisterForm() {
                                                                     e.stopPropagation();
                                                                     setSelectedProvinceCode(p.code);
                                                                     setSelectedProvinceName(p.name);
+                                                                    setSelectedDistrictCode(null);
                                                                     setSelectedDistrictName(""); // reset district
+                                                                    setSelectedWardName(""); // reset ward
                                                                     setIsOpenProvince(false);
                                                                     setProvinceSearch("");
                                                                 }}
@@ -793,7 +815,7 @@ export default function RegisterForm() {
                                         {/* Quận/Huyện */}
                                         <div className="relative">
                                             <label className="block text-sm font-medium mb-2" style={{ color: "var(--foreground)" }}>
-                                                Quận / Huyện chi tiết
+                                                Quận / Huyện <span style={{ color: "var(--destructive)" }}>*</span>
                                             </label>
                                             
                                             {isOpenDistrict && (
@@ -805,6 +827,7 @@ export default function RegisterForm() {
                                                     if (!selectedProvinceCode) return;
                                                     setIsOpenDistrict(!isOpenDistrict);
                                                     setIsOpenProvince(false);
+                                                    setIsOpenWard(false);
                                                     setDistrictSearch("");
                                                 }}
                                                 className={`flex items-center justify-between w-full h-11 px-3.5 rounded-md border text-sm relative z-40 ${
@@ -861,7 +884,9 @@ export default function RegisterForm() {
                                                                 key={d.code}
                                                                 onClick={(e) => {
                                                                     e.stopPropagation();
+                                                                    setSelectedDistrictCode(d.code);
                                                                     setSelectedDistrictName(d.name);
+                                                                    setSelectedWardName(""); // reset ward
                                                                     setIsOpenDistrict(false);
                                                                     setDistrictSearch("");
                                                                 }}
@@ -870,6 +895,94 @@ export default function RegisterForm() {
                                                                 }`}
                                                             >
                                                                 {d.name}
+                                                            </div>
+                                                        ))
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* Phường / Xã */}
+                                        <div className="relative">
+                                            <label className="block text-sm font-medium mb-2" style={{ color: "var(--foreground)" }}>
+                                                Phường / Xã <span style={{ color: "var(--destructive)" }}>*</span>
+                                            </label>
+                                            
+                                            {isOpenWard && (
+                                                <div className="fixed inset-0 z-30" onClick={() => { setIsOpenWard(false); setWardSearch(""); }} />
+                                            )}
+
+                                            <div 
+                                                onClick={() => {
+                                                    if (!selectedDistrictCode) return;
+                                                    setIsOpenWard(!isOpenWard);
+                                                    setIsOpenProvince(false);
+                                                    setIsOpenDistrict(false);
+                                                    setWardSearch("");
+                                                }}
+                                                className={`flex items-center justify-between w-full h-11 px-3.5 rounded-md border text-sm relative z-40 ${
+                                                    selectedDistrictCode ? 'cursor-pointer' : 'cursor-not-allowed opacity-60'
+                                                }`}
+                                                style={{
+                                                    borderColor: "var(--border)",
+                                                    backgroundColor: "var(--card)",
+                                                    color: "var(--foreground)",
+                                                }}
+                                            >
+                                                <span className="truncate">
+                                                    {!selectedDistrictCode 
+                                                        ? "Chọn Quận/Huyện trước..." 
+                                                        : selectedWardName || "Chọn Phường/Xã..."
+                                                    }
+                                                </span>
+                                                <ChevronDown size={16} className={`text-slate-400 transition-transform duration-200 ${isOpenWard ? 'rotate-180' : ''}`} />
+                                            </div>
+
+                                            {isOpenWard && selectedDistrictCode && (
+                                                <div 
+                                                    className="absolute left-0 right-0 top-full mt-1 border rounded-lg shadow-xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-1 duration-100"
+                                                    style={{
+                                                        borderColor: "var(--border)",
+                                                        backgroundColor: "var(--card)",
+                                                        maxHeight: "220px",
+                                                        overflowY: "auto",
+                                                    }}
+                                                >
+                                                    <div className="p-2 border-b border-border bg-slate-50 sticky top-0">
+                                                        <input
+                                                            type="text"
+                                                            value={wardSearch}
+                                                            onChange={(e) => setWardSearch(e.target.value)}
+                                                            placeholder="Tìm Phường/Xã..."
+                                                            className="w-full h-8 px-2.5 rounded border border-border text-xs outline-none bg-card text-foreground"
+                                                            autoFocus
+                                                            onClick={(e) => e.stopPropagation()}
+                                                        />
+                                                    </div>
+                                                    
+                                                    {wardsLoading ? (
+                                                        <div className="p-3 space-y-2">
+                                                            <div className="h-3 bg-slate-100 dark:bg-slate-800 rounded animate-pulse w-3/4"></div>
+                                                            <div className="h-3 bg-slate-100 dark:bg-slate-800 rounded animate-pulse w-1/2"></div>
+                                                            <div className="h-3 bg-slate-100 dark:bg-slate-800 rounded animate-pulse w-5/6"></div>
+                                                        </div>
+                                                    ) : filteredWardsList.length === 0 ? (
+                                                        <div className="px-4 py-3 text-xs text-muted-foreground text-center">Không tìm thấy</div>
+                                                    ) : (
+                                                        filteredWardsList.map((w) => (
+                                                            <div
+                                                                key={w.code}
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    setSelectedWardName(w.name);
+                                                                    setIsOpenWard(false);
+                                                                    setWardSearch("");
+                                                                }}
+                                                                className={`px-4 py-2 text-xs sm:text-sm transition-colors cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 text-left ${
+                                                                    selectedWardName === w.name ? "bg-slate-50 font-semibold text-primary" : "text-foreground"
+                                                                }`}
+                                                            >
+                                                                {w.name}
                                                             </div>
                                                         ))
                                                     )}

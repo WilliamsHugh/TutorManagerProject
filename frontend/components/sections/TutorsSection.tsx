@@ -91,9 +91,9 @@ export default function TutorsSection() {
                   </div>
                 </div>
               ))
-            : tutors.map((tutor) => (
+            : tutors.map((tutor, index) => (
             <div
-              key={tutor.name}
+              key={`${tutor.name}-${index}`}
               className="flex flex-col gap-4 sm:gap-5 p-4 sm:p-6 rounded-lg border"
               style={{
                 backgroundColor: "var(--card)",

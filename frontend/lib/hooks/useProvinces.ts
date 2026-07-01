@@ -220,3 +220,46 @@ export function useDistricts(provinceCode: number | null) {
 
   return { districts, loading };
 }
+
+export interface Ward {
+  code: number;
+  name: string;
+}
+
+const wardCache = new Map<number, Ward[]>();
+
+export function useWards(districtCode: number | null) {
+  const [wards, setWards] = useState<Ward[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!districtCode) {
+      setWards([]);
+      return;
+    }
+
+    if (wardCache.has(districtCode)) {
+      setWards(wardCache.get(districtCode)!);
+      return;
+    }
+
+    setLoading(true);
+    fetch(`${PROVINCES_API}/d/${districtCode}?depth=2`)
+      .then((res) => {
+        if (!res.ok) throw new Error("API error");
+        return res.json();
+      })
+      .then((data: { wards: Ward[] }) => {
+        const ws = data.wards || [];
+        wardCache.set(districtCode, ws);
+        setWards(ws);
+      })
+      .catch((err) => {
+        console.warn(`Lỗi tải xã/phường cho code ${districtCode}:`, err);
+        setWards([]);
+      })
+      .finally(() => setLoading(false));
+  }, [districtCode]);
+
+  return { wards, loading };
+}

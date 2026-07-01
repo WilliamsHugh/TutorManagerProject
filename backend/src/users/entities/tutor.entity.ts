@@ -61,6 +61,9 @@ export class Tutor {
   @Column({ type: 'varchar', length: 100, nullable: true })
   district!: string;
 
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  ward!: string;
+
   @Column({ type: 'text', nullable: true })
   bio!: string;
 

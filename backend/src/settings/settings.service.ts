@@ -148,6 +148,14 @@ export class SettingsService {
         description:
           'Cho phép học viên đánh giá gia sư sau khi hoàn thành khóa học',
       },
+      {
+        key: 'center_commission_rate',
+        value: '30',
+        label: 'Phí hoa hồng trung tâm (%)',
+        type: 'number',
+        description:
+          'Tỷ lệ phần trăm hoa hồng trung tâm thu từ học phí gia sư (ví dụ: 30%)',
+      },
     ];
 
     for (const d of defaults) {

@@ -64,6 +64,7 @@ export class AuthService {
         cvUrl: dto.cvUrl,
         province: dto.province,
         district: dto.district,
+        ward: dto.ward,
       },
       dto.subjects || [],
     );

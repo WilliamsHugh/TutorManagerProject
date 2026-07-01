@@ -18,6 +18,7 @@ import { Role } from '../users/entities/role.entity';
 import { Notification } from '../notifications/notification.entity';
 import { TutorSubject } from './tutor-subject.entity';
 import { Review } from '../classes/entities/review.entity';
+import { Setting } from '../settings/setting.entity';
 
 import { NotificationsModule } from '../notifications/notifications.module';
 
@@ -36,6 +37,7 @@ import { NotificationsModule } from '../notifications/notifications.module';
       Notification,
       TutorSubject,
       Review,
+      Setting,
     ]),
     forwardRef(() => ClassesModule),
     NotificationsModule,

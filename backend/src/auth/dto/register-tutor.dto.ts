@@ -40,4 +40,8 @@ export class RegisterTutorDto {
   @IsOptional()
   @IsString()
   district?: string;
+
+  @IsOptional()
+  @IsString()
+  ward?: string;
 }

@@ -29,6 +29,8 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles, RoleType } from '../auth/decorators/roles.decorator';
 import { MailService } from '../mail/mail.service';
 import * as bcrypt from 'bcryptjs';
+import { Schedule, SessionStatus } from '../classes/entities/schedule.entity';
+import { Setting } from '../settings/setting.entity';
 
 @Controller('admin')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -72,7 +74,7 @@ export class AdminController {
 
   @Post('users')
   async createUser(@Body() body: any) {
-    const { email, password, fullName, phone, address, roleName } = body;
+    const { email, password, fullName, phone, address, roleName, province, district, ward } = body;
     if (!email || !password || !fullName || !roleName) {
       throw new ConflictException('Thiếu thông tin bắt buộc');
     }
@@ -92,12 +94,18 @@ export class AdminController {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
+    
+    // Auto format address for tutor if they filled province/district/ward
+    const finalAddress = address || (province 
+      ? `${ward ? ward + ', ' : ''}${district ? district + ', ' : ''}${province}` 
+      : undefined);
+
     const user = this.usersRepo.create({
       email,
       passwordHash: hashedPassword,
       fullName,
       phone,
-      address,
+      address: finalAddress,
       role,
       isActive: true,
     });
@@ -109,6 +117,10 @@ export class AdminController {
         this.tutorsRepo.create({
           user: savedUser,
           approvalStatus: ApprovalStatus.PENDING,
+          province,
+          district,
+          ward,
+          availableAreas: finalAddress,
         }),
       );
     } else if (roleName === 'student') {
@@ -508,6 +520,9 @@ export class AdminController {
       return { startOfMonth, endOfMonth, monthLabel };
     });
 
+    const scheduleRepo = this.classesRepo.manager.getRepository(Schedule);
+    const settingsRepo = this.classesRepo.manager.getRepository(Setting);
+
     // Run all database queries in parallel for maximum optimization (reducing ~15 queries to 1 concurrent roundtrip)
     const [
       activeClasses,
@@ -518,6 +533,9 @@ export class AdminController {
       classStatusCounts,
       requestStatusCounts,
       subjectPopularityRaw,
+      commissionSetting,
+      completedSchedulesAllTime,
+      completedSchedulesForTrend,
       ...monthlyTrendCounts
     ] = await Promise.all([
       this.classesRepo.count({
@@ -565,6 +583,24 @@ export class AdminController {
         .groupBy('subject.name')
         .orderBy('count', 'DESC')
         .getRawMany(),
+
+      settingsRepo.findOneBy({ key: 'center_commission_rate' }),
+
+      scheduleRepo.find({
+        where: {
+          sessionStatus: SessionStatus.COMPLETED,
+          ...(fromDate && toDate ? { sessionDate: Between(new Date(fromDate), new Date(toDate)) } : {}),
+        },
+        relations: ['class'],
+      }),
+
+      scheduleRepo.find({
+        where: {
+          sessionStatus: SessionStatus.COMPLETED,
+          sessionDate: Between(trendRanges[0].startOfMonth, now),
+        },
+        relations: ['class'],
+      }),
 
       // Parallelized monthly trend queries
       ...trendRanges.map((range) =>
@@ -618,6 +654,40 @@ export class AdminController {
       count: monthlyTrendCounts[idx],
     }));
 
+    // Calculate center commission revenue
+    const commissionRate = commissionSetting ? Number(commissionSetting.value) : 30;
+
+    let totalRevenue = 0;
+    let totalCommission = 0;
+
+    completedSchedulesAllTime.forEach((s) => {
+      const fee = Number(s.class?.feePerSession) || 0;
+      totalRevenue += fee;
+      totalCommission += Math.round(fee * (commissionRate / 100));
+    });
+
+    const monthlyRevenueTrend = trendRanges.map((range) => {
+      const monthlySchedules = completedSchedulesForTrend.filter((s) => {
+        if (!s.sessionDate) return false;
+        const sDate = new Date(s.sessionDate);
+        return sDate >= range.startOfMonth && sDate <= range.endOfMonth;
+      });
+
+      let gross = 0;
+      let commission = 0;
+      monthlySchedules.forEach((s) => {
+        const fee = Number(s.class?.feePerSession) || 0;
+        gross += fee;
+        commission += Math.round(fee * (commissionRate / 100));
+      });
+
+      return {
+        month: range.monthLabel,
+        gross,
+        commission,
+      };
+    });
+
     return {
       activeClasses,
       completedClasses,
@@ -628,6 +698,9 @@ export class AdminController {
       requestStatusDistribution,
       subjectPopularity,
       monthlyRequestTrend,
+      totalRevenue,
+      totalCommission,
+      monthlyRevenueTrend,
     };
   }
 }

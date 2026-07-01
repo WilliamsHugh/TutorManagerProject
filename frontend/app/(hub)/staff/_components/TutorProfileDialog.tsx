@@ -220,8 +220,8 @@ export function TutorProfileDialog({ tutor, onClose, onRefresh, showToast }: Tut
                     s.dayOfWeek === "T7" ? "Thứ 7" :
                     s.dayOfWeek === "CN" ? "Chủ nhật" : s.dayOfWeek
 
-      const sStart = s.startTime.slice(0, 5)
-      const sEnd = s.endTime.slice(0, 5)
+      const sStart = s.startTime?.slice(0, 5) || ""
+      const sEnd = s.endTime?.slice(0, 5) || ""
       const timeMatch = (sStart < slotEnd && sEnd > slotStart)
       if (!timeMatch) return false
 

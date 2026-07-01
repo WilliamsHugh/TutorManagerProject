@@ -25,6 +25,7 @@ import { Role } from '../users/entities/role.entity';
 import { Notification } from '../notifications/notification.entity';
 import { TutorSubject } from './tutor-subject.entity';
 import { Review } from '../classes/entities/review.entity';
+import { Setting } from '../settings/setting.entity';
 import { CreateLearningReportDto } from '../classes/dto/create-learning-report.dto';
 import { NotificationsService } from '../notifications/notifications.service';
 import { NotificationType } from '../notifications/notification.entity';
@@ -56,6 +57,8 @@ export class TutorsService implements OnModuleInit {
     private readonly tutorSubjectRepository: Repository<TutorSubject>,
     @InjectRepository(Review)
     private readonly reviewRepository: Repository<Review>,
+    @InjectRepository(Setting)
+    private readonly settingsRepository: Repository<Setting>,
     private readonly notificationsService: NotificationsService,
   ) {}
 
@@ -1437,16 +1440,44 @@ export class TutorsService implements OnModuleInit {
     // Số buổi đã dạy
     const totalSessions = completedSchedules.length;
 
+    // Lấy config commission rate
+    const commissionSetting = await this.settingsRepository.findOneBy({ key: 'center_commission_rate' });
+    const commissionRate = commissionSetting ? Number(commissionSetting.value) : 30; // Mặc định 30%
+
+    // Tính phí trung tâm và thu nhập thực lĩnh của gia sư
+    const centerFee = Math.round(totalEarnings * (commissionRate / 100));
+    const netEarnings = totalEarnings - centerFee;
+
+    const currentMonthCenterFee = Math.round(currentMonthEarnings * (commissionRate / 100));
+    const currentMonthNetEarnings = currentMonthEarnings - currentMonthCenterFee;
+
     return {
-      totalEarnings,
+      totalEarnings, // Gross
+      centerFee,
+      netEarnings,
       totalSessions,
-      currentMonthEarnings,
+      currentMonthEarnings, // Gross
+      currentMonthNetEarnings,
+      currentMonthCenterFee,
+      commissionRate,
       averagePerSession:
-        totalSessions > 0 ? Math.round(totalEarnings / totalSessions) : 0,
-      byClass: Array.from(classEarningsMap.values()).sort(
-        (a, b) => b.totalEarnings - a.totalEarnings,
-      ),
-      monthly: monthlyEarnings,
+        totalSessions > 0 ? Math.round(netEarnings / totalSessions) : 0,
+      byClass: Array.from(classEarningsMap.values()).map(item => {
+        const classCenterFee = Math.round(item.totalEarnings * (commissionRate / 100));
+        return {
+          ...item,
+          centerFee: classCenterFee,
+          netEarnings: item.totalEarnings - classCenterFee,
+        };
+      }).sort((a, b) => b.totalEarnings - a.totalEarnings),
+      monthly: monthlyEarnings.map(item => {
+        const monthCenterFee = Math.round(item.amount * (commissionRate / 100));
+        return {
+          ...item,
+          centerFee: monthCenterFee,
+          netAmount: item.amount - monthCenterFee,
+        };
+      }),
     };
   }
 
@@ -1514,7 +1545,13 @@ export class TutorsService implements OnModuleInit {
     if (!tutor) {
       try {
         tutor = await this.tutorRepository.save(
-          this.tutorRepository.create({ user: tutorUser }),
+          this.tutorRepository.create({
+            user: tutorUser,
+            province: 'Thành phố Hồ Chí Minh',
+            district: 'Quận 1',
+            ward: 'Phường Bến Nghé',
+            availableAreas: 'Phường Bến Nghé, Quận 1, Thành phố Hồ Chí Minh',
+          }),
         );
       } catch (err) {
         tutor = await this.tutorRepository.findOne({
@@ -1699,6 +1736,11 @@ export class TutorsService implements OnModuleInit {
         },
         {
           preferredTutor: { id: tutorEntity.id },
+          status: RequestStatus.PROCESSING,
+          proposedFee: IsNull(),
+        },
+        {
+          preferredTutor: { id: tutorEntity.id },
           status: RequestStatus.PROPOSED,
           proposedFee: IsNull(),
         },
@@ -1748,6 +1790,7 @@ export class TutorsService implements OnModuleInit {
 
     if (
       request.status !== RequestStatus.PENDING &&
+      request.status !== RequestStatus.PROCESSING &&
       request.status !== RequestStatus.PROPOSED
     ) {
       throw new BadRequestException('Yêu cầu này không còn khả dụng để đề xuất');
@@ -2058,7 +2101,7 @@ export class TutorsService implements OnModuleInit {
 
     if (search) {
       qb.andWhere(
-        '(user.fullName ILIKE :search OR user.email ILIKE :search)',
+        '(user.fullName ILIKE :search OR user.email ILIKE :search OR tutor.province ILIKE :search OR tutor.district ILIKE :search OR tutor.ward ILIKE :search OR tutor.availableAreas ILIKE :search)',
         {
           search: `%${search.trim()}%`,
         },
@@ -2066,7 +2109,10 @@ export class TutorsService implements OnModuleInit {
     }
 
     if (province) {
-      qb.andWhere('tutor.province = :province', { province: province.trim() });
+      qb.andWhere(
+        '(tutor.province ILIKE :province OR tutor.district ILIKE :province OR tutor.ward ILIKE :province OR tutor.availableAreas ILIKE :province)',
+        { province: `%${province.trim()}%` },
+      );
     }
 
     if (subject) {

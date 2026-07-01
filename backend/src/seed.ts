@@ -514,7 +514,7 @@ async function seed() {
       email: 'nguyen_van_binh@tutoredu.com',
       fullName: 'Nguyễn Văn Bình',
       phone: '0901222333',
-      address: 'Quận 1, TP.HCM',
+      address: 'Phường Bến Nghé, Quận 1, Thành phố Hồ Chí Minh',
       avatarUrl:
         'https://storage.googleapis.com/banani-avatars/avatar%2Fmale%2F25-35%2FSoutheast%20Asian%2F1',
       tutor: {
@@ -523,9 +523,10 @@ async function seed() {
         university: 'Đại học Bách Khoa TP.HCM',
         experience: '2 năm kinh nghiệm dạy kèm môn Toán, Lý cấp 3',
         idCardNumber: '079100000001',
-        availableAreas: 'Quận 1, Quận 5',
+        availableAreas: 'Phường Bến Nghé, Quận 1, Thành phố Hồ Chí Minh',
         province: 'Thành phố Hồ Chí Minh',
         district: 'Quận 1',
+        ward: 'Phường Bến Nghé',
         approvalStatus: ApprovalStatus.APPROVED,
       },
       subjects: ['Toán học', 'Vật lí'],
@@ -534,7 +535,7 @@ async function seed() {
       email: 'tran_thi_cam@tutoredu.com',
       fullName: 'Trần Thị Cẩm',
       phone: '0902222333',
-      address: 'Quận 7, TP.HCM',
+      address: 'Phường Tân Phong, Quận 7, Thành phố Hồ Chí Minh',
       avatarUrl:
         'https://storage.googleapis.com/banani-avatars/avatar%2Ffemale%2F25-35%2FSoutheast%20Asian%2F2',
       tutor: {
@@ -543,9 +544,10 @@ async function seed() {
         university: 'Đại học Sư phạm TP.HCM',
         experience: '5 năm kinh nghiệm giảng dạy môn Toán và Hóa học',
         idCardNumber: '079100000002',
-        availableAreas: 'Quận 1, Quận 4, Quận 7',
+        availableAreas: 'Phường Tân Phong, Quận 7, Thành phố Hồ Chí Minh',
         province: 'Thành phố Hồ Chí Minh',
         district: 'Quận 7',
+        ward: 'Phường Tân Phong',
         approvalStatus: ApprovalStatus.APPROVED,
       },
       subjects: ['Toán học', 'Hóa học'],
@@ -554,7 +556,7 @@ async function seed() {
       email: 'le_minh_dat@tutoredu.com',
       fullName: 'Lê Minh Đạt',
       phone: '0903222333',
-      address: 'Quận 10, TP.HCM',
+      address: 'Phường 10, Quận 10, Thành phố Hồ Chí Minh',
       avatarUrl:
         'https://storage.googleapis.com/banani-avatars/avatar%2Fmale%2F18-25%2FSoutheast%20Asian%2F2',
       tutor: {
@@ -563,9 +565,10 @@ async function seed() {
         university: 'Đại học Khoa học Tự nhiên TP.HCM',
         experience: '1.5 năm kinh nghiệm, rành kèm học sinh trung học',
         idCardNumber: '079100000003',
-        availableAreas: 'Quận 3, Quận 10',
+        availableAreas: 'Phường 10, Quận 10, Thành phố Hồ Chí Minh',
         province: 'Thành phố Hồ Chí Minh',
         district: 'Quận 10',
+        ward: 'Phường 10',
         approvalStatus: ApprovalStatus.PENDING,
       },
       subjects: ['Toán học', 'Tin học'],
@@ -574,7 +577,7 @@ async function seed() {
       email: 'phan_ngoc_ha@tutoredu.com',
       fullName: 'Phan Ngọc Hà',
       phone: '0904222333',
-      address: 'Bình Thạnh, TP.HCM',
+      address: 'Phường 15, Quận Bình Thạnh, Thành phố Hồ Chí Minh',
       avatarUrl:
         'https://storage.googleapis.com/banani-avatars/avatar%2Ffemale%2F25-35%2FSoutheast%20Asian%2F1',
       tutor: {
@@ -583,9 +586,10 @@ async function seed() {
         university: 'Đại học Sư phạm TP.HCM',
         experience: '3 năm kinh nghiệm dạy ôn thi',
         idCardNumber: '079100000004',
-        availableAreas: 'Bình Thạnh',
+        availableAreas: 'Phường 15, Quận Bình Thạnh, Thành phố Hồ Chí Minh',
         province: 'Thành phố Hồ Chí Minh',
         district: 'Quận Bình Thạnh',
+        ward: 'Phường 15',
         approvalStatus: ApprovalStatus.APPROVED,
       },
       subjects: ['Toán học'],
@@ -594,7 +598,7 @@ async function seed() {
       email: 'nguyen_minh_anh@tutoredu.com',
       fullName: 'Nguyễn Minh Anh',
       phone: '0901234567',
-      address: 'Quận 1, TP.HCM',
+      address: 'Phường Cô Giang, Quận 1, Thành phố Hồ Chí Minh',
       avatarUrl:
         'https://storage.googleapis.com/banani-avatars/avatar%2Ffemale%2F25-35%2FSoutheast%20Asian%2F4',
       tutor: {
@@ -603,9 +607,10 @@ async function seed() {
         university: 'Đại học Bách Khoa TP.HCM',
         experience: '5 năm kinh nghiệm dạy kèm Toán THPT, luyện thi Đại học',
         idCardNumber: '079100000005',
-        availableAreas: 'Quận 1, TP.HCM',
+        availableAreas: 'Phường Cô Giang, Quận 1, Thành phố Hồ Chí Minh',
         province: 'Thành phố Hồ Chí Minh',
         district: 'Quận 1',
+        ward: 'Phường Cô Giang',
         approvalStatus: ApprovalStatus.APPROVED,
       },
       subjects: ['Toán học'],
@@ -614,7 +619,7 @@ async function seed() {
       email: 'tran_hoang_phuc@tutoredu.com',
       fullName: 'Trần Hoàng Phúc',
       phone: '0912345678',
-      address: 'Quận 3, TP.HCM',
+      address: 'Phường Võ Thị Sáu, Quận 3, Thành phố Hồ Chí Minh',
       avatarUrl:
         'https://storage.googleapis.com/banani-avatars/avatar%2Fmale%2F25-35%2FSoutheast%20Asian%2F3',
       tutor: {
@@ -623,9 +628,10 @@ async function seed() {
         university: 'Đại học Khoa học Tự nhiên TP.HCM',
         experience: '4 năm kinh nghiệm dạy kèm Toán lớp 10-12, luyện thi',
         idCardNumber: '079100000006',
-        availableAreas: 'Quận 3, TP.HCM',
+        availableAreas: 'Phường Võ Thị Sáu, Quận 3, Thành phố Hồ Chí Minh',
         province: 'Thành phố Hồ Chí Minh',
         district: 'Quận 3',
+        ward: 'Phường Võ Thị Sáu',
         approvalStatus: ApprovalStatus.APPROVED,
       },
       subjects: ['Toán học'],
@@ -634,7 +640,7 @@ async function seed() {
       email: 'le_khanh_vy@tutoredu.com',
       fullName: 'Lê Khánh Vy',
       phone: '0923456789',
-      address: 'Bình Thạnh, TP.HCM',
+      address: 'Phường 25, Quận Bình Thạnh, Thành phố Hồ Chí Minh',
       avatarUrl:
         'https://storage.googleapis.com/banani-avatars/avatar%2Ffemale%2F18-25%2FSoutheast%20Asian%2F5',
       tutor: {
@@ -643,9 +649,10 @@ async function seed() {
         university: 'Đại học Sư phạm TP.HCM',
         experience: '3 năm kinh nghiệm dạy kèm Toán cơ bản và Toán cấp 2',
         idCardNumber: '079100000007',
-        availableAreas: 'Bình Thạnh',
+        availableAreas: 'Phường 25, Quận Bình Thạnh, Thành phố Hồ Chí Minh',
         province: 'Thành phố Hồ Chí Minh',
         district: 'Quận Bình Thạnh',
+        ward: 'Phường 25',
         approvalStatus: ApprovalStatus.APPROVED,
       },
       subjects: ['Toán học'],
@@ -654,7 +661,7 @@ async function seed() {
       email: 'pham_quoc_huy@tutoredu.com',
       fullName: 'Phạm Quốc Huy',
       phone: '0934567890',
-      address: 'Thủ Đức, TP.HCM',
+      address: 'Phường Linh Trung, Thành phố Thủ Đức, Thành phố Hồ Chí Minh',
       avatarUrl:
         'https://storage.googleapis.com/banani-avatars/avatar%2Fmale%2F18-25%2FSoutheast%20Asian%2F1',
       tutor: {
@@ -663,9 +670,10 @@ async function seed() {
         university: 'Đại học Khoa học Tự nhiên TP.HCM',
         experience: '2 năm kinh nghiệm dạy kèm 1-1 Toán THPT',
         idCardNumber: '079100000008',
-        availableAreas: 'Thủ Đức',
+        availableAreas: 'Phường Linh Trung, Thành phố Thủ Đức, Thành phố Hồ Chí Minh',
         province: 'Thành phố Hồ Chí Minh',
         district: 'Thành phố Thủ Đức',
+        ward: 'Phường Linh Trung',
         approvalStatus: ApprovalStatus.APPROVED,
       },
       subjects: ['Toán học'],
@@ -674,7 +682,7 @@ async function seed() {
       email: 'nguyen_tran_bao_ngoc@tutoredu.com',
       fullName: 'Nguyễn Trần Bảo Ngọc',
       phone: '0905222333',
-      address: 'Cầu Giấy, Hà Nội',
+      address: 'Phường Dịch Vọng Hậu, Quận Cầu Giấy, Thành phố Hà Nội',
       avatarUrl:
         'https://storage.googleapis.com/banani-avatars/avatar%2Ffemale%2F18-25%2FSoutheast%20Asian%2F1',
       tutor: {
@@ -683,9 +691,10 @@ async function seed() {
         university: 'Đại học Sư phạm Hà Nội',
         experience: '2 năm kinh nghiệm dạy kèm Toán cấp 3, luyện thi Đại học.',
         idCardNumber: '079100000009',
-        availableAreas: 'Cầu Giấy, Đống Đa, Ba Đình',
+        availableAreas: 'Phường Dịch Vọng Hậu, Quận Cầu Giấy, Thành phố Hà Nội',
         province: 'Thành phố Hà Nội',
         district: 'Quận Cầu Giấy',
+        ward: 'Phường Dịch Vọng Hậu',
         approvalStatus: ApprovalStatus.APPROVED,
       },
       subjects: ['Toán học'],
@@ -694,7 +703,7 @@ async function seed() {
       email: 'le_hoang_nam@tutoredu.com',
       fullName: 'Lê Hoàng Nam',
       phone: '0906222333',
-      address: 'Quận 1, TP.HCM',
+      address: 'Phường Bến Nghé, Quận 1, Thành phố Hồ Chí Minh',
       avatarUrl:
         'https://storage.googleapis.com/banani-avatars/avatar%2Fmale%2F25-35%2FSoutheast%20Asian%2F2',
       tutor: {
@@ -704,9 +713,10 @@ async function seed() {
         experience:
           'Cử nhân Ngôn Ngữ Anh, 4 năm kinh nghiệm giảng dạy tiếng Anh giao tiếp và luyện thi IELTS 7.5+.',
         idCardNumber: '079100000010',
-        availableAreas: 'Quận 1, Quận 3, Quận 7',
+        availableAreas: 'Phường Bến Nghé, Quận 1, Thành phố Hồ Chí Minh',
         province: 'Thành phố Hồ Chí Minh',
         district: 'Quận 1',
+        ward: 'Phường Bến Nghé',
         approvalStatus: ApprovalStatus.APPROVED,
       },
       subjects: ['Tiếng Anh'],
@@ -715,7 +725,7 @@ async function seed() {
       email: 'tran_thi_mai@tutoredu.com',
       fullName: 'Trần Thị Mai',
       phone: '0907222333',
-      address: 'Hải Châu, Đà Nẵng',
+      address: 'Phường Hải Châu I, Quận Hải Châu, Thành phố Đà Nẵng',
       avatarUrl:
         'https://storage.googleapis.com/banani-avatars/avatar%2Ffemale%2F25-35%2FSoutheast%20Asian%2F3',
       tutor: {
@@ -724,9 +734,10 @@ async function seed() {
         university: 'Đại học Sư phạm Đà Nẵng',
         experience: '7 năm kinh nghiệm giảng dạy tiểu học.',
         idCardNumber: '079100000011',
-        availableAreas: 'Hải Châu, Thanh Khê, Sơn Trà',
+        availableAreas: 'Phường Hải Châu I, Quận Hải Châu, Thành phố Đà Nẵng',
         province: 'Thành phố Đà Nẵng',
         district: 'Quận Hải Châu',
+        ward: 'Phường Hải Châu I',
         approvalStatus: ApprovalStatus.APPROVED,
       },
       subjects: ['Toán học', 'Ngữ văn'],
@@ -769,11 +780,14 @@ async function seed() {
     const shuffled = [...allSubjectNames].sort(() => Math.random() - 0.5);
     const tutorSubjects = shuffled.slice(0, numSubjects);
 
+    const wardName = `Phường ${Math.floor(Math.random() * 15) + 1}`;
+    const address = `${wardName}, ${area.district}, ${area.province}`;
+
     allTutorData.push({
       email,
       fullName,
       phone,
-      address: `${area.district}, ${area.province}`,
+      address,
       avatarUrl,
       tutor: {
         educationLevel: pickRandom(EDU_LEVELS),
@@ -781,9 +795,10 @@ async function seed() {
         university: pickRandom(UNIVERSITIES),
         experience: `${Math.floor(1 + Math.random() * 7)} năm kinh nghiệm dạy kèm môn ${tutorSubjects.join(', ')}`,
         idCardNumber: nextIdCard(),
-        availableAreas: area.district,
+        availableAreas: address,
         province: area.province,
         district: area.district,
+        ward: wardName,
         approvalStatus:
           i % 8 === 0 ? ApprovalStatus.PENDING : ApprovalStatus.APPROVED,
       },
@@ -814,6 +829,7 @@ async function seed() {
         existingTutor.availableAreas = item.tutor.availableAreas;
         existingTutor.province = item.tutor.province;
         existingTutor.district = item.tutor.district;
+        existingTutor.ward = (item.tutor as any).ward;
         existingTutor.approvalStatus = item.tutor.approvalStatus;
         await tutorRepo.save(existingTutor);
         seededTutorsMap.set(item.email, existingTutor);
@@ -1020,6 +1036,8 @@ async function seed() {
     RequestStatus.PROCESSING,
     RequestStatus.MATCHED,
     RequestStatus.CANCELLED,
+    RequestStatus.PROPOSED,
+    RequestStatus.NEGOTIATING,
   ];
   const schedules = [
     'Tối Thứ 2, Thứ 4 · 19:00 - 21:00',
@@ -1062,6 +1080,14 @@ async function seed() {
     });
     if (existingReq) continue;
 
+    const status = pickRandom(requestStatuses);
+    const isProposal = status === RequestStatus.PROPOSED || status === RequestStatus.NEGOTIATING;
+    const allSeededTutors = Array.from(seededTutorsMap.values());
+    const preferredTutor = isProposal && allSeededTutors.length > 0 ? pickRandom(allSeededTutors) : undefined;
+    const proposedFee = isProposal ? 150000 + Math.floor(Math.random() * 4) * 50000 : undefined;
+    const proposedSessions = isProposal ? 10 + Math.floor(Math.random() * 3) * 5 : undefined;
+    const proposedAt = isProposal ? new Date() : undefined;
+
     await requestRepo.save(
       requestRepo.create({
         student,
@@ -1069,7 +1095,11 @@ async function seed() {
         preferredArea: `${area.district}, ${area.province}`,
         preferredSchedule: pickRandom(schedules),
         requirements: pickRandom(requirements),
-        status: pickRandom(requestStatuses),
+        status,
+        preferredTutor,
+        proposedFee,
+        proposedSessions,
+        proposedAt,
       }),
     );
     requestCount++;

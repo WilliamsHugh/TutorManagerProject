@@ -95,7 +95,7 @@ export class UsersService {
 
     const user = this.usersRepository.create();
     const address = userData.address || (tutorData.province 
-      ? `${tutorData.district ? tutorData.district + ', ' : ''}${tutorData.province}` 
+      ? `${tutorData.ward ? tutorData.ward + ', ' : ''}${tutorData.district ? tutorData.district + ', ' : ''}${tutorData.province}` 
       : undefined);
     Object.assign(user, { ...userData, address, role, isActive: true });
     const savedUser = await this.usersRepository.save(user);

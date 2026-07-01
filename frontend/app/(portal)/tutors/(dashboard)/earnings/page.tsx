@@ -71,54 +71,86 @@ export default function TutorEarnings() {
       <div className="content" style={{ padding: '32px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
         
         {/* Summary Cards */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '24px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '24px' }}>
+          
+          {/* Card 1: Tổng học phí tích lũy */}
           <div style={{ background: '#fff', padding: '24px', borderRadius: '12px', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: '16px' }}>
-            <div style={{ width: '56px', height: '56px', borderRadius: '16px', background: '#eef2ff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '28px', color: '#6366f1' }}>
-              <Icon icon="lucide:wallet" />
+            <div style={{ width: '56px', height: '56px', borderRadius: '16px', background: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '28px', color: '#64748b' }}>
+              <Icon icon="lucide:coins" />
             </div>
             <div>
-              <div style={{ fontSize: '13px', color: '#64748b' }}>Tổng thu nhập</div>
-              <div style={{ fontSize: '24px', fontWeight: 700, color: '#0f172a' }}>
+              <div style={{ fontSize: '13px', color: '#64748b' }}>Tổng học phí tích lũy</div>
+              <div style={{ fontSize: '22px', fontWeight: 700, color: '#0f172a' }}>
                 {formatCurrency(earnings?.totalEarnings || 0)}
               </div>
             </div>
           </div>
 
+          {/* Card 2: Phí dịch vụ Trung tâm */}
+          <div style={{ background: '#fff', padding: '24px', borderRadius: '12px', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <div style={{ width: '56px', height: '56px', borderRadius: '16px', background: '#fef2f2', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '28px', color: '#ef4444' }}>
+              <Icon icon="lucide:percent" />
+            </div>
+            <div>
+              <div style={{ fontSize: '13px', color: '#64748b' }}>Phí dịch vụ Trung tâm ({earnings?.commissionRate || 30}%)</div>
+              <div style={{ fontSize: '22px', fontWeight: 700, color: '#ef4444' }}>
+                -{formatCurrency(earnings?.centerFee || 0)}
+              </div>
+            </div>
+          </div>
+
+          {/* Card 3: Thu nhập thực lĩnh */}
+          <div style={{ background: '#fff', padding: '24px', borderRadius: '12px', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <div style={{ width: '56px', height: '56px', borderRadius: '16px', background: '#eef2ff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '28px', color: '#6366f1' }}>
+              <Icon icon="lucide:wallet" />
+            </div>
+            <div>
+              <div style={{ fontSize: '13px', color: '#64748b' }}>Thu nhập thực lĩnh (Net)</div>
+              <div style={{ fontSize: '22px', fontWeight: 700, color: '#6366f1' }}>
+                {formatCurrency(earnings?.netEarnings || 0)}
+              </div>
+            </div>
+          </div>
+
+          {/* Card 4: Thực nhận tháng này */}
           <div style={{ background: '#fff', padding: '24px', borderRadius: '12px', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: '16px' }}>
             <div style={{ width: '56px', height: '56px', borderRadius: '16px', background: '#f0fdf4', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '28px', color: '#22c55e' }}>
               <Icon icon="lucide:trending-up" />
             </div>
             <div>
-              <div style={{ fontSize: '13px', color: '#64748b' }}>Thu nhập tháng này</div>
-              <div style={{ fontSize: '24px', fontWeight: 700, color: '#0f172a' }}>
-                {formatCurrency(earnings?.currentMonthEarnings || 0)}
+              <div style={{ fontSize: '13px', color: '#64748b' }}>Thực nhận tháng này</div>
+              <div style={{ fontSize: '22px', fontWeight: 700, color: '#22c55e' }}>
+                {formatCurrency(earnings?.currentMonthNetEarnings || 0)}
               </div>
             </div>
           </div>
 
+          {/* Card 5: Số buổi đã dạy */}
           <div style={{ background: '#fff', padding: '24px', borderRadius: '12px', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: '16px' }}>
-            <div style={{ width: '56px', height: '56px', borderRadius: '16px', background: '#fef2f2', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '28px', color: '#ef4444' }}>
+            <div style={{ width: '56px', height: '56px', borderRadius: '16px', background: '#fdf8f6', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '28px', color: '#ea580c' }}>
               <Icon icon="lucide:book-open" />
             </div>
             <div>
               <div style={{ fontSize: '13px', color: '#64748b' }}>Số buổi đã dạy</div>
-              <div style={{ fontSize: '24px', fontWeight: 700, color: '#0f172a' }}>
+              <div style={{ fontSize: '22px', fontWeight: 700, color: '#0f172a' }}>
                 {earnings?.totalSessions || 0} buổi
               </div>
             </div>
           </div>
 
+          {/* Card 6: Thực lĩnh trung bình/buổi */}
           <div style={{ background: '#fff', padding: '24px', borderRadius: '12px', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: '16px' }}>
             <div style={{ width: '56px', height: '56px', borderRadius: '16px', background: '#f5f3ff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '28px', color: '#a855f7' }}>
               <Icon icon="lucide:calculator" />
             </div>
             <div>
-              <div style={{ fontSize: '13px', color: '#64748b' }}>Trung bình mỗi buổi</div>
-              <div style={{ fontSize: '24px', fontWeight: 700, color: '#0f172a' }}>
+              <div style={{ fontSize: '13px', color: '#64748b' }}>Thực lĩnh trung bình/buổi</div>
+              <div style={{ fontSize: '22px', fontWeight: 700, color: '#a855f7' }}>
                 {formatCurrency(earnings?.averagePerSession || 0)}
               </div>
             </div>
           </div>
+
         </div>
 
         {/* Monthly Breakdown */}
@@ -139,7 +171,9 @@ export default function TutorEarnings() {
                     <div key={i}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
                         <span style={{ fontSize: '14px', fontWeight: 500 }}>Tháng {item.month}</span>
-                        <span style={{ fontSize: '14px', fontWeight: 600, color: '#2563eb' }}>{formatCurrency(item.amount)}</span>
+                        <span style={{ fontSize: '14px', fontWeight: 600, color: '#2563eb' }}>
+                          {formatCurrency(item.netAmount)} <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 400 }}>(Gốc: {formatCurrency(item.amount)})</span>
+                        </span>
                       </div>
                       <div style={{ height: '8px', background: '#f1f5f9', borderRadius: '99px', overflow: 'hidden' }}>
                         <div style={{ height: '100%', width: `${percent}%`, background: 'linear-gradient(90deg, #3b82f6, #8b5cf6)', borderRadius: '99px', transition: 'width 0.5s ease' }}></div>
@@ -171,7 +205,8 @@ export default function TutorEarnings() {
                 <th style={{ padding: '12px 24px', textAlign: 'left', fontWeight: 600 }}>Học viên</th>
                 <th style={{ padding: '12px 24px', textAlign: 'center', fontWeight: 600 }}>Số buổi</th>
                 <th style={{ padding: '12px 24px', textAlign: 'right', fontWeight: 600 }}>Học phí/buổi</th>
-                <th style={{ padding: '12px 24px', textAlign: 'right', fontWeight: 600 }}>Thành tiền</th>
+                <th style={{ padding: '12px 24px', textAlign: 'right', fontWeight: 600 }}>Phí trung tâm</th>
+                <th style={{ padding: '12px 24px', textAlign: 'right', fontWeight: 600 }}>Thực nhận</th>
               </tr>
             </thead>
             <tbody>
@@ -181,11 +216,12 @@ export default function TutorEarnings() {
                   <td style={{ padding: '14px 24px', color: '#475569' }}>{cls.studentName}</td>
                   <td style={{ padding: '14px 24px', textAlign: 'center' }}>{cls.sessions}</td>
                   <td style={{ padding: '14px 24px', textAlign: 'right', color: '#64748b' }}>{formatCurrency(cls.feePerSession)}</td>
-                  <td style={{ padding: '14px 24px', textAlign: 'right', fontWeight: 600, color: '#16a34a' }}>{formatCurrency(cls.totalEarnings)}</td>
+                  <td style={{ padding: '14px 24px', textAlign: 'right', color: '#ef4444' }}>-{formatCurrency(cls.centerFee)}</td>
+                  <td style={{ padding: '14px 24px', textAlign: 'right', fontWeight: 600, color: '#16a34a' }}>{formatCurrency(cls.netEarnings)}</td>
                 </tr>
               )) : (
                 <tr>
-                  <td colSpan={5} style={{ padding: '32px', textAlign: 'center', color: '#64748b' }}>
+                  <td colSpan={6} style={{ padding: '32px', textAlign: 'center', color: '#64748b' }}>
                     Chưa có dữ liệu thu nhập. Hãy bắt đầu gửi báo cáo buổi học để theo dõi thu nhập!
                   </td>
                 </tr>
@@ -193,9 +229,9 @@ export default function TutorEarnings() {
             </tbody>
             <tfoot>
               <tr style={{ background: '#f8fafc' }}>
-                <td colSpan={4} style={{ padding: '14px 24px', textAlign: 'right', fontWeight: 600 }}>Tổng cộng:</td>
+                <td colSpan={5} style={{ padding: '14px 24px', textAlign: 'right', fontWeight: 600 }}>Tổng cộng thực nhận:</td>
                 <td style={{ padding: '14px 24px', textAlign: 'right', fontWeight: 700, color: '#16a34a', fontSize: '16px' }}>
-                  {formatCurrency(earnings?.totalEarnings || 0)}
+                  {formatCurrency(earnings?.netEarnings || 0)}
                 </td>
               </tr>
             </tfoot>

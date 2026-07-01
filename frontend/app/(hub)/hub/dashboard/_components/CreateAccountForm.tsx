@@ -4,6 +4,8 @@ import React, { useState } from "react";
 import { UserPlus } from "lucide-react";
 import { Input } from "@/components/ui/input";
 
+import { useProvinces, useDistricts, useWards } from "@/lib/hooks/useProvinces";
+
 interface CreateAccountFormProps {
   onCreateAccount: (accountData: any) => void;
 }
@@ -18,9 +20,31 @@ export function CreateAccountForm({ onCreateAccount }: CreateAccountFormProps) {
     roleName: "staff",
   });
 
+  const [selectedProvinceCode, setSelectedProvinceCode] = useState<number | null>(null);
+  const [selectedDistrictCode, setSelectedDistrictCode] = useState<number | null>(null);
+  const [provinceName, setProvinceName] = useState("");
+  const [districtName, setDistrictName] = useState("");
+  const [wardName, setWardName] = useState("");
+
+  const { provinces } = useProvinces();
+  const { districts } = useDistricts(selectedProvinceCode);
+  const { wards } = useWards(selectedDistrictCode);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onCreateAccount(newAccount);
+    if (newAccount.roleName === "tutor" && (!provinceName || !districtName || !wardName)) {
+      alert("Vui lòng chọn đầy đủ Tỉnh/Thành, Quận/Huyện và Phường/Xã cho gia sư.");
+      return;
+    }
+    const payload = {
+      ...newAccount,
+      ...(newAccount.roleName === "tutor" ? {
+        province: provinceName,
+        district: districtName,
+        ward: wardName,
+      } : {})
+    };
+    onCreateAccount(payload);
     setNewAccount({
       email: "",
       password: "",
@@ -29,6 +53,11 @@ export function CreateAccountForm({ onCreateAccount }: CreateAccountFormProps) {
       address: "",
       roleName: "staff",
     });
+    setProvinceName("");
+    setDistrictName("");
+    setWardName("");
+    setSelectedProvinceCode(null);
+    setSelectedDistrictCode(null);
   };
 
   return (
@@ -101,11 +130,76 @@ export function CreateAccountForm({ onCreateAccount }: CreateAccountFormProps) {
             </select>
           </div>
 
+          {newAccount.roleName === "tutor" && (
+            <>
+              <div className="space-y-1.5 col-span-2 sm:col-span-1">
+                <label className="text-xs text-slate-400">Tỉnh / Thành phố nhận dạy *</label>
+                <select
+                  value={selectedProvinceCode || ""}
+                  onChange={(e) => {
+                    const code = Number(e.target.value);
+                    const name = provinces.find((p) => p.code === code)?.name || "";
+                    setSelectedProvinceCode(code);
+                    setProvinceName(name);
+                    setSelectedDistrictCode(null);
+                    setDistrictName("");
+                    setWardName("");
+                  }}
+                  className="w-full h-9 rounded text-xs bg-[#0f172a] border border-slate-700 text-slate-300 px-3 cursor-pointer outline-none custom-select"
+                  required
+                >
+                  <option value="">Chọn Tỉnh/Thành...</option>
+                  {provinces.map((p) => (
+                    <option key={p.code} value={p.code}>{p.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="space-y-1.5 col-span-2 sm:col-span-1">
+                <label className="text-xs text-slate-400">Quận / Huyện nhận dạy *</label>
+                <select
+                  value={selectedDistrictCode || ""}
+                  onChange={(e) => {
+                    const code = Number(e.target.value);
+                    const name = districts.find((d) => d.code === code)?.name || "";
+                    setSelectedDistrictCode(code);
+                    setDistrictName(name);
+                    setWardName("");
+                  }}
+                  disabled={!selectedProvinceCode}
+                  className="w-full h-9 rounded text-xs bg-[#0f172a] border border-slate-700 text-slate-300 px-3 cursor-pointer outline-none custom-select disabled:opacity-50"
+                  required
+                >
+                  <option value="">Chọn Quận/Huyện...</option>
+                  {districts.map((d) => (
+                    <option key={d.code} value={d.code}>{d.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="space-y-1.5 col-span-2 sm:col-span-1">
+                <label className="text-xs text-slate-400">Phường / Xã nhận dạy *</label>
+                <select
+                  value={wardName || ""}
+                  onChange={(e) => setWardName(e.target.value)}
+                  disabled={!selectedDistrictCode}
+                  className="w-full h-9 rounded text-xs bg-[#0f172a] border border-slate-700 text-slate-300 px-3 cursor-pointer outline-none custom-select disabled:opacity-50"
+                  required
+                >
+                  <option value="">Chọn Phường/Xã...</option>
+                  {wards.map((w) => (
+                    <option key={w.code} value={w.name}>{w.name}</option>
+                  ))}
+                </select>
+              </div>
+            </>
+          )}
+
           <div className="space-y-1.5 col-span-2">
             <label className="text-xs text-slate-400">Địa chỉ liên hệ</label>
             <Input
               className="bg-[#0f172a] border-slate-700 text-xs text-white h-9"
-              placeholder="Địa chỉ liên hệ thường trú..."
+              placeholder="Địa chỉ liên hệ thường trú... (Nếu bỏ trống, hệ thống sẽ dùng địa chỉ nhận dạy của gia sư)"
               value={newAccount.address}
               onChange={(e) => setNewAccount({ ...newAccount, address: e.target.value })}
             />

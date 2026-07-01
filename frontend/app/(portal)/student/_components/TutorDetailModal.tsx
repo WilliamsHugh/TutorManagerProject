@@ -188,7 +188,9 @@ export function TutorDetailModal({ tutor, onClose, onRecommend, isRecommended = 
                     };
                     const day = weekdaysMap[curr.dayOfWeek] || curr.dayOfWeek;
                     if (!acc[day]) acc[day] = [];
-                    acc[day].push(`${curr.startTime.slice(0, 5)} - ${curr.endTime.slice(0, 5)} (${curr.class?.subject?.name || "Lớp bận"})`);
+                    const startFmt = curr.startTime?.slice(0, 5) || "";
+                    const endFmt = curr.endTime?.slice(0, 5) || "";
+                    acc[day].push(`${startFmt} - ${endFmt} (${curr.class?.subject?.name || "Lớp bận"})`);
                     return acc;
                   }, {})
                 ).map(([day, slots]: any) => (

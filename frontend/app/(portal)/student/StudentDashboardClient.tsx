@@ -13,6 +13,8 @@ import {
   confirmProposal,
   declineProposal,
   counterProposal,
+  getStudentRequests,
+  selectProposedTutor,
 } from "@/lib/api";
 
 import type { TutorSuggestion } from "./types";
@@ -81,7 +83,20 @@ export default function StudentDashboardClient() {
     message: string;
     type: "success" | "error" | "info";
   } | null>(null);
-  const [activeTab, setActiveTab] = useState<"request" | "proposals">("request");
+  const [activeTab, setActiveTab] = useState<"request" | "proposals" | "requests">("request");
+
+  // My requests state (danh sách yêu cầu đã gửi kèm đề xuất từ staff)
+  const [myRequests, setMyRequests] = useState<any[]>([]);
+  const [requestsLoading, setRequestsLoading] = useState(true);
+  const [requestsPage, setRequestsPage] = useState(1);
+  const REQUESTS_PER_PAGE = 3;
+
+  const totalRequestsPages = Math.ceil(myRequests.length / REQUESTS_PER_PAGE) || 1;
+
+  const paginatedRequests = useMemo(() => {
+    const start = (requestsPage - 1) * REQUESTS_PER_PAGE;
+    return myRequests.slice(start, start + REQUESTS_PER_PAGE);
+  }, [myRequests, requestsPage]);
 
   // Auth protection — use state to prevent SSR/Client mismatch
   const [mounted, setMounted] = useState(false);
@@ -131,6 +146,15 @@ export default function StudentDashboardClient() {
         }
       } catch (err) {
         console.error("Failed to load student profile:", err);
+      }
+
+      try {
+        const reqs = await getStudentRequests();
+        setMyRequests(reqs || []);
+      } catch (err) {
+        console.error("Failed to load student requests:", err);
+      } finally {
+        setRequestsLoading(false);
       }
     }
     init();
@@ -449,6 +473,21 @@ export default function StudentDashboardClient() {
                 </span>
               )}
             </button>
+            <button
+              onClick={() => setActiveTab("requests")}
+              className={`flex-1 rounded-md px-4 py-2 text-sm font-medium transition-colors ${
+                activeTab === "requests"
+                  ? "bg-white text-slate-900 shadow-sm"
+                  : "text-slate-500 hover:text-slate-700"
+              }`}
+            >
+              Yêu cầu của tôi
+              {myRequests.filter(r => r.proposedTutors && r.proposedTutors.length > 0).length > 0 && (
+                <span className="ml-2 inline-flex h-5 w-5 items-center justify-center rounded-full bg-blue-500 text-xs font-bold text-white">
+                  {myRequests.filter(r => r.proposedTutors && r.proposedTutors.length > 0).length}
+                </span>
+              )}
+            </button>
           </div>
           <button
             onClick={async () => {
@@ -476,6 +515,16 @@ export default function StudentDashboardClient() {
               } finally {
                 setProposalsLoading(false);
               }
+
+              try {
+                setRequestsLoading(true);
+                const data = await getStudentRequests();
+                setMyRequests(data || []);
+              } catch (err) {
+                console.error(err);
+              } finally {
+                setRequestsLoading(false);
+              }
             }}
             className="flex items-center justify-center gap-2 px-4 py-2 border border-slate-200 rounded-lg text-sm font-semibold text-slate-700 bg-white hover:bg-slate-50 transition-colors shadow-sm cursor-pointer whitespace-nowrap self-end sm:self-auto"
           >
@@ -501,7 +550,7 @@ export default function StudentDashboardClient() {
 
 
 
-        {activeTab === "request" ? (
+        {activeTab === "request" && (
           <div className="grid grid-cols-1 items-start gap-6 xl:grid-cols-12">
             <TutorRequestForm
               province={province}
@@ -539,8 +588,9 @@ export default function StudentDashboardClient() {
               recommendedTutorIds={recommendedTutorIds}
             />
           </div>
-        ) : (
-          /* Proposals Tab */
+        )}
+
+        {activeTab === "proposals" && (
           <div className="space-y-4">
             {proposalsLoading ? (
               <div className="flex items-center justify-center py-12 text-slate-500">
@@ -651,6 +701,204 @@ export default function StudentDashboardClient() {
                   </div>
                 </div>
               ))
+            )}
+          </div>
+        )}
+
+        {activeTab === "requests" && (
+          <div className="space-y-4">
+            {requestsLoading ? (
+              <div className="flex items-center justify-center py-12 text-slate-500">
+                <Icon icon="lucide:loader-2" className="animate-spin mr-2" fontSize={20} />
+                Đang tải danh sách yêu cầu...
+              </div>
+            ) : myRequests.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12 text-slate-400 bg-white rounded-xl border border-slate-200">
+                <Icon icon="lucide:inbox" fontSize={48} className="text-slate-300 mb-3" />
+                <p className="text-sm">Bạn chưa gửi yêu cầu tìm gia sư nào</p>
+              </div>
+            ) : (
+              <>
+                {paginatedRequests.map((req: any) => (
+                  <div
+                    key={req.id}
+                    className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden p-5 space-y-4"
+                  >
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <h3 className="font-semibold text-slate-900 text-base">
+                          Yêu cầu dạy môn {req.subject?.name}
+                        </h3>
+                        <p className="text-xs text-slate-500 mt-1">
+                          Ngày tạo: {new Date(req.createdAt).toLocaleDateString("vi-VN")} | Trạng thái:{" "}
+                          <span className="font-semibold text-blue-600 uppercase">{req.status}</span>
+                        </p>
+                      </div>
+                      {req.proposedTutors && req.proposedTutors.length > 0 && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-700 border border-blue-200 animate-pulse">
+                          Có {req.proposedTutors.length} đề xuất từ Staff
+                        </span>
+                      )}
+                    </div>
+
+                    {req.proposedTutors && req.proposedTutors.length > 0 ? (
+                      <div className="space-y-3 pt-2 border-t border-slate-100">
+                        <p className="text-xs font-bold uppercase text-slate-400 tracking-wider">Gia sư được Trung tâm đề xuất:</p>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {req.proposedTutors.map((tutor: any) => {
+                            const isSelected = req.preferredTutor?.id === tutor.id;
+                            const hasSelectedAny = !!req.preferredTutor;
+
+                            return (
+                              <div
+                                key={tutor.id}
+                                className={`border rounded-lg p-4 flex flex-col justify-between transition-all ${
+                                  isSelected
+                                    ? "border-emerald-500 bg-emerald-50/50 shadow-sm ring-1 ring-emerald-500"
+                                    : hasSelectedAny
+                                      ? "border-slate-200 bg-slate-50/50 opacity-60 grayscale-[10%]"
+                                      : "border-slate-200 bg-slate-50 hover:border-blue-300"
+                                }`}
+                              >
+                                <div>
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                      <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center font-bold text-blue-600 text-sm">
+                                        {tutor.user?.fullName?.charAt(0) || "G"}
+                                      </div>
+                                      <div>
+                                        <h4 className="font-semibold text-slate-800 text-sm">{tutor.user?.fullName}</h4>
+                                        <p className="text-xs text-slate-500">{tutor.educationLevel || "Gia sư"} - {tutor.school}</p>
+                                      </div>
+                                    </div>
+                                    {isSelected && (
+                                      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-800 border border-emerald-300">
+                                        <Icon icon="lucide:check" fontSize={10} />
+                                        Đã chọn
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className="mt-3 space-y-1 text-xs text-slate-600">
+                                    <p><strong>Kinh nghiệm:</strong> {tutor.experience || "Chưa cập nhật"}</p>
+                                    <p><strong>Khu vực dạy:</strong> {tutor.availableAreas || "Toàn quốc"}</p>
+                                  </div>
+                                </div>
+                                <button
+                                  onClick={async () => {
+                                    if (hasSelectedAny) return;
+                                    try {
+                                      setConfirmingId(req.id);
+                                      await selectProposedTutor(req.id, tutor.id);
+                                      triggerAlert(`Đã đồng ý chọn gia sư ${tutor.user?.fullName} thành công! Lớp học sẽ được thiết lập tự động.`, "success");
+                                      const updated = await getStudentRequests();
+                                      setMyRequests(updated || []);
+                                    } catch (err: any) {
+                                      triggerAlert(err.message || "Lỗi khi chọn gia sư", "error");
+                                    } finally {
+                                      setConfirmingId(null);
+                                    }
+                                  }}
+                                  disabled={confirmingId === req.id || hasSelectedAny}
+                                  className={`mt-4 w-full py-2 rounded-lg text-xs font-semibold shadow-sm transition-all flex items-center justify-center gap-1 cursor-pointer ${
+                                    isSelected
+                                      ? "bg-emerald-600 hover:bg-emerald-700 text-white cursor-not-allowed"
+                                      : hasSelectedAny
+                                        ? "bg-slate-200 text-slate-400 cursor-not-allowed border border-slate-300"
+                                        : "bg-blue-600 hover:bg-blue-700 text-white"
+                                  }`}
+                                >
+                                  {isSelected ? (
+                                    <>
+                                      <Icon icon="lucide:check-circle" fontSize={14} />
+                                      Đã chọn gia sư này
+                                    </>
+                                  ) : hasSelectedAny ? (
+                                    <>
+                                      <Icon icon="lucide:lock" fontSize={14} />
+                                      Đã chọn gia sư khác
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Icon icon="lucide:check-circle" fontSize={14} />
+                                      Chọn gia sư này
+                                    </>
+                                  )}
+                                </button>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-xs text-slate-400 italic">Trung tâm đang tìm kiếm gia sư phù hợp...</p>
+                    )}
+                  </div>
+                ))}
+
+                {/* Pagination for requests */}
+                {totalRequestsPages > 1 && (
+                  <div className="flex items-center justify-between border border-slate-200 bg-white px-4 py-3 sm:px-6 rounded-xl mt-4">
+                    <div className="flex flex-1 justify-between sm:hidden">
+                      <button
+                        onClick={() => setRequestsPage((p) => Math.max(p - 1, 1))}
+                        disabled={requestsPage === 1}
+                        className="relative inline-flex items-center rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                      >
+                        Trước
+                      </button>
+                      <button
+                        onClick={() => setRequestsPage((p) => Math.min(p + 1, totalRequestsPages))}
+                        disabled={requestsPage === totalRequestsPages}
+                        className="relative ml-3 inline-flex items-center rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                      >
+                        Sau
+                      </button>
+                    </div>
+                    <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+                      <div>
+                        <p className="text-sm text-slate-700">
+                          Hiển thị trang <span className="font-medium">{requestsPage}</span> trên{" "}
+                          <span className="font-medium">{totalRequestsPages}</span> (Tổng{" "}
+                          <span className="font-medium">{myRequests.length}</span> yêu cầu)
+                        </p>
+                      </div>
+                      <div>
+                        <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
+                          <button
+                            onClick={() => setRequestsPage((p) => Math.max(p - 1, 1))}
+                            disabled={requestsPage === 1}
+                            className="relative inline-flex items-center rounded-l-md px-2 py-2 text-slate-400 ring-1 ring-inset ring-slate-300 hover:bg-slate-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50 cursor-pointer"
+                          >
+                            <span className="sr-only">Trước</span>
+                            <Icon icon="lucide:chevron-left" fontSize={20} />
+                          </button>
+                          {Array.from({ length: totalRequestsPages }, (_, i) => i + 1).map((p) => (
+                            <button
+                              key={p}
+                              onClick={() => setRequestsPage(p)}
+                              className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold focus:z-20 cursor-pointer ${
+                                p === requestsPage
+                                  ? "z-10 bg-blue-600 text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
+                                  : "text-slate-900 ring-1 ring-inset ring-slate-300 hover:bg-slate-50 focus:outline-offset-0"
+                              }`}
+                            >
+                              {p}
+                            </button>
+                          ))}
+                          <button
+                            onClick={() => setRequestsPage((p) => Math.min(p + 1, totalRequestsPages))}
+                            disabled={requestsPage === totalRequestsPages}
+                            className="relative inline-flex items-center rounded-r-md px-2 py-2 text-slate-400 ring-1 ring-inset ring-slate-300 hover:bg-slate-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50 cursor-pointer"
+                          >
+                            <span className="sr-only">Sau</span>
+                            <Icon icon="lucide:chevron-right" fontSize={20} />
+                          </button>
+                        </nav>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </>
             )}
           </div>
         )}

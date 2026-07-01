@@ -202,6 +202,39 @@ export function DashboardOverview({
         </div>
       </div>
 
+      {/* Financial & Revenue Stats (Doanh thu hoa hồng từ các lớp học) */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 stagger-item">
+        {/* Gross Tuition Fee */}
+        <div className="bg-[#131926] p-6 rounded-xl border border-white/5 relative overflow-hidden group hover:border-blue-500/30 transition-all duration-300">
+          <div className="absolute inset-0 bg-blue-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+          <p className="text-xs text-slate-400 font-semibold uppercase tracking-wider">Tổng học phí đã phát sinh (Gross)</p>
+          <p className="text-3xl font-extrabold text-blue-500 mt-2 tracking-tight">
+            {stats.totalRevenue?.toLocaleString("vi-VN") || 0}đ
+          </p>
+          <p className="text-[10px] text-slate-500 mt-1">Tính trên tất cả các buổi học đã hoàn thành</p>
+        </div>
+
+        {/* Center Commission */}
+        <div className="bg-[#131926] p-6 rounded-xl border border-white/5 relative overflow-hidden group hover:border-yellow-500/30 transition-all duration-300">
+          <div className="absolute inset-0 bg-yellow-500/5 opacity-0 group-hover:opacity-100 transition-opacity animate-pulse" />
+          <p className="text-xs text-slate-400 font-semibold uppercase tracking-wider">Doanh thu hoa hồng trung tâm</p>
+          <p className="text-3xl font-extrabold text-yellow-500 mt-2 tracking-tight">
+            {stats.totalCommission?.toLocaleString("vi-VN") || 0}đ
+          </p>
+          <p className="text-[10px] text-slate-500 mt-1">Phí dịch vụ trích từ gia sư (mặc định 30%)</p>
+        </div>
+
+        {/* Net Payout to Tutors */}
+        <div className="bg-[#131926] p-6 rounded-xl border border-white/5 relative overflow-hidden group hover:border-emerald-500/30 transition-all duration-300">
+          <div className="absolute inset-0 bg-emerald-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+          <p className="text-xs text-slate-400 font-semibold uppercase tracking-wider">Thực trả cho Gia sư (Net)</p>
+          <p className="text-3xl font-extrabold text-emerald-500 mt-2 tracking-tight">
+            {((stats.totalRevenue || 0) - (stats.totalCommission || 0))?.toLocaleString("vi-VN")}đ
+          </p>
+          <p className="text-[10px] text-slate-500 mt-1">Thu nhập thực nhận của gia sư sau chiết khấu</p>
+        </div>
+      </div>
+
       {/* Navigation Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Block 1: Quản lý yêu cầu (Dành cho Staff/Admin) */}
@@ -441,6 +474,38 @@ export function DashboardOverview({
           </div>
         </div>
       </div>
+
+      {/* Financial Monthly Report Table */}
+      {stats.monthlyRevenueTrend && stats.monthlyRevenueTrend.length > 0 && (
+        <div className="bg-[#1e293b] p-6 rounded-xl border border-white/5 space-y-4 stagger-item">
+          <div>
+            <h3 className="font-bold text-lg text-white">Báo cáo Doanh thu & Hoa hồng Trung tâm</h3>
+            <p className="text-xs text-slate-400">Báo cáo tổng học phí và chiết khấu hoa hồng thực thu (30%) của trung tâm qua các tháng</p>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm text-left text-slate-300">
+              <thead className="text-xs uppercase bg-[#131926] text-slate-400 border-b border-white/5">
+                <tr>
+                  <th scope="col" className="px-6 py-3 rounded-l-lg">Tháng</th>
+                  <th scope="col" className="px-6 py-3">Tổng học phí các lớp (Gross)</th>
+                  <th scope="col" className="px-6 py-3">Doanh thu hoa hồng (Commission)</th>
+                  <th scope="col" className="px-6 py-3 rounded-r-lg">Thực trả Gia sư (Net Payout)</th>
+                </tr>
+              </thead>
+              <tbody>
+                {stats.monthlyRevenueTrend.map((row: any, idx: number) => (
+                  <tr key={idx} className="border-b border-white/5 hover:bg-slate-800/40 transition-colors">
+                    <td className="px-6 py-4 font-semibold text-white">{row.month}</td>
+                    <td className="px-6 py-4 text-blue-400 font-medium">{row.gross?.toLocaleString("vi-VN")}đ</td>
+                    <td className="px-6 py-4 text-yellow-500 font-bold">{row.commission?.toLocaleString("vi-VN")}đ</td>
+                    <td className="px-6 py-4 text-emerald-400 font-medium">{(row.gross - row.commission)?.toLocaleString("vi-VN")}đ</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </>
   );
 }
